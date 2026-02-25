@@ -1,0 +1,74 @@
+{
+  "workflow": {
+    "name": "HotBot Studios AI Chatbot Workflow",
+    "version": "2.0.0",
+    "description": "Two-layer chatbot system for HotBot Studios: AI Agent with Google Drive knowledge base and Live Chat via AI Sensy HTTP Node",
+    "company_profile": {
+      "name": "HotBot Studios",
+      "tagline": "AI-Powered Growth Infrastructure",
+      "headline": "Welcome to HotBot Studios",
+      "subheadline": "Choose your growth engine",
+      "founded_by": "Hekai Harshpreet Bhasin",
+      "description": "AI automation and growth infrastructure for modern businesses.",
+      "website": "https://hotbotstudios.com",
+      "social_links": ["X (Twitter)", "LinkedIn", "Instagram"],
+      "company_pages": ["About", "Contact", "Careers"]
+    },
+
+    "knowledge_base": {
+      "description": "Complete service catalog and page content extracted from HotBot Studios website for AI chatbot context",
+
+      "services": [
+        {
+          "id": "ai_automation",
+          "name": "AI Automation",
+          "route": "/ai-automation",
+          "headline": "AI Automation Specialists for Modern Businesses",
+          "description": "We design and deploy custom AI agents, voice assistants, Shopify AI plugins, and conversational automation systems that increase revenue and reduce operational overhead.",
+          "cta_buttons": [
+            { "label": "Explore AI Agents", "action": "scroll_to_agents" },
+            { "label": "Book AI Strategy Call", "action": "booking_link" }
+          ],
+          "section_title": "Our AI Agents",
+          "section_subtitle": "Purpose-built AI systems designed for real business impact",
+          "products": [
+            {
+              "name": "Hekai – AI Voice Agent",
+              "description": "AI-powered voice assistant that answers inbound calls, qualifies leads, books appointments, and integrates directly with CRM systems for seamless automation.",
+              "tags": ["AI Voice Agent", "Conversational AI", "Call Automation"],
+              "has_detail_page": true
+            },
+            {
+              "name": "Shopify Birthday Gift Voucher AI Plugin",
+              "description": "Intelligent Shopify automation plugin that detects customer birthdays and automatically sends personalized discount vouchers to increase retention and repeat purchases.",
+              "tags": ["Shopify AI Plugin", "Automated Ecommerce", "Birthday Marketing"],
+              "has_detail_page": true
+            },
+            {
+              "name": "Personalized AI Chatbots",
+              "description": "Custom-trained AI chatbots built using your knowledge base, documents, and workflows for brand-aligned, context-aware responses.",
+              "tags": ["Custom AI Chatbot", "Enterprise AI Chatbot"],
+              "has_detail_page": true
+            },
+            {
+              "name": "AI Website Chatbots",
+              "description": "Real-time AI chatbots that handle customer support, lead generation, and product queries 24/7 with zero wait times.",
+              "tags": ["AI Website Chatbot", "Automated Customer Support"],
+              "has_detail_page": true
+            },
+            {
+              "name": "AI + Human Hybrid Chatbots",
+              "description": "AI chatbots that escalate complex interactions to human agents seamlessly, providing optimal customer experience at every touchpoint.",
+              "tags": ["AI Human Hybrid System", "AI Assisted Support"],
+              "has_detail_page": true
+            },
+            {
+              "name": "AI Content Generator",
+              "description": "Generate SEO-optimized blogs, landing pages, product descriptions, and marketing copy instantly using AI-powered content systems.",
+              "tags": ["AI Content Automation", "SEO AI Writer"],
+              "has_detail_page": true
+            }
+          ],
+          "founder_section": {
+            "title": "Founder-Led AI Innovation",
+            "content": "Led by Hekai Harshpreet Bhasin, HotBot Studios is a founder-led automation and growth firm focused on performance
