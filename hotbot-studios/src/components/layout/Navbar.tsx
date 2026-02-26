@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { NAV_LINKS } from "@/lib/constants";
@@ -41,17 +42,16 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 font-black text-xl tracking-tight text-white hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity"
         >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
-            style={{
-              background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-            }}
-          >
-            H
-          </div>
-          <span>HotBot Studios</span>
+          <Image
+            src="/logo.png"
+            alt="HotBot Studios"
+            width={160}
+            height={40}
+            className="h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Desktop Nav */}

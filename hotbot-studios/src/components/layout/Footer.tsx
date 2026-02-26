@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -32,14 +33,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black text-white"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
-              >
-                H
-              </div>
-              <span className="font-black text-lg text-white">HotBot Studios</span>
+            <Link href="/" className="inline-flex mb-4">
+              <Image
+                src="/logo.png"
+                alt="HotBot Studios"
+                width={160}
+                height={40}
+                className="h-9 w-auto object-contain"
+              />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-6">
               Full-service growth infrastructure for UK businesses. AI, marketing, content, software, PR — all in one place.
