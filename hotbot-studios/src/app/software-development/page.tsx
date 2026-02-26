@@ -194,6 +194,70 @@ export default function SoftwareDevelopmentPage() {
 
       <FAQSection faqs={FAQS} />
 
+      {/* ── Custom Software vs Off-the-Shelf ─────────────────────────── */}
+      <section className="relative z-10 px-6 max-w-5xl mx-auto py-10">
+        <Reveal>
+          <h2 className="text-2xl font-bold text-white text-center mb-4">When Should You Build Custom Software?</h2>
+          <p className="text-slate-400 text-center max-w-2xl mx-auto mb-8 text-sm leading-relaxed">
+            Off-the-shelf SaaS tools work well for generic workflows. But the moment your business has a unique process, a
+            competitive differentiator worth protecting, or a customer experience that no template can replicate — custom software
+            is the only path to sustainable advantage. Here&apos;s how to know which situation you&apos;re in.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[
+              {
+                icon: "✅",
+                title: "Build Custom When…",
+                color: "#22c55e",
+                points: [
+                  "Your workflow is a competitive moat that off-the-shelf tools would expose to competitors",
+                  "You&apos;re paying $5,000+/month in SaaS subscriptions for tools that still don&apos;t do exactly what you need",
+                  "You need deep integrations across your CRM, ERP, and internal systems that no native connector supports",
+                  "Your business model requires multi-tenancy, white-labeling, or customer-specific customization at scale",
+                  "You want to embed AI capabilities (GPT-4o, Claude) tailored to your proprietary data and workflows",
+                  "You need full data ownership and control for compliance (HIPAA, SOC 2, CCPA, GDPR)",
+                ],
+              },
+              {
+                icon: "⚠️",
+                title: "Stick with SaaS When…",
+                color: "#f59e0b",
+                points: [
+                  "Your needs are fully covered by an existing product and you have no immediate plans to differentiate",
+                  "You&apos;re pre-revenue and need to move fast without engineering investment",
+                  "The workflow is generic enough that customization provides no competitive advantage",
+                  "You&apos;re not ready to invest in ongoing engineering maintenance and iteration",
+                  "A no-code tool (Notion, Airtable, HubSpot) already solves 90%+ of the problem",
+                  "Speed to market matters more than a perfect fit — use SaaS now, build custom later",
+                ],
+              },
+            ].map((col, i) => (
+              <Reveal key={i} delay={i * 0.1}>
+                <div className="p-6 rounded-2xl h-full" style={{ background: `${col.color}08`, border: `1px solid ${col.color}20` }}>
+                  <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: col.color }}>
+                    <span>{col.icon}</span> {col.title}
+                  </h3>
+                  <ul className="space-y-2.5">
+                    {col.points.map((pt, j) => (
+                      <li key={j} className="flex items-start gap-2 text-slate-300 text-sm">
+                        <span className="shrink-0 mt-0.5" style={{ color: col.color }}>›</span>
+                        <span dangerouslySetInnerHTML={{ __html: pt.replace(/&apos;/g, "'") }} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={0.2}>
+            <p className="text-slate-500 text-xs text-center mt-6 max-w-2xl mx-auto">
+              Not sure which path is right for your business? HotBot Studios offers a free 30-minute technical scoping call to
+              help you make the right decision — no sales pressure, just an honest assessment.
+            </p>
+          </Reveal>
+        </Reveal>
+      </section>
+
       {/* ── Key Takeaways (AEO) ──────────────────────────────────────── */}
       <section className="relative z-10 px-6 max-w-4xl mx-auto pb-8">
         <Reveal>

@@ -170,6 +170,63 @@ export default function ContentStudioPage() {
       <ProcessSteps steps={PROCESS} title="Our Content Production Process" />
       <FAQSection faqs={FAQS} />
 
+      {/* ── Content by Business Goal ──────────────────────────────────── */}
+      <section className="relative z-10 px-6 max-w-5xl mx-auto py-10">
+        <Reveal>
+          <h2 className="text-2xl font-bold text-white text-center mb-4">The Right Content for Every Stage of Your Funnel</h2>
+          <p className="text-slate-400 text-center max-w-2xl mx-auto mb-8 text-sm leading-relaxed">
+            Effective content marketing isn&apos;t about producing more content — it&apos;s about producing the right content
+            for each stage of your buyer&apos;s journey. HotBot Studios maps every content format to a specific business goal,
+            ensuring your production budget compounds into measurable audience growth and lead generation.
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                stage: "Top of Funnel — Awareness",
+                goal: "Attract new audiences who don't know you yet",
+                formats: "SEO blog articles, YouTube videos, TikTok Reels, podcast episodes, LinkedIn thought leadership",
+                metric: "Organic traffic, social reach, new subscriber growth",
+                color: "#3b82f6",
+              },
+              {
+                stage: "Middle of Funnel — Consideration",
+                goal: "Educate prospects already researching your category",
+                formats: "Whitepapers, case studies, comparison guides, webinar recordings, email drip sequences",
+                metric: "Lead magnet downloads, email list growth, time on page",
+                color: "#8b5cf6",
+              },
+              {
+                stage: "Bottom of Funnel — Conversion",
+                goal: "Convert warm prospects into paying customers",
+                formats: "Customer testimonial videos, product demo videos, detailed case studies, sales deck copy",
+                metric: "Demo requests, proposal conversions, sales-qualified leads",
+                color: "#22c55e",
+              },
+              {
+                stage: "Post-Purchase — Retention & Advocacy",
+                goal: "Retain customers and turn them into brand ambassadors",
+                formats: "Onboarding content, tutorial videos, customer success stories, referral program content",
+                metric: "Churn reduction, NPS score, referral lead volume",
+                color: "#f59e0b",
+              },
+            ].map((row, i) => (
+              <Reveal key={i} delay={i * 0.08}>
+                <div className="p-4 rounded-2xl" style={{ background: `${row.color}08`, border: `1px solid ${row.color}20` }}>
+                  <div className="flex flex-col md:flex-row md:items-start gap-3">
+                    <div className="md:w-48 shrink-0">
+                      <span className="text-xs font-bold uppercase tracking-wide" style={{ color: row.color }}>{row.stage}</span>
+                      <p className="text-slate-400 text-xs mt-1">{row.goal}</p>
+                    </div>
+                    <div className="flex-1 text-xs text-slate-300">{row.formats}</div>
+                    <div className="md:w-48 text-xs text-slate-500 shrink-0">{row.metric}</div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
       {/* ── Key Takeaways (AEO) ──────────────────────────────────────── */}
       <section className="relative z-10 px-6 max-w-4xl mx-auto pb-8">
         <Reveal>

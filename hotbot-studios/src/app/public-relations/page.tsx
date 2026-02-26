@@ -207,6 +207,66 @@ export default function PublicRelationsPage() {
 
       <FAQSection faqs={FAQS} />
 
+      {/* ── Types of PR Stories That Win Coverage ────────────────────── */}
+      <section className="relative z-10 px-6 max-w-5xl mx-auto py-10">
+        <Reveal>
+          <h2 className="text-2xl font-bold text-white text-center mb-4">What Makes a Story Journalists Actually Want to Cover?</h2>
+          <p className="text-slate-400 text-center max-w-2xl mx-auto mb-8 text-sm leading-relaxed">
+            Journalists aren&apos;t looking for press releases about your product launch — they&apos;re looking for stories their
+            readers will share. HotBot Studios has placed 500+ earned media stories by mastering the six story types that US
+            journalists consistently cover. Every PR campaign we run is built around one or more of these proven angles.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                type: "Data-Led Stories",
+                desc: "Original research, surveys, and proprietary data that reveals a surprising trend in your industry. Journalists love exclusive data they can't get elsewhere — and it positions your brand as an authoritative source.",
+                example: "\"New survey: 68% of US SMBs waste $3,000+/month on redundant SaaS tools\"",
+                color: "#3b82f6",
+              },
+              {
+                type: "Contrarian Takes",
+                desc: "A well-argued position that challenges conventional wisdom in your industry. Editors at Forbes and Fast Company actively look for thought leadership that provokes debate and generates reader engagement.",
+                example: "\"Why hiring more salespeople is the wrong fix for your conversion problem\"",
+                color: "#8b5cf6",
+              },
+              {
+                type: "David vs Goliath",
+                desc: "The story of how a small, innovative company is disrupting a legacy industry or outperforming a much larger competitor. Readers root for the underdog, and journalists love a compelling competitive narrative.",
+                example: "\"How this $2M AI startup is replacing a $50M call center operation\"",
+                color: "#06b6d4",
+              },
+              {
+                type: "Human Impact Stories",
+                desc: "Real customer stories that show how your product or service transformed a business or improved lives. Concrete outcomes — revenue grown, jobs created, problems solved — make abstract claims credible.",
+                example: "\"How a Denver restaurant used AI to cut food waste by 40% and save $80K\"",
+                color: "#22c55e",
+              },
+              {
+                type: "Timely Newsjacking",
+                desc: "Connecting your brand's expertise to a breaking news story or major industry trend. When a relevant story hits the news cycle, HotBot Studios pitches your executives as expert commentators within hours.",
+                example: "Rapid-response commentary tied to AI regulation news or FTC rulings",
+                color: "#f59e0b",
+              },
+              {
+                type: "Milestone Announcements",
+                desc: "Funding rounds, major client wins, product launches, and expansion announcements — crafted with compelling narrative context so they read as business news, not corporate press releases.",
+                example: "\"HotBot Studios-backed startup hits $10M ARR, opens second US office\"",
+                color: "#ec4899",
+              },
+            ].map((item, i) => (
+              <Reveal key={i} delay={i * 0.08}>
+                <div className="p-5 rounded-2xl h-full" style={{ background: `${item.color}08`, border: `1px solid ${item.color}20` }}>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: item.color }}>{item.type}</div>
+                  <p className="text-slate-300 text-sm leading-relaxed mb-3">{item.desc}</p>
+                  <p className="text-slate-600 text-xs italic">{item.example}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
       {/* ── Key Takeaways (AEO) ──────────────────────────────────────── */}
       <section className="relative z-10 px-6 max-w-4xl mx-auto pb-8">
         <Reveal>
