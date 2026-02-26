@@ -152,8 +152,13 @@ export default function BlogPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {POSTS.map((post, i) => (
             <Reveal key={post.slug} delay={i * 0.07}>
-              <Link href={`/blog/${post.slug}`}>
-                <article className="group h-full flex flex-col p-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <article className="group h-full flex flex-col p-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative">
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="absolute inset-0 z-0 rounded-2xl"
+                  aria-label={post.title}
+                />
+                <div className="relative z-10 flex flex-col h-full">
                   <div className="mb-4">
                     <span
                       className="px-3 py-1 rounded-full text-[11px] font-semibold"
@@ -174,13 +179,12 @@ export default function BlogPage() {
                     <span>{post.readTime}</span>
                   </div>
                   <Link href={post.relatedHref}
-                    className="text-[11px] font-medium transition-colors hover:text-blue-300"
-                    style={{ color: CATEGORY_COLORS[post.category] || "#93c5fd" }}
-                    onClick={(e) => e.stopPropagation()}>
+                    className="relative z-10 text-[11px] font-medium transition-colors hover:text-blue-300"
+                    style={{ color: CATEGORY_COLORS[post.category] || "#93c5fd" }}>
                     Explore {post.category} Services →
                   </Link>
-                </article>
-              </Link>
+                </div>
+              </article>
             </Reveal>
           ))}
         </div>
