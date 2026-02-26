@@ -6,11 +6,11 @@ import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 import { CTASection } from "@/components/sections/CTASection";
 
 export const metadata: Metadata = {
-  title: "HotBot Studios | Best Digital Marketing & AI Automation Services in UK",
+  title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
   description:
-    "Full-service digital marketing, AI automation, content production, software development, public relations, and UI/UX design for UK businesses.",
+    "Full-service digital marketing, AI automation, content production, software development, public relations, and UI/UX design for US businesses.",
   openGraph: {
-    title: "HotBot Studios | UK's Growth Infrastructure",
+    title: "HotBot Studios | America's Growth Infrastructure",
     description: "AI, marketing, content, software, PR — all in one place.",
     url: "https://hotbotstudios.com",
   },

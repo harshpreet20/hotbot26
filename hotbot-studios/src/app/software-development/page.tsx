@@ -8,9 +8,9 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
-  title: "Software Development Services UK | HotBot Studios",
+  title: "Software Development Services USA | HotBot Studios",
   description:
-    "Custom software development, web apps, mobile apps, SaaS platforms, and API integrations for UK businesses.",
+    "Custom software development, web apps, mobile apps, SaaS platforms, and API integrations for US businesses.",
 };
 
 const SUB_SERVICES = [
@@ -39,7 +39,7 @@ const PROCESS = [
 const FAQS = [
   { q: "What technologies do you use?", a: "React, Next.js, Node.js, Python, TypeScript, PostgreSQL, MongoDB, AWS, Vercel, and Docker. We pick the right tools for each project." },
   { q: "How long does a typical project take?", a: "MVPs take 4-8 weeks. Full SaaS platforms take 3-6 months. We break projects into phases to deliver value early and often." },
-  { q: "Do you offer ongoing maintenance?", a: "Yes. All projects include 90 days of post-launch support. Ongoing maintenance retainers are available from £1,500/month." },
+  { q: "Do you offer ongoing maintenance?", a: "Yes. All projects include 90 days of post-launch support. Ongoing maintenance retainers are available from $1,500/month." },
   { q: "Who owns the code?", a: "You do — 100%. We transfer full ownership of all code, assets, and infrastructure to you at project completion." },
 ];
 
@@ -55,14 +55,14 @@ export default function SoftwareDevelopmentPage() {
       <PageHeader
         label="Software Development"
         title="Software That Scales With Your Ambition"
-        subtitle="From MVPs to enterprise platforms — we build robust, beautiful software that solves real problems and delivers measurable business value."
+        subtitle="Ideas are worthless without execution. We turn your software vision into a shipped, scalable product — whether that's a two-week MVP to validate a market, or an enterprise platform built to handle millions of users."
       />
       <SubServices services={SUB_SERVICES} title="What We Build" columns={3} />
       <ServiceStats stats={STATS} />
       <ProcessSteps steps={PROCESS} title="Our Development Process" />
       <FAQSection faqs={FAQS} />
       <RelatedServices services={RELATED} />
-      <CTASection title="Have a Software Idea?" subtitle="We'll take it from concept to production — with speed, quality, and transparency." formType="get-started" />
+      <CTASection title="Have a Software Idea?" subtitle="Tell us what you're building. We'll scope it, build it, and ship it — with full transparency at every step." formType="get-started" />
     </>
   );
 }

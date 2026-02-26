@@ -13,8 +13,8 @@ export function FormStep1({ form, update, onNext }: FormStep1Props) {
   const fields: Array<{ key: keyof FormData; label: string; type: string; placeholder: string; required?: boolean }> = [
     { key: "name", label: "Full Name", type: "text", placeholder: "John Smith", required: true },
     { key: "email", label: "Email Address", type: "email", placeholder: "john@company.com", required: true },
-    { key: "phone", label: "Phone Number", type: "tel", placeholder: "+44 7700 900000" },
-    { key: "company", label: "Company Name", type: "text", placeholder: "Acme Ltd." },
+    { key: "phone", label: "Phone Number", type: "tel", placeholder: "+1 (415) 555-0100" },
+    { key: "company", label: "Company Name", type: "text", placeholder: "Acme Inc." },
   ];
 
   return (

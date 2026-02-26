@@ -8,9 +8,9 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
-  title: "Marketing Consulting UK | HotBot Studios",
+  title: "Marketing Consulting USA | HotBot Studios",
   description:
-    "Strategic marketing consulting, digital transformation, and growth advisory for UK businesses ready to scale.",
+    "Strategic marketing consulting, digital transformation, and growth advisory for US businesses ready to scale.",
 };
 
 const SUB_SERVICES = [
@@ -19,7 +19,7 @@ const SUB_SERVICES = [
   { icon: "📊", title: "Marketing Audit", desc: "Comprehensive review of your current marketing to identify gaps and opportunities." },
   { icon: "🏗️", title: "MarTech Stack Design", desc: "Select and implement the right tools for your team size, budget, and goals." },
   { icon: "👥", title: "Team Building", desc: "Help you hire, structure, and upskill your in-house marketing team." },
-  { icon: "🌍", title: "Market Entry", desc: "Research, strategy, and execution support for entering new UK or international markets." },
+  { icon: "🌍", title: "Market Entry", desc: "Research, strategy, and execution support for entering new US or international markets." },
 ];
 
 const STATS = [
@@ -37,7 +37,7 @@ const PROCESS = [
 ];
 
 const FAQS = [
-  { q: "What types of businesses do you consult for?", a: "We work with growing SMEs, scale-ups, and enterprise teams across all industries. Sweet spot is £1M-£50M revenue businesses." },
+  { q: "What types of businesses do you consult for?", a: "We work with growing SMBs, scale-ups, and enterprise teams across all industries. Sweet spot is $1M-$50M revenue businesses." },
   { q: "Is consulting a one-time engagement or ongoing?", a: "Both. We offer one-off strategy audits (4-6 weeks) and ongoing advisory retainers (monthly) for continued support." },
   { q: "How quickly will we see a return on consulting investment?", a: "Most clients see a clear ROI within 60-90 days through waste reduction and higher-value activities. We set measurable goals from day one." },
   { q: "Do you also help with implementation?", a: "Yes. We're different from typical consultants — we roll up our sleeves and help you execute, not just advise." },
@@ -55,14 +55,14 @@ export default function ConsultancyPage() {
       <PageHeader
         label="Marketing Consulting"
         title="Clarity, Strategy, and Execution That Scales"
-        subtitle="We partner with ambitious UK businesses to develop winning growth strategies, modernise their marketing operations, and build teams that deliver."
+        subtitle="Most marketing problems aren't strategy problems — they're clarity problems. You don't need another agency pitching services. You need an honest assessment of where your growth is stalling and a concrete plan to fix it."
       />
       <SubServices services={SUB_SERVICES} title="Our Consulting Services" columns={3} />
       <ServiceStats stats={STATS} />
       <ProcessSteps steps={PROCESS} title="Our Consulting Process" />
       <FAQSection faqs={FAQS} />
       <RelatedServices services={RELATED} />
-      <CTASection title="Book Your Free Strategy Call" subtitle="30 minutes. No pitch. Just honest insights about your biggest marketing opportunities." formType="strategy-call" />
+      <CTASection title="Book Your Free Strategy Call" subtitle="30 minutes, no pitch deck, no sales pressure. Just an honest conversation about where your business is and what it takes to get where you want to go." formType="strategy-call" />
     </>
   );
 }

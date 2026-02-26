@@ -43,7 +43,7 @@ export function Footer() {
               />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-6">
-              Full-service growth infrastructure for UK businesses. AI, marketing, content, software, PR — all in one place.
+              Full-service growth infrastructure for US businesses. AI, marketing, content, software, PR — all in one place.
             </p>
             {/* Newsletter */}
             {!subDone ? (
@@ -140,7 +140,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} HotBot Studios Ltd. All rights reserved. Registered in England & Wales.
+            © {new Date().getFullYear()} HotBot Studios Inc. All rights reserved. Incorporated in Delaware, USA.
           </p>
           <div className="flex items-center gap-4">
             <a

@@ -8,9 +8,9 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
-  title: "Content Production Studio UK | HotBot Studios",
+  title: "Content Production Studio USA | HotBot Studios",
   description:
-    "Premium content production — video, photography, copywriting, podcasts, and social content — for UK brands that want to stand out.",
+    "Premium content production — video, photography, copywriting, podcasts, and social content — for US brands that want to stand out.",
 };
 
 const SUB_SERVICES = [
@@ -55,14 +55,14 @@ export default function ContentStudioPage() {
       <PageHeader
         label="Content Studio"
         title="Content That Captivates, Converts, and Compounds"
-        subtitle="Premium content production for brands that refuse to blend in. From viral social content to long-form thought leadership — we tell your story beautifully."
+        subtitle="Generic content gets scrolled past. Content that educates, entertains, and speaks directly to your buyer's pain points builds audiences, drives organic traffic, and generates leads at scale. That's what we produce."
       />
       <SubServices services={SUB_SERVICES} title="What We Create" columns={3} />
       <ServiceStats stats={STATS} />
       <ProcessSteps steps={PROCESS} title="Our Creative Process" />
       <FAQSection faqs={FAQS} />
       <RelatedServices services={RELATED} />
-      <CTASection title="Let's Create Something Remarkable" subtitle="Tell us about your content needs and we'll produce content that actually drives results." formType="get-started" />
+      <CTASection title="Let's Create Something Remarkable" subtitle="Tell us your content goals and we'll build a production system that scales with you — without sacrificing quality." formType="get-started" />
     </>
   );
 }

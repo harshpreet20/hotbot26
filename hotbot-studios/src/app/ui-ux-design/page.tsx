@@ -8,7 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
-  title: "UI/UX Design Services UK | HotBot Studios",
+  title: "UI/UX Design Services USA | HotBot Studios",
   description:
     "User-centered UI/UX design, wireframing, prototyping, and design systems that convert visitors into customers.",
 };
@@ -19,7 +19,7 @@ const SUB_SERVICES = [
   { icon: "🎨", title: "UI Design", desc: "Beautiful, consistent interfaces built on solid design systems that scale." },
   { icon: "⚡", title: "Prototyping", desc: "Interactive prototypes for user testing and stakeholder sign-off before development begins." },
   { icon: "📱", title: "Mobile Design", desc: "Native iOS and Android design patterns that feel right at home on any device." },
-  { icon: "♿", title: "Accessibility", desc: "WCAG 2.1 AA compliant designs that are inclusive and meet UK digital accessibility standards." },
+  { icon: "♿", title: "Accessibility", desc: "WCAG 2.1 AA compliant designs that are inclusive and meet ADA & Section 508 accessibility standards." },
 ];
 
 const STATS = [
@@ -46,7 +46,7 @@ const FAQS = [
 const RELATED = [
   { title: "Software Development", href: "/software-development", desc: "We'll build what we design, pixel-perfect.", icon: "💻" },
   { title: "AI Automation", href: "/ai-automation", desc: "Beautiful interfaces for your AI products.", icon: "🤖" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "More traffic to your newly optimised product.", icon: "📣" },
+  { title: "Digital Marketing", href: "/marketing-services", desc: "More traffic to your newly optimized product.", icon: "📣" },
 ];
 
 export default function UIUXDesignPage() {
@@ -55,14 +55,14 @@ export default function UIUXDesignPage() {
       <PageHeader
         label="UI/UX Design"
         title="Designs That Convert, Not Just Impress"
-        subtitle="User-centered design that solves real problems. We create beautiful, functional interfaces that guide users to their goals — and your business to its targets."
+        subtitle="A confusing product loses customers before it ever gets a chance to keep them. We design interfaces that feel effortless — because when users achieve their goals quickly, your conversion metrics follow."
       />
       <SubServices services={SUB_SERVICES} title="Our Design Services" columns={3} />
       <ServiceStats stats={STATS} />
       <ProcessSteps steps={PROCESS} title="Our Design Process" />
       <FAQSection faqs={FAQS} />
       <RelatedServices services={RELATED} />
-      <CTASection title="Ready to Transform Your Product?" subtitle="Get a free UX audit and discover exactly where users are dropping off." formType="consultation" />
+      <CTASection title="Ready to Transform Your Product?" subtitle="Find the leaks in your user experience — and the specific design changes that will fix them." formType="consultation" />
     </>
   );
 }

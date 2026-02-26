@@ -6,9 +6,9 @@ import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 
 export const metadata: Metadata = {
-  title: "About HotBot Studios | UK Digital Agency",
+  title: "About HotBot Studios | US Digital Agency",
   description:
-    "Learn about HotBot Studios — the full-service digital agency combining AI, marketing, content, software, PR, and design for UK businesses.",
+    "Learn about HotBot Studios — the full-service digital agency combining AI, marketing, content, software, PR, and design for US businesses.",
 };
 
 const VALUES = [
@@ -17,7 +17,7 @@ const VALUES = [
   { icon: "🤝", title: "True Partnership", desc: "We don't take briefs — we build partnerships. Your success is genuinely our success." },
   { icon: "🔬", title: "Data-Driven", desc: "Gut feelings don't scale. Every strategy is grounded in data, tested, and refined." },
   { icon: "⚡", title: "Speed Without Compromise", desc: "We move fast, but never at the expense of quality. Agile, not reckless." },
-  { icon: "🌍", title: "Globally Minded", desc: "UK-headquartered with a global team and international client experience." },
+  { icon: "🌍", title: "Globally Minded", desc: "US-headquartered with a global team and international client experience." },
 ];
 
 export default function AboutPage() {
@@ -25,8 +25,8 @@ export default function AboutPage() {
     <>
       <PageHeader
         label="About Us"
-        title="The Agency Built for the AI Era"
-        subtitle="HotBot Studios was founded to solve a simple problem: most agencies do one thing. We build the entire growth stack — marketing, AI, content, software, PR, and design — under one roof."
+        title="The Agency That Builds Your Entire Growth Stack"
+        subtitle="Most agencies specialize in one slice of your growth. You end up managing five vendors, five invoices, and five strategies that don't talk to each other. We fix that. One team builds your entire growth engine — marketing, AI, content, software, PR, and design — working together from day one."
       />
 
       {/* Mission */}
@@ -34,7 +34,7 @@ export default function AboutPage() {
         <Reveal>
           <div className="p-8 rounded-3xl text-center" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)" }}>
             <p className="text-2xl font-semibold text-white leading-relaxed mb-4">
-              &ldquo;We exist to give every UK business access to enterprise-grade marketing technology and creative talent — regardless of size.&rdquo;
+              &ldquo;Every business deserves the same advantages that Fortune 500 companies take for granted: world-class creative talent, cutting-edge AI automation, and a growth strategy built on data — not guesswork.&rdquo;
             </p>
             <p className="text-slate-400">— HotBot Studios Founding Team</p>
           </div>
@@ -69,10 +69,10 @@ export default function AboutPage() {
         </Reveal>
         <div className="space-y-4">
           {[
-            { q: "Full-stack service", a: "7 services under one roof means no agency fragmentation. One strategy, one team, one invoice." },
-            { q: "AI-native approach", a: "We build AI into every service — from AI-powered ad bidding to automated content workflows." },
-            { q: "UK-focused expertise", a: "We understand UK consumers, regulations (GDPR), and media landscape better than any overseas agency." },
-            { q: "Transparent reporting", a: "You get weekly updates and a live dashboard showing exactly how your investment is performing." },
+            { q: "One team, seven capabilities", a: "Agency fragmentation kills momentum. When your SEO, AI, content, and dev teams are in separate companies, nothing moves fast. One integrated team means strategies compound — your AI feeds your marketing, your content fuels your PR, your data shapes everything." },
+            { q: "AI runs through everything we do", a: "We don't bolt AI on as an afterthought. It's built into every service — AI-powered ad bidding, automated content workflows, intelligent lead scoring, and predictive analytics. The result: faster execution, less waste, better outcomes." },
+            { q: "Built for the US market", a: "We understand US consumers, the American media landscape, CCPA compliance, and the channels that drive growth for US businesses. No translation layer. No learning curve. Just results." },
+            { q: "Radical transparency", a: "You get a live dashboard, weekly updates, and monthly reviews — showing exactly what we've done, what moved the needle, and what's next. If something isn't working, we tell you first." },
           ].map((item, i) => (
             <Reveal key={i} delay={i * 0.1}>
               <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02]">

@@ -33,7 +33,7 @@ export default function ContactPage() {
       <PageHeader
         label="Contact"
         title="Let's Start a Conversation"
-        subtitle="Reach out via the form below, WhatsApp, or email. We respond to all enquiries within 24 hours."
+        subtitle="Reach out via the form below, WhatsApp, or email. We respond to all inquiries within 24 hours."
       />
 
       <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
@@ -50,8 +50,8 @@ export default function ContactPage() {
 
               {[
                 { icon: "📧", title: "Email", value: "hello@hotbotstudios.com", href: "mailto:hello@hotbotstudios.com" },
-                { icon: "💬", title: "WhatsApp", value: "+44 7700 900000", href: "https://wa.me/447700900000" },
-                { icon: "📍", title: "Location", value: "London, United Kingdom", href: null },
+                { icon: "💬", title: "WhatsApp", value: "+1 (415) 555-0100", href: "https://wa.me/14155550100" },
+                { icon: "📍", title: "Location", value: "New York, United States", href: null },
                 { icon: "⏰", title: "Response Time", value: "Within 24 hours", href: null },
               ].map((item) => (
                 <GlassCard key={item.title} className="p-5" hover={false}>
@@ -80,7 +80,7 @@ export default function ContactPage() {
                   {[
                     { key: "name", label: "Full Name *", type: "text", placeholder: "John Smith" },
                     { key: "email", label: "Email *", type: "email", placeholder: "john@company.com" },
-                    { key: "phone", label: "Phone", type: "tel", placeholder: "+44 7700 900000" },
+                    { key: "phone", label: "Phone", type: "tel", placeholder: "+1 (415) 555-0100" },
                     { key: "subject", label: "Subject", type: "text", placeholder: "How can we help?" },
                   ].map(({ key, label, type, placeholder }) => (
                     <div key={key}>

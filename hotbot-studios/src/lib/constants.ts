@@ -43,10 +43,10 @@ export const SERVICE_LIST = [
 ];
 
 export const BUDGET_LIST = [
-  "Under £5,000",
-  "£5,000 – £15,000",
-  "£15,000 – £50,000",
-  "£50,000+",
+  "Under $5,000",
+  "$5,000 – $15,000",
+  "$15,000 – $50,000",
+  "$50,000+",
   "Let's discuss",
 ];
 

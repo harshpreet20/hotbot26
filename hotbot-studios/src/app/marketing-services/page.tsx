@@ -10,9 +10,9 @@ import { Highlight } from "@/components/shared/Highlight";
 import { ContentBlock } from "@/components/shared/ContentBlock";
 
 export const metadata: Metadata = {
-  title: "Best Digital Marketing Services UK | HotBot Studios",
+  title: "Best Digital Marketing Services USA | HotBot Studios",
   description:
-    "SEO, SEM, social media marketing, PPC, email marketing, and performance marketing for UK businesses. Data-driven strategies that deliver measurable ROI.",
+    "SEO, SEM, social media marketing, PPC, email marketing, and performance marketing for US businesses. Data-driven strategies that deliver measurable ROI.",
 };
 
 const SUB_SERVICES = [
@@ -21,7 +21,7 @@ const SUB_SERVICES = [
   { icon: "💰", title: "PPC & Paid Ads", desc: "Google Ads, Meta Ads, and LinkedIn Ads managed for maximum ROAS with AI bidding." },
   { icon: "📧", title: "Email Marketing", desc: "Automated email sequences, newsletters, and drip campaigns that convert and retain customers." },
   { icon: "📊", title: "Analytics & Attribution", desc: "GA4 setup, custom dashboards, and multi-touch attribution to understand your true marketing ROI." },
-  { icon: "🎯", title: "Conversion Rate Optimisation", desc: "A/B testing, landing page optimisation, and UX improvements that turn visitors into customers." },
+  { icon: "🎯", title: "Conversion Rate Optimization", desc: "A/B testing, landing page optimization, and UX improvements that turn visitors into customers." },
 ];
 
 const STATS = [
@@ -35,13 +35,13 @@ const PROCESS = [
   { n: 1, title: "Audit & Strategy", desc: "Deep dive into your current marketing, competitor landscape, and audience to craft a winning strategy.", icon: "🔍" },
   { n: 2, title: "Channel Selection", desc: "Identify the highest-ROI channels for your specific business, audience, and budget.", icon: "📍" },
   { n: 3, title: "Campaign Launch", desc: "Build, launch, and A/B test campaigns across all selected channels simultaneously.", icon: "🚀" },
-  { n: 4, title: "Optimise & Scale", desc: "Weekly optimisation cycles to cut waste, double down on winners, and scale profitably.", icon: "📈" },
+  { n: 4, title: "Optimize & Scale", desc: "Weekly optimization cycles to cut waste, double down on winners, and scale profitably.", icon: "📈" },
 ];
 
 const FAQS = [
   { q: "How long before I see results from digital marketing?", a: "SEO typically takes 3-6 months for significant results. PPC and social ads can drive leads within days. We set realistic expectations from day one." },
   { q: "Do you specialise in any particular industry?", a: "We work across B2B, e-commerce, professional services, and consumer brands. Our team has specialists in retail, finance, tech, and healthcare." },
-  { q: "What's your minimum monthly retainer?", a: "Our digital marketing retainers start at £2,500/month. We also offer project-based work for one-off campaigns or audits." },
+  { q: "What's your minimum monthly retainer?", a: "Our digital marketing retainers start at $2,500/month. We also offer project-based work for one-off campaigns or audits." },
   { q: "How do you measure marketing success?", a: "We set KPIs from day one — typically revenue, ROAS, cost per acquisition, and lead quality. You get weekly dashboards and monthly reviews." },
 ];
 
@@ -57,13 +57,13 @@ export default function MarketingServicesPage() {
       <PageHeader
         label="Digital Marketing"
         title="Performance Marketing That Actually Performs"
-        subtitle="Data-driven digital marketing strategies that drive measurable growth. From SEO to paid ads to social — we build your customer acquisition engine."
+        subtitle="Your competitors are running ads right now. The question is whether those ads are profitable. We build and manage data-driven marketing systems — SEO, PPC, social — engineered to turn spend into revenue, not just clicks."
       />
       <ContentBlock>
         <Highlight
           icon="📈"
           title="Mark-Tech Approach"
-          text="We blend marketing expertise with cutting-edge technology — using AI tools for campaign optimisation, predictive analytics, and automated personalisation at scale."
+          text="We pair deep marketing expertise with AI tools — machine learning for campaign optimization, predictive analytics for smarter budget allocation, and automated personalization that speaks to the right buyer at the right moment — all tracked in one dashboard."
           color="#3b82f6"
         />
       </ContentBlock>
@@ -72,7 +72,7 @@ export default function MarketingServicesPage() {
       <ProcessSteps steps={PROCESS} title="How We Drive Growth" />
       <FAQSection faqs={FAQS} />
       <RelatedServices services={RELATED} />
-      <CTASection title="Ready to Grow Your Business?" subtitle="Get a free marketing audit and see exactly where your biggest opportunities lie." formType="strategy-call" />
+      <CTASection title="Ready to Grow Your Business?" subtitle="Find out where your current marketing is leaking revenue — and what it would take to fix it. Free audit, no strings." formType="strategy-call" />
     </>
   );
 }

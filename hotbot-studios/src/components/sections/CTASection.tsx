@@ -12,7 +12,7 @@ interface CTASectionProps {
 
 export function CTASection({
   title = "Ready to Scale Your Business?",
-  subtitle = "Join 42+ UK businesses using HotBot Studios to grow faster with AI-powered marketing, automation, and creative services.",
+  subtitle = "Join 42+ US businesses using HotBot Studios to grow faster with AI-powered marketing, automation, and creative services.",
   primaryCTA = "Start Your Project",
   secondaryCTA = "Book Strategy Call",
   formType = "get-started",

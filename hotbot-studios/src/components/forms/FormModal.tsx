@@ -18,7 +18,7 @@ const SUBTITLES: Record<string, string> = {
   "get-started": "Tell us about your project and we'll get back within 24 hours.",
   "contact-sales": "Our sales team will reach out with a tailored proposal.",
   "strategy-call": "Book a free 30-minute strategy session with our experts.",
-  consultation: "Get a no-obligation consultation for your UK business.",
+  consultation: "Get a no-obligation consultation for your US business.",
 };
 
 const EMPTY_FORM: FormData = {

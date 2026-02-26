@@ -5,23 +5,23 @@ import { Reveal } from "@/components/shared/Reveal";
 
 export const metadata: Metadata = {
   title: "Blog | HotBot Studios",
-  description: "Insights on AI automation, digital marketing, content production, and growth strategies for UK businesses.",
+  description: "Insights on AI automation, digital marketing, content production, and growth strategies for US businesses.",
 };
 
 const POSTS = [
   {
-    slug: "ai-automation-uk-business-2025",
-    title: "How AI Automation is Transforming UK Businesses in 2025",
-    excerpt: "Discover how leading UK companies are using AI agents, voice AI, and workflow automation to cut costs, increase efficiency, and outpace competition.",
+    slug: "ai-automation-us-business-2025",
+    title: "How AI Automation is Transforming US Businesses in 2025",
+    excerpt: "Discover how leading US companies are using AI agents, voice AI, and workflow automation to cut costs, increase efficiency, and outpace competition.",
     date: "2025-01-15",
     category: "AI Automation",
     readTime: "8 min read",
     author: "HotBot Studios",
   },
   {
-    slug: "digital-marketing-strategy-uk",
-    title: "The Complete Digital Marketing Strategy for UK SMEs in 2025",
-    excerpt: "From SEO to paid ads to social media — a comprehensive playbook for UK small and medium businesses to compete with larger rivals.",
+    slug: "digital-marketing-strategy-us",
+    title: "The Complete Digital Marketing Strategy for US SMBs in 2025",
+    excerpt: "From SEO to paid ads to social media — a comprehensive playbook for US small and medium businesses to compete with larger rivals.",
     date: "2025-01-10",
     category: "Digital Marketing",
     readTime: "12 min read",
@@ -29,7 +29,7 @@ const POSTS = [
   },
   {
     slug: "voice-ai-customer-service",
-    title: "Voice AI: The Future of Customer Service for UK Businesses",
+    title: "Voice AI: The Future of Customer Service for US Businesses",
     excerpt: "How Heka Voice AI and similar systems are replacing traditional phone support, reducing costs, and improving customer satisfaction simultaneously.",
     date: "2025-01-05",
     category: "AI Products",
@@ -46,17 +46,17 @@ const POSTS = [
     author: "HotBot Studios",
   },
   {
-    slug: "pr-strategy-small-business",
-    title: "PR on a Budget: How UK SMEs Can Compete for Media Coverage",
-    excerpt: "Big PR budgets aren't required. Here's how small businesses can land coverage in major UK publications with the right strategy and relationships.",
+    slug: "pr-strategy-us-business",
+    title: "PR on a Budget: How US SMBs Can Win National Media Coverage",
+    excerpt: "Big PR budgets aren't required. Here's how small businesses can land coverage in major US publications with the right strategy and relationships.",
     date: "2024-12-20",
     category: "Public Relations",
     readTime: "7 min read",
     author: "HotBot Studios",
   },
   {
-    slug: "n8n-automation-guide",
-    title: "n8n: The Open-Source Automation Tool Every UK Business Should Know",
+    slug: "n8n-automation-guide-us",
+    title: "n8n: The Open-Source Automation Tool Every US Business Should Know",
     excerpt: "A beginner's guide to n8n — the workflow automation platform we use to connect 500+ apps and automate complex business processes without code.",
     date: "2024-12-15",
     category: "AI Automation",
@@ -105,7 +105,7 @@ export default function BlogPage() {
                   </h3>
                   <p className="text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3">{post.excerpt}</p>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 mt-auto">
-                    <span>{new Date(post.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span>{new Date(post.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</span>
                     <span>{post.readTime}</span>
                   </div>
                 </div>

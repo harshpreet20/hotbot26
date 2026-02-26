@@ -7,7 +7,7 @@ const SERVICES = [
   {
     type: "ai",
     title: "AI Automation",
-    desc: "Custom AI agents, voice assistants, and intelligent automation systems.",
+    desc: "Stop doing manually what machines can handle. Custom AI agents and workflows that save your team 200+ hours every month.",
     href: "/ai-automation",
     featured: true,
     products: ["Heka Voice AI", "Website Keywords", "Telegram Bot", "LinkedIn Assistant", "Instagram Assistant", "Wellness AI"],
@@ -15,43 +15,43 @@ const SERVICES = [
   {
     type: "marketing",
     title: "Digital Marketing",
-    desc: "SEO, SEM, social media, and performance marketing strategies.",
+    desc: "Turn ad spend into predictable revenue. Data-driven SEO, PPC, and social campaigns engineered for maximum ROI.",
     href: "/marketing-services",
   },
   {
     type: "software",
     title: "Content Production Studio",
-    desc: "Premium websites, web apps, and professional content creation.",
+    desc: "Content that attracts, engages, and converts. Video, copy, and social built to grow your audience on every platform.",
     href: "/content-studio",
   },
   {
     type: "code",
     title: "Software Development",
-    desc: "Custom software, mobile apps, SaaS platforms, and API integrations.",
+    desc: "From MVP to enterprise-grade platform — we ship robust, scalable software your users will love and your investors will trust.",
     href: "/software-development",
   },
   {
     type: "pr",
     title: "Public Relations",
-    desc: "Strategic PR campaigns, media outreach, and brand reputation management.",
+    desc: "Get your brand into Forbes, TechCrunch, and the outlets your buyers actually read. Authority that opens doors.",
     href: "/public-relations",
   },
   {
     type: "uiux",
     title: "UI/UX Design",
-    desc: "User-centered design, wireframing, prototyping, and conversion optimization.",
+    desc: "Beautiful products that guide users to their goals — and your business to higher conversions. Design that pays for itself.",
     href: "/ui-ux-design",
   },
   {
     type: "consulting",
     title: "Marketing Consulting",
-    desc: "Business strategy, digital transformation, and growth consulting.",
+    desc: "Clarity without the jargon. We audit your growth strategy, find the gaps, and give you a plan that actually works.",
     href: "/consultancy",
   },
   {
     type: "seo",
     title: "Analytics & Data",
-    desc: "Real-time dashboards, attribution modelling, and conversion intelligence.",
+    desc: "Know exactly where every dollar is going. Real-time dashboards and attribution that eliminate guesswork.",
     href: "/marketing-services",
   },
 ];
@@ -78,7 +78,7 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl mb-8">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-slate-400 text-[13px] font-medium">
-            Full-Service Growth Infrastructure
+            Trusted by 42+ US Businesses
           </span>
         </div>
       </div>
@@ -92,9 +92,10 @@ export function HeroSection() {
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.4s",
         }}
       >
-        <span className="text-white">Welcome to </span>
+        <span className="text-white">Your Entire Growth Stack,</span>
+        <br />
         <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
-          HotBot Studios
+          One Partner.
         </span>
       </h1>
 
@@ -107,7 +108,7 @@ export function HeroSection() {
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.55s",
         }}
       >
-        Choose your growth engine
+        AI automation, marketing, content, software, PR, and design — built to work together and scale your business faster.
       </p>
 
       {/* Service cards */}

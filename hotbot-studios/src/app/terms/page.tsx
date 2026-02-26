@@ -27,7 +27,7 @@ export default function TermsPage() {
         <P>Upon full payment, clients receive ownership of all custom deliverables created specifically for their project. HotBot Studios retains rights to pre-existing tools, frameworks, and methodologies used in service delivery.</P>
 
         <H2>5. Payment Terms</H2>
-        <P>Invoices are due within 14 days of issue unless otherwise agreed. Late payments may incur interest at 8% above the Bank of England base rate, as permitted under the Late Payment of Commercial Debts Act 1998.</P>
+        <P>Invoices are due within 14 days of issue unless otherwise agreed. Late payments may incur interest at 1.5% per month or the maximum rate permitted by applicable state law.</P>
 
         <H2>6. Confidentiality</H2>
         <P>Both parties agree to keep confidential any proprietary information shared during the engagement. This obligation survives termination of the agreement for a period of 3 years.</P>
@@ -39,10 +39,10 @@ export default function TermsPage() {
         <P>Either party may terminate a service agreement with 30 days written notice. Clients are responsible for payment of work completed up to the termination date.</P>
 
         <H2>9. Governing Law</H2>
-        <P>These terms are governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</P>
+        <P>These terms are governed by the laws of the State of Delaware, United States. Any disputes shall be subject to the exclusive jurisdiction of the state and federal courts of Delaware.</P>
 
         <H2>10. Contact</H2>
-        <P>For questions about these terms, contact: legal@hotbotstudios.com | HotBot Studios Ltd, London, United Kingdom.</P>
+        <P>For questions about these terms, contact: legal@hotbotstudios.com | HotBot Studios Inc., Delaware, United States.</P>
       </ContentBlock>
     </div>
   );
