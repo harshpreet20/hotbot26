@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#0a0e1a"/>
+  <!-- Grid background -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(148,163,184,0.08)" stroke-width="0.6"/>
+    </pattern>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <!-- Glow orb -->
+  <ellipse cx="600" cy="315" rx="400" ry="200" fill="rgba(59,130,246,0.06)" filter="blur(80px)"/>
+  <!-- Logo mark -->
+  <rect x="520" y="160" width="64" height="64" rx="16" fill="url(#logoGrad)"/>
+  <path d="M535 172v40M535 192h34M569 172v40" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Title -->
+  <text x="600" y="270" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="900" text-anchor="middle" fill="white">HotBot Studios</text>
+  <!-- Tagline -->
+  <text x="600" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="400" text-anchor="middle" fill="rgba(148,163,184,0.9)">Full-Service Growth Infrastructure for UK Businesses</text>
+  <!-- Pills -->
+  <rect x="248" y="375" width="152" height="36" rx="18" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+  <text x="324" y="398" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#93c5fd">AI Automation</text>
+  <rect x="420" y="375" width="170" height="36" rx="18" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+  <text x="505" y="398" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#c4b5fd">Digital Marketing</text>
+  <rect x="610" y="375" width="160" height="36" rx="18" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.3)" stroke-width="1"/>
+  <text x="690" y="398" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#67e8f9">Content Studio</text>
+  <rect x="790" y="375" width="162" height="36" rx="18" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+  <text x="871" y="398" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#86efac">Software Dev</text>
+  <!-- URL -->
+  <text x="600" y="490" font-family="system-ui" font-size="18" text-anchor="middle" fill="rgba(100,116,139,0.8)">hotbotstudios.com</text>
+</svg>

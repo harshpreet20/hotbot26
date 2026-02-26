@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Block server-side API routes (no value for crawlers)
+Disallow: /api/
+
+# Block Next.js internals
+Disallow: /_next/
+
+# Block common bot traps
+Disallow: /admin/
+Disallow: /dashboard/
+
+# Crawl budget — let Google index key pages first
+Crawl-delay: 1
+
+Sitemap: https://hotbotstudios.com/sitemap.xml
