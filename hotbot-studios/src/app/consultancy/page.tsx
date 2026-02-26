@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 const SUB_SERVICES = [
   { icon: "🗺️", title: "Growth Strategy", desc: "Build a clear, executable roadmap from where you are to where you want to be." },
-  { icon: "🔄", title: "Digital Transformation", desc: "Modernise your marketing stack, processes, and team capabilities." },
+  { icon: "🔄", title: "Digital Transformation", desc: "Modernize your marketing stack, processes, and team capabilities." },
   { icon: "📊", title: "Marketing Audit", desc: "Comprehensive review of your current marketing to identify gaps and opportunities." },
   { icon: "🏗️", title: "MarTech Stack Design", desc: "Select and implement the right tools for your team size, budget, and goals." },
   { icon: "👥", title: "Team Building", desc: "Help you hire, structure, and upskill your in-house marketing team." },

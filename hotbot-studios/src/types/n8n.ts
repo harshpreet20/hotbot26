@@ -3,7 +3,6 @@
 export interface N8nChatPayload {
   message: string;
   history: Array<{ role: string; content: string }>;
-  mode: "chat";
 }
 
 export interface N8nChatResponse {
@@ -13,43 +12,37 @@ export interface N8nChatResponse {
   output?: string;
 }
 
-export interface N8nVoicePayload {
-  audio: string;
-  audioFormat: string;
-  history: Array<{ role: string; content: string }>;
-  mode: "voice";
-}
-
-export interface N8nVoiceResponse {
+// Unified lead capture (all forms → Google Sheets via single N8N webhook)
+export interface N8nLeadsPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  service?: string;
+  budget?: string;
   message?: string;
-  response?: string;
-  audio?: string;
-  audioFormat?: string;
+  formType: string;   // "get-started" | "strategy-call" | "consultation" | "contact"
+  source: string;     // page the form was submitted from
 }
 
-export interface N8nFormPayload {
-  lead: {
-    name: string;
-    email: string;
-    phone?: string;
-    company?: string;
-    service?: string;
-    budget?: string;
-    message?: string;
-  };
-  formType: string;
-  page: string;
-}
-
-export interface N8nFormResponse {
+export interface N8nLeadsResponse {
   success: boolean;
   leadId?: string;
   id?: string;
   message?: string;
 }
 
-export interface N8nLeadsResponse {
-  leads: import("./index").Lead[];
+// Callback request → N8N → Sarvam AI outbound call
+export interface N8nCallbackPayload {
+  name: string;
+  phone: string;
+  requestedAt: string;
+  source: string;
+}
+
+export interface N8nCallbackResponse {
+  success: boolean;
+  message?: string;
 }
 
 export interface N8nAnalyticsPayload {

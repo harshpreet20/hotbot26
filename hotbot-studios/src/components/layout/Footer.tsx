@@ -100,7 +100,6 @@ export function Footer() {
                 { label: "About Us", href: "/about" },
                 { label: "Blog", href: "/blog" },
                 { label: "Products", href: "/ai-automation" },
-                { label: "Dashboard", href: "/dashboard" },
               ].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-slate-400 text-sm hover:text-white transition-colors">

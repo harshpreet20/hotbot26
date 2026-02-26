@@ -50,7 +50,7 @@ export default function ContactPage() {
 
               {[
                 { icon: "📧", title: "Email", value: "hello@hotbotstudios.com", href: "mailto:hello@hotbotstudios.com" },
-                { icon: "💬", title: "WhatsApp", value: "+1 (415) 555-0100", href: "https://wa.me/14155550100" },
+                { icon: "💬", title: "WhatsApp", value: "+91 97000 01534", href: "https://wa.me/919700001534" },
                 { icon: "📍", title: "Location", value: "New York, United States", href: null },
                 { icon: "⏰", title: "Response Time", value: "Within 24 hours", href: null },
               ].map((item) => (
@@ -80,7 +80,7 @@ export default function ContactPage() {
                   {[
                     { key: "name", label: "Full Name *", type: "text", placeholder: "John Smith" },
                     { key: "email", label: "Email *", type: "email", placeholder: "john@company.com" },
-                    { key: "phone", label: "Phone", type: "tel", placeholder: "+1 (415) 555-0100" },
+                    { key: "phone", label: "Phone", type: "tel", placeholder: "+91 97000 01534" },
                     { key: "subject", label: "Subject", type: "text", placeholder: "How can we help?" },
                   ].map(({ key, label, type, placeholder }) => (
                     <div key={key}>
