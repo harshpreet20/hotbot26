@@ -108,6 +108,7 @@ export function HeroSection() {
 
       {/* Service cards */}
       <div
+        id="services"
         className="services-grid max-w-6xl w-full"
         style={{
           opacity: loaded ? 1 : 0,
