@@ -45,14 +45,9 @@ const SERVICES = [
   {
     type: "consulting",
     title: "Marketing Consulting",
-    desc: "Clarity without the jargon. We audit your growth strategy, find the gaps, and give you a plan that actually works.",
+    desc: "Clarity without the jargon. We audit your growth strategy, uncover revenue leaks, and hand you a prioritized execution plan that actually moves the needle — backed by data, not guesswork.",
     href: "/consultancy",
-  },
-  {
-    type: "seo",
-    title: "Analytics & Data",
-    desc: "Know exactly where every dollar is going. Real-time dashboards and attribution that eliminate guesswork.",
-    href: "/marketing-services",
+    featured: true,
   },
 ];
 
@@ -78,7 +73,7 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl mb-8">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-slate-400 text-[13px] font-medium">
-            Trusted by 42+ US Businesses
+            #1 AI Automation & Digital Marketing Agency — Trusted by 42+ US Businesses
           </span>
         </div>
       </div>
@@ -101,14 +96,14 @@ export function HeroSection() {
 
       {/* Subtitle */}
       <p
-        className="text-slate-300 text-lg md:text-xl text-center mb-14"
+        className="text-slate-300 text-lg md:text-xl text-center mb-14 max-w-2xl mx-auto"
         style={{
           opacity: loaded ? 1 : 0,
           transform: loaded ? "translateY(0)" : "translateY(25px)",
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.55s",
         }}
       >
-        AI automation, marketing, content, software, PR, and design — built to work together and scale your business faster.
+        Custom AI agents, performance marketing, content production, software development, and PR — all built to work together and compound your growth.
       </p>
 
       {/* Service cards */}
