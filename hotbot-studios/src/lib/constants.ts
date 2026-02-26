@@ -58,7 +58,7 @@ export const PRODUCTS = [
     description: "Heka handles every inbound call — qualifying leads, answering FAQs, and booking appointments automatically. Powered by Sarvam AI for natural, human-like conversations. Integrates with HubSpot, Salesforce, and Calendly. Never miss a lead again.",
     icon: "🎙️",
     color: "#3b82f6",
-    href: "/ai-automation",
+    href: "/products/heka-voice-ai",
   },
   {
     name: "Website Keyword Assistant",
@@ -66,7 +66,7 @@ export const PRODUCTS = [
     description: "An AI-powered widget that continuously scans your website for keyword opportunities, content gaps, and SERP ranking improvements. Get actionable SEO recommendations without hiring an analyst — updated daily using live Google search data.",
     icon: "🔍",
     color: "#8b5cf6",
-    href: "/ai-automation",
+    href: "/products/website-keyword-assistant",
   },
   {
     name: "Telegram SEO Assistant",
@@ -74,7 +74,7 @@ export const PRODUCTS = [
     description: "Track your keyword rankings, monitor competitor moves, and receive daily SEO performance briefings delivered directly to your Telegram — no dashboards to check, no reports to pull. Automated keyword tracking for US businesses.",
     icon: "📱",
     color: "#06b6d4",
-    href: "/ai-automation",
+    href: "/products/telegram-seo-assistant",
   },
   {
     name: "LinkedIn Post Assistant",
@@ -82,7 +82,7 @@ export const PRODUCTS = [
     description: "Generate scroll-stopping LinkedIn posts from your blog articles, industry news, or product updates. Trained on top-performing B2B LinkedIn content patterns. Maintains your authentic brand voice while dramatically increasing post reach and engagement.",
     icon: "💼",
     color: "#22c55e",
-    href: "/ai-automation",
+    href: "/products/linkedin-post-assistant",
   },
   {
     name: "Instagram Content Assistant",
@@ -90,7 +90,7 @@ export const PRODUCTS = [
     description: "Auto-generate on-brand captions, strategic hashtag sets, and creative hooks for Instagram Reels, Stories, and Feed posts. Fine-tuned to your brand voice and target audience. Cuts content creation time by 80% while improving engagement rate.",
     icon: "📸",
     color: "#ec4899",
-    href: "/ai-automation",
+    href: "/products/instagram-content-assistant",
   },
   {
     name: "Mental Wellness Assistant",
@@ -98,6 +98,6 @@ export const PRODUCTS = [
     description: "A confidential, 24/7 AI wellness companion for your team. Delivers guided CBT exercises, real-time mood check-ins, and stress management tools. Escalates to human support when needed. Reduces employee burnout and improves productivity.",
     icon: "🧠",
     color: "#f59e0b",
-    href: "/ai-automation",
+    href: "/products/mental-wellness-assistant",
   },
 ];
