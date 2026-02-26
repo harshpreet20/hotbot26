@@ -1,0 +1,263 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+  "name": "HotBot — 03 Voice Pipeline",
+  "nodes": [
+    {
+      "id": "node-webhook-voice",
+      "name": "Webhook — Voice",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-voice",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "node-validate-voice",
+      "name": "Validate Audio Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst audio = body.audio || '';\nconst language = body.language || 'hi-IN';\nconst sessionId = body.sessionId || ('voice-' + Date.now());\nconst meta = body._meta || {};\n\nif (!audio || audio.length < 100) throw new Error('Invalid or missing audio data');\n\n// Remove data URI prefix if present\nconst cleanAudio = audio.replace(/^data:audio\\/[^;]+;base64,/, '');\n\nreturn [{\n  json: {\n    audio: cleanAudio,\n    language,\n    sessionId,\n    timestamp: new Date().toISOString(),\n    source: meta.source || 'website-voice'\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-sarvam-stt",
+      "name": "Sarvam AI — Speech to Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/speech-to-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "API-Subscription-Key",
+              "value": "YOUR_SARVAM_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audio",
+              "value": "={{ $json.audio }}"
+            },
+            {
+              "name": "language_code",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "model",
+              "value": "saarika:v2"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "node-extract-transcript",
+      "name": "Extract Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "parameters": {
+        "jsCode": "const sttResult = $input.first().json;\nconst transcript = sttResult.transcript || sttResult.text || '';\n\nif (!transcript || transcript.trim().length === 0) {\n  throw new Error('Could not transcribe audio — please try again');\n}\n\nconst sessionId = $('Validate Audio Input').first().json.sessionId;\nconst language = $('Validate Audio Input').first().json.language;\n\nreturn [{\n  json: {\n    transcript: transcript.trim(),\n    language,\n    sessionId,\n    timestamp: $('Validate Audio Input').first().json.timestamp\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-llm-voice",
+      "name": "OpenAI — Voice LLM",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [1200, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CRED_ID",
+          "name": "OpenAI API"
+        }
+      },
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are HotBot, the AI voice assistant for HotBot Studios. You're responding to a voice message, so:\n- Keep responses SHORT (2-3 sentences max)\n- Use simple, conversational language\n- No markdown, no lists, no special characters\n- Be warm, helpful, and professional\n- Guide users to services: AI Automation, Marketing, Content, Software Dev, PR, UI/UX, Consultancy\n- If they want to get started, ask for their email or direct them to the website form\nContact: hello@hotbotstudios.com | https://hotbotstudios.com"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.transcript }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.6,
+          "maxTokens": 200
+        }
+      }
+    },
+    {
+      "id": "node-extract-llm-reply",
+      "name": "Extract LLM Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300],
+      "parameters": {
+        "jsCode": "const llmResult = $input.first().json;\nconst replyText = llmResult.message?.content || llmResult.choices?.[0]?.message?.content || 'I am here to help. Please tell me what you need.';\n\nreturn [{\n  json: {\n    replyText,\n    language: $('Extract Transcript').first().json.language,\n    sessionId: $('Extract Transcript').first().json.sessionId\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-sarvam-tts",
+      "name": "Sarvam AI — Text to Speech",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/text-to-speech",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "API-Subscription-Key",
+              "value": "YOUR_SARVAM_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ [$json.replyText] }}"
+            },
+            {
+              "name": "target_language_code",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "speaker",
+              "value": "meera"
+            },
+            {
+              "name": "model",
+              "value": "bulbul:v1"
+            },
+            {
+              "name": "enable_preprocessing",
+              "value": true
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "node-prepare-voice-response",
+      "name": "Prepare Voice Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "parameters": {
+        "jsCode": "const ttsResult = $input.first().json;\nconst audioBase64 = ttsResult.audios?.[0] || ttsResult.audio || '';\nconst replyText = $('Extract LLM Reply').first().json.replyText;\n\nreturn [{\n  json: {\n    message: replyText,\n    audio: audioBase64,\n    audioFormat: 'wav',\n    sessionId: $('Extract LLM Reply').first().json.sessionId\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-respond-voice",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2160, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ message: $json.message, audio: $json.audio, audioFormat: $json.audioFormat }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Voice": {
+      "main": [
+        [{ "node": "Validate Audio Input", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Audio Input": {
+      "main": [
+        [{ "node": "Sarvam AI — Speech to Text", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sarvam AI — Speech to Text": {
+      "main": [
+        [{ "node": "Extract Transcript", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Transcript": {
+      "main": [
+        [{ "node": "OpenAI — Voice LLM", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenAI — Voice LLM": {
+      "main": [
+        [{ "node": "Extract LLM Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract LLM Reply": {
+      "main": [
+        [{ "node": "Sarvam AI — Text to Speech", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sarvam AI — Text to Speech": {
+      "main": [
+        [{ "node": "Prepare Voice Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Voice Response": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [
+    { "id": "tag-hotbot", "name": "hotbot-studios" },
+    { "id": "tag-voice", "name": "voice-pipeline" }
+  ],
+  "pinData": {}
+}

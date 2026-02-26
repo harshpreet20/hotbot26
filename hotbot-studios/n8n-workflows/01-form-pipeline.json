@@ -1,0 +1,239 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+  "name": "HotBot — 01 Form Pipeline",
+  "nodes": [
+    {
+      "id": "node-webhook-form",
+      "name": "Webhook — Form Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-form",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "node-validate-form",
+      "name": "Validate Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst name = (body.name || '').trim();\nconst email = (body.email || '').trim();\nconst phone = (body.phone || '').trim();\nconst company = (body.company || '').trim();\nconst services = Array.isArray(body.services) ? body.services : [];\nconst budget = (body.budget || '').trim();\nconst message = (body.message || '').trim();\nconst meta = body._meta || {};\n\nif (!name || name.length < 2) throw new Error('Invalid name');\nif (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new Error('Invalid email');\n\nconst leadId = 'LEAD-' + Date.now();\nconst timestamp = new Date().toISOString();\n\nreturn [{\n  json: {\n    leadId,\n    timestamp,\n    name,\n    email,\n    phone,\n    company,\n    services: services.join(', '),\n    budget,\n    message,\n    source: meta.source || 'website-form',\n    pipeline: meta.pipeline || 'form',\n    status: 'new'\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-sheets-form",
+      "name": "Google Sheets — Append Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [720, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GSHEETS_CRED_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead ID": "={{ $json.leadId }}",
+            "Timestamp": "={{ $json.timestamp }}",
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Company": "={{ $json.company }}",
+            "Services": "={{ $json.services }}",
+            "Budget": "={{ $json.budget }}",
+            "Message": "={{ $json.message }}",
+            "Source": "={{ $json.source }}",
+            "Status": "={{ $json.status }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-parallel-split",
+      "name": "Parallel Notifications",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [960, 300],
+      "parameters": {}
+    },
+    {
+      "id": "node-telegram-form",
+      "name": "Telegram — New Lead Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 180],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CRED_ID",
+          "name": "Telegram Bot"
+        }
+      },
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 *New Lead — {{ $json.leadId }}*\n\n👤 *Name:* {{ $json.name }}\n📧 *Email:* {{ $json.email }}\n📞 *Phone:* {{ $json.phone || 'N/A' }}\n🏢 *Company:* {{ $json.company || 'N/A' }}\n🛠️ *Services:* {{ $json.services || 'N/A' }}\n💰 *Budget:* {{ $json.budget || 'N/A' }}\n📝 *Message:* {{ $json.message || 'N/A' }}\n\n⏰ {{ $json.timestamp }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      }
+    },
+    {
+      "id": "node-email-form",
+      "name": "Send Email — Team Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CRED_ID",
+          "name": "SMTP"
+        }
+      },
+      "parameters": {
+        "fromEmail": "noreply@hotbotstudios.com",
+        "toEmail": "sales@hotbotstudios.com",
+        "subject": "=New Lead: {{ $json.name }} — {{ $json.leadId }}",
+        "emailType": "html",
+        "message": "=<h2>New Lead Received</h2>\n<table border='1' cellpadding='8' cellspacing='0'>\n  <tr><th>Field</th><th>Value</th></tr>\n  <tr><td>Lead ID</td><td>{{ $json.leadId }}</td></tr>\n  <tr><td>Name</td><td>{{ $json.name }}</td></tr>\n  <tr><td>Email</td><td>{{ $json.email }}</td></tr>\n  <tr><td>Phone</td><td>{{ $json.phone }}</td></tr>\n  <tr><td>Company</td><td>{{ $json.company }}</td></tr>\n  <tr><td>Services</td><td>{{ $json.services }}</td></tr>\n  <tr><td>Budget</td><td>{{ $json.budget }}</td></tr>\n  <tr><td>Message</td><td>{{ $json.message }}</td></tr>\n  <tr><td>Timestamp</td><td>{{ $json.timestamp }}</td></tr>\n</table>"
+      }
+    },
+    {
+      "id": "node-aisensy-form",
+      "name": "AI Sensy — WhatsApp Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 420],
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.aisensy.com/campaign/t1/api/v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "YOUR_AISENSY_API_KEY"
+            },
+            {
+              "name": "campaignName",
+              "value": "hotbot_new_lead"
+            },
+            {
+              "name": "destination",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "userName",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "name": "templateParams",
+              "value": "={{ [$json.name, $json.services || 'AI Automation'] }}"
+            },
+            {
+              "name": "source",
+              "value": "website-form"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-respond-form",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, leadId: $('Validate Fields').first().json.leadId, message: 'Thank you! We will contact you shortly.' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Form Intake": {
+      "main": [
+        [{ "node": "Validate Fields", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Fields": {
+      "main": [
+        [{ "node": "Google Sheets — Append Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Google Sheets — Append Lead": {
+      "main": [
+        [{ "node": "Parallel Notifications", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parallel Notifications": {
+      "main": [
+        [
+          { "node": "Telegram — New Lead Alert", "type": "main", "index": 0 },
+          { "node": "Send Email — Team Notification", "type": "main", "index": 0 },
+          { "node": "AI Sensy — WhatsApp Template", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Telegram — New Lead Alert": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Email — Team Notification": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    },
+    "AI Sensy — WhatsApp Template": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": [
+    { "id": "tag-hotbot", "name": "hotbot-studios" },
+    { "id": "tag-form", "name": "form-pipeline" }
+  ],
+  "pinData": {}
+}
