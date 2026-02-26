@@ -96,15 +96,20 @@ export function TestimonialsSection() {
     [active, goTo]
   );
 
+  // Keep a stable ref to latest `next` so the interval never needs to be recreated.
+  const nextRef = useRef(next);
+  useEffect(() => { nextRef.current = next; }, [next]);
+
+  // Interval set up once only — uses ref to always call current `next`.
+  useEffect(() => {
+    timerRef.current = setInterval(() => nextRef.current(), 5000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(next, 5000);
-  }, [next]);
-
-  useEffect(() => {
-    timerRef.current = setInterval(next, 5000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [next]);
+    timerRef.current = setInterval(() => nextRef.current(), 5000);
+  }, []);
 
   const t = TESTIMONIALS[active];
   const prevIdx = (active - 1 + TESTIMONIALS.length) % TESTIMONIALS.length;

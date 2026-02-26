@@ -4,8 +4,16 @@ import Link from "next/link";
 import { Reveal } from "@/components/shared/Reveal";
 
 export const metadata: Metadata = {
-  title: "Blog | HotBot Studios",
-  description: "Insights on AI automation, digital marketing, content production, and growth strategies for US businesses.",
+  title: "Blog | AI Automation & Digital Marketing Insights",
+  description:
+    "Expert insights on AI automation, digital marketing, content production, software development, and growth strategies for US businesses — by the HotBot Studios team.",
+  keywords: ["AI automation blog", "digital marketing blog USA", "AI chatbot news", "marketing agency blog"],
+  openGraph: {
+    title: "HotBot Studios Blog | AI & Marketing Insights",
+    description: "Deep-dives into AI, marketing, content, and technology from the team that builds and implements these strategies daily.",
+    url: "https://hotbotstudios.com/blog",
+  },
+  alternates: { canonical: "https://hotbotstudios.com/blog" },
 };
 
 const POSTS = [

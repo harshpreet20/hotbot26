@@ -9,6 +9,8 @@ import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
   title: "UI/UX Design Services USA | HotBot Studios",
+  keywords: ["UI UX design agency USA", "UX design services", "product design agency", "user experience design USA", "web design agency"],
+  alternates: { canonical: "https://hotbotstudios.com/ui-ux-design" },
   description:
     "User-centered UI/UX design, wireframing, prototyping, and design systems that convert visitors into customers.",
 };

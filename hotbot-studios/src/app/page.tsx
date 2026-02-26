@@ -8,12 +8,17 @@ import { CTASection } from "@/components/sections/CTASection";
 export const metadata: Metadata = {
   title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
   description:
-    "Full-service digital marketing, AI automation, content production, software development, public relations, and UI/UX design for US businesses.",
+    "HotBot Studios is America's full-service growth agency — AI automation, digital marketing, content production, software development, PR, and UI/UX design for US businesses.",
+  keywords: [
+    "AI automation agency USA", "digital marketing agency", "chatbot development USA",
+    "growth agency US businesses", "AI marketing agency New York",
+  ],
   openGraph: {
-    title: "HotBot Studios | America's Growth Infrastructure",
-    description: "AI, marketing, content, software, PR — all in one place.",
+    title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
+    description: "America's full-service growth agency — AI, marketing, content, software, PR, and design in one team.",
     url: "https://hotbotstudios.com",
   },
+  alternates: { canonical: "https://hotbotstudios.com" },
 };
 
 export default function HomePage() {

@@ -8,10 +8,6 @@ interface AppState {
   formPage: string;
   openForm: (type?: string, page?: string) => void;
   closeForm: () => void;
-
-  // Chat
-  chatOpen: boolean;
-  setChatOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -21,7 +17,4 @@ export const useAppStore = create<AppState>((set) => ({
   openForm: (type = "get-started", page = "unknown") =>
     set({ formOpen: true, formType: type, formPage: page }),
   closeForm: () => set({ formOpen: false }),
-
-  chatOpen: false,
-  setChatOpen: (open) => set({ chatOpen: open }),
 }));

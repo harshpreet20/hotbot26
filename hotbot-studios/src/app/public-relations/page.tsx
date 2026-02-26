@@ -9,6 +9,8 @@ import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
   title: "Public Relations Services USA | HotBot Studios",
+  keywords: ["public relations agency USA", "PR agency New York", "media relations USA", "press release service", "digital PR agency USA"],
+  alternates: { canonical: "https://hotbotstudios.com/public-relations" },
   description:
     "Strategic PR campaigns, media outreach, crisis communications, and brand reputation management for US businesses.",
 };
@@ -30,10 +32,10 @@ const STATS = [
 ];
 
 const PROCESS = [
-  { n: 1, title: "Brand Audit", desc: "Analyse your current media presence, competitor coverage, and brand narrative gaps.", icon: "🔍" },
+  { n: 1, title: "Brand Audit", desc: "Analyze your current media presence, competitor coverage, and brand narrative gaps.", icon: "🔍" },
   { n: 2, title: "Strategy", desc: "Craft your core brand narrative, key messages, and media outreach strategy.", icon: "📐" },
-  { n: 3, title: "Outreach", desc: "Personalised media outreach to our network of journalists, editors, and producers.", icon: "📨" },
-  { n: 4, title: "Amplify", desc: "Repurpose earned media coverage across your owned channels to maximise reach.", icon: "📣" },
+  { n: 3, title: "Outreach", desc: "Personalized media outreach to our network of journalists, editors, and producers.", icon: "📨" },
+  { n: 4, title: "Amplify", desc: "Repurpose earned media coverage across your owned channels to maximize reach.", icon: "📣" },
 ];
 
 const FAQS = [

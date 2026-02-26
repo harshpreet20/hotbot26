@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         <P>We do not sell your personal data. We may share data with trusted third-party service providers who assist us in operating our business (such as CRM tools, email platforms, and cloud services) under strict data processing agreements.</P>
 
         <H2>4. Cookies</H2>
-        <P>We use cookies and similar tracking technologies to analyse website traffic, remember your preferences, and improve your experience. You can control cookies through your browser settings.</P>
+        <P>We use cookies and similar tracking technologies to analyze website traffic, remember your preferences, and improve your experience. You can control cookies through your browser settings.</P>
 
         <H2>5. Data Retention</H2>
         <P>We retain your personal data for as long as necessary to fulfill the purposes outlined in this policy, unless a longer retention period is required by law. Typically, contact form data is retained for 3 years.</P>

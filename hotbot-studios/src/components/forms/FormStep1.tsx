@@ -8,12 +8,13 @@ interface FormStep1Props {
 }
 
 export function FormStep1({ form, update, onNext }: FormStep1Props) {
-  const valid = form.name.trim() && form.email.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const valid = form.name.trim() && emailOk;
 
   const fields: Array<{ key: keyof FormData; label: string; type: string; placeholder: string; required?: boolean }> = [
     { key: "name", label: "Full Name", type: "text", placeholder: "John Smith", required: true },
     { key: "email", label: "Email Address", type: "email", placeholder: "john@company.com", required: true },
-    { key: "phone", label: "Phone Number", type: "tel", placeholder: "+1 (415) 555-0100" },
+    { key: "phone", label: "Phone Number", type: "tel", placeholder: "+91 97000 01534" },
     { key: "company", label: "Company Name", type: "text", placeholder: "Acme Inc." },
   ];
 

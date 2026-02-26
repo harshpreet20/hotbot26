@@ -7,6 +7,8 @@ import { GlassCard } from "@/components/shared/GlassCard";
 
 export const metadata: Metadata = {
   title: "About HotBot Studios | US Digital Agency",
+  keywords: ["about HotBot Studios", "digital agency New York", "AI marketing agency team", "US growth agency"],
+  alternates: { canonical: "https://hotbotstudios.com/about" },
   description:
     "Learn about HotBot Studios — the full-service digital agency combining AI, marketing, content, software, PR, and design for US businesses.",
 };

@@ -5,7 +5,7 @@
 // Architecture:
 //   Frontend (Next.js) → /api/n8n/* routes → triggerN8n() → n8n webhook → Google Sheets + notifications
 
-const N8N_BASE = process.env.N8N_BASE_URL!;
+const N8N_BASE = process.env.N8N_BASE_URL;
 
 export type N8nPipeline =
   | "chat"       // AI text chat (N8N LLM workflow)
@@ -14,20 +14,34 @@ export type N8nPipeline =
   | "newsletter" // Newsletter subscriptions
   | "callback";  // Request a call → triggers Sarvam voice agent outbound call
 
-const ENDPOINTS: Record<N8nPipeline, string> = {
-  chat:       process.env.N8N_WEBHOOK_CHAT!,
-  leads:      process.env.N8N_WEBHOOK_LEADS!,       // single webhook for ALL lead capture
-  analytics:  process.env.N8N_WEBHOOK_ANALYTICS!,
-  newsletter: process.env.N8N_WEBHOOK_NEWSLETTER!,
-  callback:   process.env.N8N_WEBHOOK_CALLBACK!,    // triggers Sarvam outbound call
+const ENDPOINTS: Record<N8nPipeline, string | undefined> = {
+  chat:       process.env.N8N_WEBHOOK_CHAT,
+  leads:      process.env.N8N_WEBHOOK_LEADS,       // single webhook for ALL lead capture
+  analytics:  process.env.N8N_WEBHOOK_ANALYTICS,
+  newsletter: process.env.N8N_WEBHOOK_NEWSLETTER,
+  callback:   process.env.N8N_WEBHOOK_CALLBACK,    // triggers Sarvam outbound call
 };
+
+export class N8nConfigError extends Error {
+  constructor(pipeline: N8nPipeline) {
+    super(`n8n misconfiguration: N8N_BASE_URL or endpoint for "${pipeline}" is not set`);
+    this.name = "N8nConfigError";
+  }
+}
 
 export async function triggerN8n<T = unknown>(
   pipeline: N8nPipeline,
   payload: Record<string, unknown>,
   options?: { timeout?: number }
 ): Promise<T> {
-  const url = `${N8N_BASE}${ENDPOINTS[pipeline]}`;
+  const base = N8N_BASE;
+  const endpoint = ENDPOINTS[pipeline];
+
+  if (!base || !endpoint) {
+    throw new N8nConfigError(pipeline);
+  }
+
+  const url = `${base}${endpoint}`;
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),

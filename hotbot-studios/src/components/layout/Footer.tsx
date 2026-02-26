@@ -11,15 +11,20 @@ export function Footer() {
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    // Basic email format guard — prevent obviously bad submissions reaching n8n
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
     try {
-      await fetch("/api/n8n/newsletter", {
+      const res = await fetch("/api/n8n/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: trimmed }),
       });
-      setSubDone(true);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
+      // Silent fail — still show success so UX isn't blocked
+    } finally {
       setSubDone(true);
     }
   };

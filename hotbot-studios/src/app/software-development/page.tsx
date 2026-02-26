@@ -9,6 +9,8 @@ import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
   title: "Software Development Services USA | HotBot Studios",
+  keywords: ["software development agency USA", "custom web app development", "SaaS development agency", "React development agency", "mobile app development USA"],
+  alternates: { canonical: "https://hotbotstudios.com/software-development" },
   description:
     "Custom software development, web apps, mobile apps, SaaS platforms, and API integrations for US businesses.",
 };

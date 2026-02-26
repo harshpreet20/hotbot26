@@ -11,6 +11,8 @@ import { ContentBlock } from "@/components/shared/ContentBlock";
 
 export const metadata: Metadata = {
   title: "Best Digital Marketing Services USA | HotBot Studios",
+  keywords: ["digital marketing services USA", "SEO agency USA", "PPC management USA", "social media marketing", "email marketing agency", "CRO agency"],
+  alternates: { canonical: "https://hotbotstudios.com/marketing-services" },
   description:
     "SEO, SEM, social media marketing, PPC, email marketing, and performance marketing for US businesses. Data-driven strategies that deliver measurable ROI.",
 };

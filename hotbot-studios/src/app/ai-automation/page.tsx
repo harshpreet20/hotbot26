@@ -14,6 +14,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "AI Automation Services USA | HotBot Studios",
+  keywords: ["AI automation services USA", "AI chatbot development", "n8n automation agency", "workflow automation USA", "voice AI business", "AI agent development"],
+  alternates: { canonical: "https://hotbotstudios.com/ai-automation" },
   description:
     "Custom AI agents, voice assistants, chatbots, and intelligent automation for US businesses. Powered by the latest LLMs and Sarvam AI.",
 };
@@ -55,9 +57,28 @@ const RELATED = [
   { title: "UI/UX Design", href: "/ui-ux-design", desc: "Beautiful interfaces for your AI products.", icon: "🎨" },
 ];
 
+
+const serviceSchema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "AI Automation Services",
+  "provider": {
+    "@type": "Organization",
+    "name": "HotBot Studios",
+    "url": "https://hotbotstudios.com"
+  },
+  "serviceType": "AI Automation",
+  "areaServed": { "@type": "Country", "name": "United States" },
+  "description": "Custom AI agents, chatbots, voice AI, and workflow automation for US businesses.",
+  "url": "https://hotbotstudios.com/ai-automation",
+  "offers": { "@type": "Offer", "priceCurrency": "USD", "availability": "https://schema.org/InStock" }
+};
+
 export default function AIAutomationPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
+      
       <PageHeader
         label="AI & Automation"
         title="Stop Working for Your Business. Let AI Work for You."

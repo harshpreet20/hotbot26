@@ -9,6 +9,8 @@ import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
   title: "Content Production Studio USA | HotBot Studios",
+  keywords: ["content production agency USA", "video production agency", "copywriting services USA", "podcast production agency", "brand content creation"],
+  alternates: { canonical: "https://hotbotstudios.com/content-studio" },
   description:
     "Premium content production — video, photography, copywriting, podcasts, and social content — for US brands that want to stand out.",
 };

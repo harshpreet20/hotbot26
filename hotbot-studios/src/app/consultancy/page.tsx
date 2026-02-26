@@ -9,6 +9,8 @@ import { RelatedServices } from "@/components/sections/RelatedServices";
 
 export const metadata: Metadata = {
   title: "Marketing Consulting USA | HotBot Studios",
+  keywords: ["marketing consulting USA", "growth strategy consulting", "digital transformation agency", "fractional CMO USA", "marketing audit services"],
+  alternates: { canonical: "https://hotbotstudios.com/consultancy" },
   description:
     "Strategic marketing consulting, digital transformation, and growth advisory for US businesses ready to scale.",
 };

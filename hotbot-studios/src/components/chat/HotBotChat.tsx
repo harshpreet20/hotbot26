@@ -102,16 +102,22 @@ function CallTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
       });
+      if (!res.ok) {
+        setError("Something went wrong. Please try again.");
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setDone(true);
       } else {
-        setError("Something went wrong. Please try again.");
+        setError(data.error || "Something went wrong. Please try again.");
       }
     } catch {
-      setDone(true); // Graceful — still show success
+      // Network error — still confirm so user isn't stuck
+      setDone(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (done) {
@@ -236,6 +242,7 @@ export function HotBotChat() {
     setMsgs((p) => [...p, { role: "user", text, ts: Date.now() }]);
     setInput("");
     setTyping(true);
+    const controller = new AbortController();
     try {
       const res = await fetch("/api/n8n/chat", {
         method: "POST",
@@ -244,21 +251,25 @@ export function HotBotChat() {
           message: text,
           history: msgs.slice(-10).map((m) => ({ role: m.role, content: m.text })),
         }),
+        signal: controller.signal,
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMsgs((p) => [...p, {
         role: "bot",
         text: data?.message || "Thanks! Our team will reach out shortly.",
         ts: Date.now(),
       }]);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setMsgs((p) => [...p, {
         role: "bot",
         text: "Message sent! You can also reach us instantly via WhatsApp or request a call.",
         ts: Date.now(),
       }]);
+    } finally {
+      setTyping(false);
     }
-    setTyping(false);
   }, [msgs]);
 
   const handleKey = (e: React.KeyboardEvent) => {

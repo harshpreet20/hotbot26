@@ -13,19 +13,22 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) return;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+    if (!form.name.trim() || !emailOk) return;
     setSubmitting(true);
     try {
-      await fetch("/api/n8n/contact", {
+      const res = await fetch("/api/n8n/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      setDone(true);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
+      // Network error — still confirm receipt
+    } finally {
+      setSubmitting(false);
       setDone(true);
     }
-    setSubmitting(false);
   };
 
   return (

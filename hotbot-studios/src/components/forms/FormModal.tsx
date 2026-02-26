@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { useAppStore } from "@/store/useAppStore";
 import { FormStep1 } from "./FormStep1";
 import { FormStep2 } from "./FormStep2";
@@ -31,20 +32,44 @@ const EMPTY_FORM: FormData = {
   message: "",
 };
 
+const SESSION_KEY = "hotbot_form_draft";
+
 export function FormModal() {
   const { formOpen, formType, formPage, closeForm } = useAppStore();
-  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [form, setForm] = useState<FormData>(() => {
+    // Restore draft from sessionStorage on first render (client-only)
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(SESSION_KEY);
+        if (saved) return { ...EMPTY_FORM, ...JSON.parse(saved) };
+      } catch { /* ignore */ }
+    }
+    return EMPTY_FORM;
+  });
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  const { getToken } = useRecaptcha();
+
+  // Persist form draft to sessionStorage on every change (survives page refresh)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (done) {
+      sessionStorage.removeItem(SESSION_KEY); // Clear after successful submit
+    } else {
+      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(form)); } catch { /* ignore */ }
+    }
+  }, [form, done]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (formOpen) {
       setStep(1);
       setDone(false);
       setSubmitting(false);
-      setForm(EMPTY_FORM);
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -60,18 +85,24 @@ export function FormModal() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // Get reCAPTCHA v3 token (returns null if site key not configured)
+      const recaptchaToken = await getToken("lead_form");
       const res = await fetch("/api/n8n/form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, formType, page: formPage }),
+        body: JSON.stringify({ ...form, formType, page: formPage, recaptchaToken }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setLeadId(data?.leadId || null);
+      if (mountedRef.current) setLeadId(data?.leadId || null);
     } catch {
-      // Still show success
+      // Network / server error — show success so user isn't blocked
+    } finally {
+      if (mountedRef.current) {
+        setSubmitting(false);
+        setDone(true);
+      }
     }
-    setSubmitting(false);
-    setDone(true);
   };
 
   return (
