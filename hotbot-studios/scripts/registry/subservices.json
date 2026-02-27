@@ -1,0 +1,284 @@
+[
+  {
+    "slug": "seo",
+    "name": "SEO Services",
+    "path": "/marketing-services/seo",
+    "parentService": "/marketing-services",
+    "parentLabel": "Digital Marketing",
+    "schemaType": "Service",
+    "buyerType": "b2b",
+    "accentColor": "#3b82f6",
+    "seo": {
+      "title": "SEO Services for US Businesses — Organic Growth Agency | HotBot Studios",
+      "description": "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
+      "h1": "SEO Services That Drive Qualified Organic Traffic for US Businesses",
+      "label": "Search Engine Optimization",
+      "primaryKeyword": "SEO services for US businesses",
+      "keywords": [
+        "SEO agency for US businesses",
+        "technical SEO services USA",
+        "organic search growth agency",
+        "B2B SEO strategy",
+        "enterprise SEO services United States",
+        "local SEO for US companies",
+        "content SEO agency",
+        "keyword research services USA",
+        "on-page SEO optimization",
+        "link building services United States"
+      ]
+    },
+    "content": {
+      "subtitle": "Most SEO agencies chase rankings that do not convert. HotBot Studios builds search programs around buyer intent — connecting your brand to decision-makers at the exact moment they are evaluating solutions. Technical foundations, topical authority content, and authoritative link acquisition working as one system.",
+      "definitionTerm": "SEO for Business",
+      "definition": "Search engine optimization (SEO) for business is the systematic process of improving a website's visibility in organic search results for queries that indicate commercial intent. For US B2B organizations, this means ranking for transactional and informational keywords that decision-makers use during the buying process — not vanity traffic that inflates sessions without influencing revenue.",
+      "features": [
+        { "icon": "⚙️", "title": "Technical SEO Audit and Remediation", "desc": "Crawl architecture, Core Web Vitals, structured data, canonical management, and indexation control. We resolve the technical debt that suppresses rankings before building content or links. Every audit delivers a prioritized remediation roadmap.", "color": "#3b82f6" },
+        { "icon": "🗝️", "title": "Keyword and Intent Architecture", "desc": "Full keyword universe mapped by search intent: informational, navigational, commercial, and transactional. Each keyword cluster assigned to a page owner, content type, and funnel stage. No two pages compete for the same intent.", "color": "#8b5cf6" },
+        { "icon": "📝", "title": "Topical Authority Content", "desc": "Pillar pages, cluster articles, and answer-engine-optimized definitions built to capture position zero, featured snippets, and AI-generated search overviews. Content written to consultant-grade quality standards.", "color": "#06b6d4" },
+        { "icon": "🔗", "title": "Link Acquisition", "desc": "Editorial link building through digital PR, resource page outreach, and thought leadership placement. Every link is placed on a topically relevant domain with real traffic. No PBNs, no link farms, no shortcuts.", "color": "#22c55e" },
+        { "icon": "📍", "title": "Local SEO for Multi-Location Businesses", "desc": "Google Business Profile optimization, local citation management, and geo-targeted content for US businesses with physical locations or service area targeting. Structured for multi-city and franchise deployments.", "color": "#f59e0b" },
+        { "icon": "📊", "title": "SEO Reporting and Attribution", "desc": "Monthly reporting covering ranking movements, organic traffic, qualified session rate, and pipeline influence. GA4 + CRM integration shows revenue attribution from organic search to closed deals.", "color": "#ec4899" }
+      ],
+      "useCases": [
+        { "segment": "B2B SaaS Companies", "challenge": "Competing against established players with massive content libraries and domain authority accumulated over years.", "solution": "Topical authority strategy targeting mid-funnel buyer intent keywords where established players have gaps. Cluster content builds authority faster than trying to outrank pillar pages head-on.", "color": "#3b82f6" },
+        { "segment": "Professional Services Firms", "challenge": "Generating qualified inbound inquiry without over-reliance on referrals and networking.", "solution": "Expertise-led content targeting high-intent service queries. FAQ content optimized for AI overviews. Local SEO capturing geographic service area searches.", "color": "#8b5cf6" },
+        { "segment": "E-Commerce Brands", "challenge": "Thin margins making paid search unsustainable as the primary acquisition channel.", "solution": "Category page SEO, product schema markup, and buying guide content capturing commercial intent searches with zero per-click cost.", "color": "#06b6d4" },
+        { "segment": "Multi-Location Enterprises", "challenge": "Inconsistent local search visibility across locations with siloed marketing teams.", "solution": "Centralized local SEO program with per-location Google Business Profile optimization, local content templates, and citation management across all US markets.", "color": "#22c55e" }
+      ],
+      "stats": [
+        { "value": 68, "suffix": "%", "label": "of B2B Buyers Start with Search", "color": "#3b82f6" },
+        { "value": 14, "suffix": "x", "label": "Higher Close Rate vs Outbound", "color": "#8b5cf6" },
+        { "value": 90, "suffix": " days", "label": "To First Ranking Movements", "color": "#06b6d4" },
+        { "value": 0, "suffix": " cost per click", "label": "Organic Traffic", "color": "#22c55e" }
+      ],
+      "process": [
+        { "n": 1, "title": "SEO Audit and Opportunity Mapping", "desc": "Full technical audit, competitor gap analysis, keyword opportunity sizing, and content inventory assessment. Delivered as an actionable prioritized roadmap within the first two weeks.", "icon": "🔍" },
+        { "n": 2, "title": "Architecture and Foundation", "desc": "URL structure, internal linking strategy, schema implementation, and Core Web Vitals remediation. Build the foundation before scaling content or links.", "icon": "🏗️" },
+        { "n": 3, "title": "Content and Authority Build", "desc": "Topical authority content production and link acquisition running in parallel. Monthly publishing cadence calibrated to competitive intensity and domain authority targets.", "icon": "📝" },
+        { "n": 4, "title": "Reporting and Continuous Optimization", "desc": "Monthly ranking, traffic, and pipeline attribution reporting. Ongoing keyword expansion, content refresh cycles, and link velocity management.", "icon": "📊" }
+      ],
+      "kpis": [
+        "Organic sessions from target keyword clusters",
+        "Keyword ranking positions for primary commercial terms",
+        "Organic qualified lead rate",
+        "Domain authority growth trajectory",
+        "Core Web Vitals scores (LCP, CLS, INP)",
+        "Organic-attributed pipeline revenue"
+      ],
+      "faqs": [
+        { "q": "How long does SEO take to show results?", "a": "Technical fixes and quick-win content updates can produce ranking movements within 30 to 90 days. Significant organic traffic growth from competitive keywords typically takes 4 to 9 months. Link acquisition compounds over time. We set realistic timelines based on your current domain authority, competitive landscape, and keyword targets — not promises designed to close the deal." },
+        { "q": "What makes HotBot Studios SEO different from other agencies?", "a": "We build SEO programs around revenue attribution, not ranking reports. Every keyword we target is mapped to a buyer intent stage and tied to CRM data so you can see which organic sessions become qualified leads and closed deals. We do not separate SEO from the broader marketing system — content, links, and technical foundations work as one program." },
+        { "q": "Do you handle both on-page and off-page SEO?", "a": "Yes. Our program covers technical SEO, on-page optimization, content production, and link acquisition. We treat these as a single coordinated system, not separate services to be bought individually. The ratio of effort between each discipline shifts based on your current baseline and the competitive landscape." },
+        { "q": "Can SEO work for local US businesses?", "a": "Yes. Local SEO for US businesses includes Google Business Profile optimization, local citation building, geo-targeted content, and review acquisition strategy. For multi-location businesses, we build centralized programs with location-specific content templates and reporting by market." }
+      ],
+      "takeaways": [
+        "SEO built around buyer intent generates leads that close at 14x higher rates than outbound-sourced prospects",
+        "Technical foundations are resolved before content or links — no ranking ceiling from crawl or speed issues",
+        "Topical authority content clusters capture mid-funnel decision-maker queries where competitors have gaps",
+        "Link acquisition is editorial and placement-verified — every link on a real topically relevant domain",
+        "Revenue attribution through GA4 and CRM integration shows organic pipeline contribution, not just sessions",
+        "Programs are calibrated to your competitive landscape and domain authority baseline — not a generic playbook"
+      ],
+      "infographic": "SEO Funnel Visualization: Shows how informational content (awareness), commercial content (consideration), and transactional pages (decision) map to organic traffic volume vs. conversion rate. Bar chart showing organic vs. paid CPA over 12 months. Line chart showing compounding traffic growth curve versus paid traffic flat line.",
+      "imageSuggestion": "Split-screen showing keyword ranking dashboard (left) vs. revenue attribution report showing organic-sourced pipeline (right). Dark background. Blue accent data visualization."
+    },
+    "related": [
+      { "title": "PPC and Paid Search", "href": "/marketing-services/ppc", "desc": "Paid search complements SEO — capture demand while organic rankings build.", "icon": "💰" },
+      { "title": "Analytics and Attribution", "href": "/marketing-services/analytics", "desc": "Connect organic search performance to revenue and pipeline in your CRM.", "icon": "📊" },
+      { "title": "Content Studio", "href": "/content-studio", "desc": "SEO content production: copywriting, video, and thought leadership at scale.", "icon": "✍️" }
+    ],
+    "cta": {
+      "title": "Get a Free SEO Opportunity Audit",
+      "subtitle": "We will analyze your current rankings, identify your highest-value keyword gaps, and map out what an organic growth program would produce for your business.",
+      "formType": "get-started"
+    }
+  },
+  {
+    "slug": "ppc",
+    "name": "PPC and Paid Search",
+    "path": "/marketing-services/ppc",
+    "parentService": "/marketing-services",
+    "parentLabel": "Digital Marketing",
+    "schemaType": "Service",
+    "buyerType": "b2b",
+    "accentColor": "#f59e0b",
+    "seo": {
+      "title": "PPC Management Services for US Businesses — Google Ads Agency | HotBot Studios",
+      "description": "Google Ads, Meta Ads, and LinkedIn Ads management for US B2B companies. Revenue-focused PPC with full attribution from click to closed deal.",
+      "h1": "PPC Management That Turns Ad Spend Into Qualified Pipeline",
+      "label": "Paid Search & Paid Social",
+      "primaryKeyword": "PPC management services USA",
+      "keywords": [
+        "PPC management agency USA",
+        "Google Ads management services",
+        "paid search agency United States",
+        "B2B PPC agency",
+        "LinkedIn Ads management USA",
+        "Meta Ads agency for business",
+        "Google Ads for B2B companies",
+        "paid advertising management USA",
+        "SEM agency United States",
+        "performance marketing agency USA"
+      ]
+    },
+    "content": {
+      "subtitle": "Paid search without attribution is burning budget. HotBot Studios manages Google Ads, Meta Ads, and LinkedIn Ads with full-funnel tracking from click to closed revenue. Every campaign is built around your actual cost-per-acquisition target, not impressions or click-through rate.",
+      "definitionTerm": "PPC (Pay-Per-Click) Management",
+      "definition": "PPC management is the ongoing process of planning, building, optimizing, and measuring paid advertising campaigns across search engines and social platforms. For US B2B organizations, effective PPC management means placing ads in front of high-intent buyers at exactly the right moment — with bidding, copy, landing pages, and attribution all optimized together to reduce cost per acquisition and increase qualified lead volume.",
+      "features": [
+        { "icon": "🔍", "title": "Google Search Ads", "desc": "Keyword research, match type strategy, ad copy testing, and Quality Score optimization. Every campaign structured around commercial intent keywords that signal active buying. Negative keyword management prevents wasted spend on irrelevant queries.", "color": "#f59e0b" },
+        { "icon": "📱", "title": "Meta Ads (Facebook and Instagram)", "desc": "Audience architecture, creative testing frameworks, and funnel stage sequencing for Meta platforms. Cold audience prospecting, retargeting sequences, and lookalike expansion built around your highest-LTV customer segments.", "color": "#3b82f6" },
+        { "icon": "💼", "title": "LinkedIn Ads for B2B", "desc": "Sponsored content, message ads, and conversation ads targeting decision-makers by job title, industry, company size, and seniority. LinkedIn's account-based targeting makes it the most precise B2B paid channel available.", "color": "#8b5cf6" },
+        { "icon": "🎯", "title": "Landing Page Conversion Optimization", "desc": "PPC performance is capped by landing page conversion rate. We audit, redesign, and A/B test landing pages to maximize lead capture from every dollar of ad spend. Variant testing with statistical significance gates.", "color": "#06b6d4" },
+        { "icon": "📊", "title": "Full Attribution and Reporting", "desc": "GA4 event tracking, CRM integration, and call tracking ensure every conversion traces back to the specific campaign, ad group, and keyword that generated it. Weekly performance reports cover spend, CPA, lead quality, and pipeline contribution.", "color": "#22c55e" },
+        { "icon": "🔄", "title": "Retargeting and Remarketing", "desc": "Audience segmentation by page visited, time on site, and funnel stage. Sequential retargeting that delivers progressively stronger offers as prospects move closer to decision. Cross-platform retargeting across Google Display, Meta, and LinkedIn.", "color": "#ec4899" }
+      ],
+      "useCases": [
+        { "segment": "B2B SaaS Companies", "challenge": "Long sales cycles make it hard to justify paid spend when conversion to revenue takes 60 to 180 days.", "solution": "Pipeline-stage attribution model traces PPC spend to SQL and closed revenue, not just lead volume. Bidding strategies optimize toward lead quality signals from CRM, not raw conversion count.", "color": "#f59e0b" },
+        { "segment": "Professional Services", "challenge": "High CPCs in competitive service categories make cost-per-lead from search unsustainable without strong conversion optimization.", "solution": "Landing page conversion audit and redesign reduces CPA before scaling budget. Quality Score improvements from tighter ad groups reduce average CPC.", "color": "#3b82f6" },
+        { "segment": "E-Commerce Brands", "challenge": "ROAS targets are difficult to maintain as CPCs rise and tracking accuracy degrades from iOS privacy changes.", "solution": "Server-side conversion tracking, first-party data activation, and Meta Conversions API restore signal accuracy. Performance Max campaigns structured with proper asset segmentation to avoid budget waste.", "color": "#8b5cf6" },
+        { "segment": "Local Service Businesses", "challenge": "Google Local Services Ads and search campaigns targeting specific US cities have high intent but require constant bid and budget management.", "solution": "Geo-targeted campaign structure with dayparting, device bid adjustments, and call tracking to optimize spend by time of day and location for maximum qualified call volume.", "color": "#06b6d4" }
+      ],
+      "stats": [
+        { "value": 200, "suffix": "%", "label": "Average First-Quarter ROAS Improvement", "color": "#f59e0b" },
+        { "value": 35, "suffix": "%", "label": "Average CPA Reduction After Audit", "color": "#3b82f6" },
+        { "value": 4, "suffix": " platforms", "label": "Google, Meta, LinkedIn, Display", "color": "#8b5cf6" },
+        { "value": 100, "suffix": "%", "label": "Revenue-Attributed Reporting", "color": "#22c55e" }
+      ],
+      "process": [
+        { "n": 1, "title": "Account Audit and Strategy", "desc": "Full audit of existing campaigns (if applicable), competitive landscape analysis, keyword opportunity mapping, and audience strategy. Delivered as a paid media strategy document before any spend is committed.", "icon": "🔍" },
+        { "n": 2, "title": "Campaign Build and Tracking Setup", "desc": "Campaign architecture, ad copy, landing pages, GA4 event tracking, CRM integration, and call tracking configured. Zero wasted spend from day one with proper negative keyword lists and audience exclusions.", "icon": "🏗️" },
+        { "n": 3, "title": "Launch and Learning Phase", "desc": "Initial 30-day learning period with daily monitoring. Budget, bids, and targeting adjusted based on early performance data. Weekly reporting covers spend, impressions, clicks, conversions, and lead quality.", "icon": "🚀" },
+        { "n": 4, "title": "Optimization and Scale", "desc": "Monthly optimization cycles covering bid strategy, ad copy testing, audience expansion, and landing page iteration. Scale winners and kill underperformers with data, not intuition.", "icon": "📈" }
+      ],
+      "kpis": [
+        "Cost per qualified lead (not cost per click)",
+        "Lead-to-pipeline conversion rate by campaign",
+        "Return on ad spend (ROAS) by channel",
+        "Quality Score average across Google campaigns",
+        "Landing page conversion rate by offer",
+        "Organic vs. paid pipeline contribution ratio"
+      ],
+      "faqs": [
+        { "q": "What PPC platforms do you manage?", "a": "Google Search Ads, Google Performance Max, Google Display, YouTube Ads, Meta Ads (Facebook and Instagram), LinkedIn Ads, and Microsoft Advertising (Bing). We recommend the right mix based on your buyer type, deal size, and budget. B2B companies with deal sizes above $10K typically see strongest ROI from Google Search and LinkedIn. E-commerce brands generally lead with Meta and Google Shopping." },
+        { "q": "What budget is required to see results?", "a": "Minimum effective budgets vary by platform and market. For Google Search in competitive B2B categories, $3,000 to $5,000 per month is typically the minimum to generate statistically meaningful data. LinkedIn Ads require minimum $1,500 per month to exit the learning phase. We will advise on realistic budget expectations before onboarding — not after." },
+        { "q": "How do you measure PPC ROI beyond clicks and conversions?", "a": "We integrate GA4 conversion data with your CRM to trace leads from click to qualified opportunity to closed deal. This allows us to calculate true cost per acquisition and pipeline-attributed revenue by campaign, ad group, and keyword. Vanity metrics like impressions and CTR are secondary to business outcomes." },
+        { "q": "Can you improve existing underperforming campaigns?", "a": "Yes. Account audits frequently uncover structural issues: poor match type usage, missing negative keywords, landing pages that do not match ad intent, conversion tracking gaps, and budget allocation across campaigns that favors low-performers. Most inherited accounts can be improved materially within 60 days before requiring budget increases." }
+      ],
+      "takeaways": [
+        "PPC campaigns are structured around your target cost-per-acquisition, not platform metrics like clicks or impressions",
+        "Full attribution from click to CRM closes the loop between ad spend and revenue contribution",
+        "Landing page conversion rate is addressed before scaling spend — higher conversion rate reduces CPA immediately",
+        "B2B campaigns leverage LinkedIn account-based targeting for decision-maker precision that search alone cannot match",
+        "Retargeting sequences re-engage high-intent visitors across Google, Meta, and LinkedIn simultaneously",
+        "Weekly reporting covers spend efficiency and pipeline contribution — not just traffic and clicks"
+      ],
+      "infographic": "PPC Funnel Attribution Map: Shows click journey from keyword search through landing page, form submission, CRM lead creation, SQLs, and closed revenue. Highlights where most agencies lose attribution visibility. Comparison table: agency-managed vs self-managed CPA over 6 months.",
+      "imageSuggestion": "Google Ads dashboard showing ROAS improvement trend over 6 months alongside CRM pipeline view showing paid-source opportunities. Dark background with amber/gold accent data visualization."
+    },
+    "related": [
+      { "title": "SEO Services", "href": "/marketing-services/seo", "desc": "Organic traffic builds the long-term channel while paid generates immediate pipeline.", "icon": "🔍" },
+      { "title": "Analytics and Attribution", "href": "/marketing-services/analytics", "desc": "Revenue attribution connecting PPC spend to pipeline and closed revenue.", "icon": "📊" },
+      { "title": "CRO — Conversion Rate Optimization", "href": "/marketing-services/cro", "desc": "Higher landing page conversion rates reduce CPA without increasing budget.", "icon": "🎯" }
+    ],
+    "cta": {
+      "title": "Get a Free PPC Account Audit",
+      "subtitle": "We will audit your current campaigns, identify structural inefficiencies, and show you exactly how much pipeline you are leaving on the table.",
+      "formType": "get-started"
+    }
+  },
+  {
+    "slug": "analytics",
+    "name": "Analytics and Attribution",
+    "path": "/marketing-services/analytics",
+    "parentService": "/marketing-services",
+    "parentLabel": "Digital Marketing",
+    "schemaType": "Service",
+    "buyerType": "b2b",
+    "accentColor": "#06b6d4",
+    "seo": {
+      "title": "Marketing Analytics and Attribution Services USA | HotBot Studios",
+      "description": "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue — not just sessions and conversions.",
+      "h1": "Marketing Analytics That Connect Every Channel to Revenue",
+      "label": "Analytics and Attribution",
+      "primaryKeyword": "marketing analytics services USA",
+      "keywords": [
+        "marketing analytics agency USA",
+        "GA4 setup and configuration",
+        "marketing attribution services",
+        "revenue attribution for B2B",
+        "CRM analytics integration",
+        "marketing reporting agency USA",
+        "GA4 ecommerce tracking",
+        "multi-touch attribution model",
+        "marketing data analytics USA",
+        "Google Analytics 4 consultant"
+      ]
+    },
+    "content": {
+      "subtitle": "Most US businesses cannot answer one question: which marketing channels are driving closed revenue? Not sessions. Not leads. Revenue. HotBot Studios builds attribution infrastructure that traces every deal back to its source — giving your team the data to allocate budget with confidence.",
+      "definitionTerm": "Marketing Attribution",
+      "definition": "Marketing attribution is the process of identifying which marketing channels, campaigns, and touchpoints contributed to a conversion or closed sale. For US B2B organizations, proper attribution requires connecting website analytics (GA4), paid media platforms (Google Ads, Meta, LinkedIn), and CRM data (HubSpot, Salesforce) into a single reporting system that shows which activities generate qualified pipeline — not just traffic or form fills.",
+      "features": [
+        { "icon": "📊", "title": "GA4 Implementation and Configuration", "desc": "Full GA4 property setup, event tracking configuration, conversion action mapping, and Looker Studio dashboard build. Includes e-commerce tracking, form submission events, scroll depth, video engagement, and custom parameter capture for your specific business needs.", "color": "#06b6d4" },
+        { "icon": "🔗", "title": "CRM and Ad Platform Integration", "desc": "HubSpot, Salesforce, and Pipedrive connected to GA4 and paid media platforms for closed-loop attribution. Offline conversion imports, lead scoring data passed to Google Ads, and CRM pipeline data available in reporting dashboards.", "color": "#3b82f6" },
+        { "icon": "🗺️", "title": "Multi-Touch Attribution Modeling", "desc": "First-touch, last-touch, linear, time-decay, and data-driven attribution models configured to reflect your actual sales cycle length and channel mix. Understand how different channels assist conversion rather than taking single-touch credit.", "color": "#8b5cf6" },
+        { "icon": "📈", "title": "Revenue Reporting Dashboards", "desc": "Custom Looker Studio dashboards showing channel-attributed revenue, customer acquisition cost by source, pipeline velocity by lead origin, and marketing-influenced revenue per period. Built for CMOs and revenue teams — not just digital analysts.", "color": "#22c55e" },
+        { "icon": "🔒", "title": "Server-Side Tracking and Privacy Compliance", "desc": "Server-side GTM setup, Meta Conversions API, Google Enhanced Conversions, and first-party data strategies that restore signal accuracy in a privacy-first tracking environment. Compliant with GDPR and CCPA where applicable.", "color": "#f59e0b" },
+        { "icon": "🤖", "title": "AI-Powered Insights and Anomaly Detection", "desc": "Automated anomaly detection alerts when traffic, conversion, or revenue metrics deviate from expected ranges. AI-assisted analysis identifies pattern breaks, seasonal shifts, and channel performance changes before they impact quarterly targets.", "color": "#ec4899" }
+      ],
+      "useCases": [
+        { "segment": "B2B SaaS with Long Sales Cycles", "challenge": "Multiple touchpoints across 60 to 180-day cycles make it impossible to understand which early-funnel activities ultimately drive closed revenue.", "solution": "CRM integration maps every marketing touchpoint — content download, webinar attendance, paid click, organic search visit — to the eventual closed deal. Time-decay attribution gives appropriate credit to early-funnel awareness activities.", "color": "#06b6d4" },
+        { "segment": "E-Commerce Brands", "challenge": "iOS tracking changes and GA4 migration gaps have created blind spots in conversion data, making ROAS calculations unreliable.", "solution": "Server-side GTM and Meta Conversions API restore conversion signal. Enhanced e-commerce tracking captures product-level revenue data. First-party data strategy reduces dependency on third-party cookie tracking.", "color": "#3b82f6" },
+        { "segment": "Multi-Channel Advertisers", "challenge": "Running SEO, PPC, email, and social simultaneously with no unified view of which channel combinations drive acquisition.", "solution": "Unified reporting dashboard aggregates all channel data with consistent attribution logic. Channel overlap analysis identifies which combinations produce the highest-LTV customers.", "color": "#8b5cf6" },
+        { "segment": "Revenue Operations Teams", "challenge": "Reporting to board and investors requires marketing-attributed revenue numbers that can be tied to specific activities and justified.", "solution": "Board-ready reporting templates with marketing-influenced pipeline, marketing-sourced revenue, and channel ROI metrics. Monthly executive dashboard updated automatically from live data sources.", "color": "#22c55e" }
+      ],
+      "stats": [
+        { "value": 67, "suffix": "%", "label": "of Marketers Lack Revenue Attribution", "color": "#06b6d4" },
+        { "value": 30, "suffix": "%", "label": "Average Budget Saved by Cutting Low-ROI Channels", "color": "#3b82f6" },
+        { "value": 14, "suffix": " days", "label": "Full GA4 + CRM Setup Timeline", "color": "#8b5cf6" },
+        { "value": 100, "suffix": "%", "label": "First-Party Data Owned by You", "color": "#22c55e" }
+      ],
+      "process": [
+        { "n": 1, "title": "Analytics Audit and Gap Analysis", "desc": "Audit existing GA4 configuration, conversion tracking, UTM consistency, and CRM data quality. Identify every attribution blind spot that is causing inaccurate reporting.", "icon": "🔍" },
+        { "n": 2, "title": "Tracking Architecture and Implementation", "desc": "Deploy server-side GTM, configure GA4 events, set up ad platform integrations, and implement CRM closed-loop reporting. Full QA testing before going live.", "icon": "🏗️" },
+        { "n": 3, "title": "Dashboard and Reporting Build", "desc": "Custom Looker Studio dashboards configured for your specific KPIs, reporting cadence, and audience (CMO, board, or operations team). Automated data refresh with manual commentary layer.", "icon": "📊" },
+        { "n": 4, "title": "Ongoing Analysis and Optimization", "desc": "Monthly attribution analysis, anomaly investigation, and budget reallocation recommendations. Quarterly reporting model review to ensure attribution logic stays aligned with your evolving channel mix.", "icon": "🔄" }
+      ],
+      "kpis": [
+        "Marketing-sourced pipeline revenue by channel",
+        "Customer acquisition cost (CAC) by source",
+        "Marketing-influenced closed revenue",
+        "Conversion tracking accuracy rate (vs. platform reported)",
+        "Lead-to-SQL conversion rate by traffic source",
+        "Dashboard data freshness and automation rate"
+      ],
+      "faqs": [
+        { "q": "What is the difference between GA4 and CRM attribution?", "a": "GA4 tracks website behavior — sessions, events, and on-site conversions like form fills. CRM attribution tracks what happens after a lead is created — pipeline stage progression, deal value, and closed revenue. Connecting both systems gives you end-to-end attribution from first website visit to closed deal, which is the only attribution model that actually tells you which marketing activities drive revenue." },
+        { "q": "How does server-side tracking improve attribution accuracy?", "a": "Browser-based tracking (via JavaScript tags) is blocked by ad blockers, browser privacy settings, and iOS restrictions. Server-side tracking sends conversion data directly from your server to ad platforms and analytics tools, bypassing client-side blockers. This restores between 20 and 40 percent of conversions that browser tracking typically misses, giving you more accurate ROAS calculations and bidding signals." },
+        { "q": "How long does analytics implementation take?", "a": "A standard GA4 setup with event tracking, CRM integration, and Looker Studio dashboard can be completed in 10 to 14 days. Server-side GTM deployment and ad platform integration (Meta CAPI, Google Enhanced Conversions) adds 5 to 7 additional days. Complex implementations with custom data models, API integrations, or BigQuery warehousing take 4 to 6 weeks." },
+        { "q": "Can you fix an existing GA4 setup that is reporting inaccurately?", "a": "Yes. GA4 audit and remediation is one of our most common engagements. Common issues include duplicate event firing, incorrect conversion counting, missing UTM parameters, GA4 and Google Ads link misconfigurations, and session channel grouping errors. We document every issue found, fix it, and QA the corrected tracking against ground truth data before signing off." }
+      ],
+      "takeaways": [
+        "Revenue attribution connects marketing spend to pipeline and closed revenue — not just sessions and form fills",
+        "GA4 and CRM integration is the minimum required infrastructure for accurate B2B marketing ROI reporting",
+        "Server-side tracking restores 20 to 40 percent of conversions lost to browser privacy restrictions",
+        "Multi-touch attribution models reflect the reality of complex B2B buying journeys across 60 to 180-day cycles",
+        "Custom Looker Studio dashboards deliver board-ready marketing performance reporting automatically",
+        "First-party data infrastructure is owned entirely by your organization — not locked in a vendor platform"
+      ],
+      "infographic": "Attribution Model Comparison: Side-by-side showing last-touch vs. linear vs. time-decay models applied to the same 6-touchpoint customer journey. Shows how different models distribute credit across SEO content, paid retargeting, email, and direct visits. Revenue by channel comparison before and after proper attribution setup.",
+      "imageSuggestion": "Looker Studio dashboard screenshot showing channel-attributed revenue breakdown, CAC by source, and pipeline velocity. Split with GA4 funnel visualization showing path from first visit to conversion. Dark background with cyan accent data visualization."
+    },
+    "related": [
+      { "title": "SEO Services", "href": "/marketing-services/seo", "desc": "Measure organic search contribution accurately with proper attribution.", "icon": "🔍" },
+      { "title": "PPC and Paid Search", "href": "/marketing-services/ppc", "desc": "Connect ad spend to pipeline revenue with closed-loop CRM attribution.", "icon": "💰" },
+      { "title": "AI Automation", "href": "/ai-automation", "desc": "AI analytics dashboards and predictive BI for enterprise reporting.", "icon": "🤖" }
+    ],
+    "cta": {
+      "title": "Get a Free Analytics Audit",
+      "subtitle": "We will review your current tracking setup, identify attribution gaps, and show you what accurate revenue reporting would look like for your business.",
+      "formType": "get-started"
+    }
+  }
+]

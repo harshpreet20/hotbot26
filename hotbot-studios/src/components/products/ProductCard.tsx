@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import type { Product } from "@/types";
 
@@ -15,7 +16,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <div
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
-      className="p-6 rounded-2xl border transition-all duration-500 cursor-default"
+      className="p-6 rounded-2xl border transition-all duration-500 cursor-default flex flex-col"
       style={{
         background: hovering ? `${product.color}08` : "rgba(255,255,255,0.02)",
         borderColor: hovering ? `${product.color}30` : "rgba(255,255,255,0.08)",
@@ -34,18 +35,32 @@ export function ProductCard({ product }: ProductCardProps) {
       <p className="text-sm mb-2" style={{ color: `${product.color}cc` }}>
         {product.tagline}
       </p>
-      <p className="text-slate-400 text-sm leading-relaxed mb-5">{product.description}</p>
-      <button
-        onClick={() => openForm("get-started")}
-        className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5"
-        style={{
-          background: `${product.color}15`,
-          border: `1px solid ${product.color}30`,
-          color: product.color,
-        }}
-      >
-        Get Access →
-      </button>
+      <p className="text-slate-400 text-sm leading-relaxed mb-5 flex-1">{product.description}</p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          onClick={() => openForm("get-started")}
+          className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5"
+          style={{
+            background: `${product.color}15`,
+            border: `1px solid ${product.color}30`,
+            color: product.color,
+          }}
+        >
+          Get Access →
+        </button>
+        {product.href && (
+          <Link
+            href={product.href}
+            className="text-sm font-semibold transition-colors duration-200 flex items-center gap-1.5"
+            style={{ color: `${product.color}80` }}
+          >
+            Learn more
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
