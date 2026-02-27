@@ -79,12 +79,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "🔍", title: "SEO & Content Marketing", desc: "Technical SEO audits, on-page optimization, keyword strategy, and link building that ranks your site for high-value search terms on Google. Includes GA4, Google Search Console, and Core Web Vitals optimization." },
-  { icon: "📱", title: "Social Media Marketing", desc: "Platform-native strategies for Instagram, LinkedIn, X (Twitter), TikTok, and Facebook that build engaged communities and convert followers into customers. Includes content creation and community management." },
-  { icon: "💰", title: "PPC & Paid Ads (Google + Meta)", desc: "Google Ads (Search, Display, Shopping, YouTube) and Meta Ads (Facebook, Instagram) campaigns managed for maximum ROAS using AI-powered bidding strategies and continuous A/B testing." },
-  { icon: "📧", title: "Email Marketing & Automation", desc: "Automated email sequences, drip campaigns, newsletters, and behavioral triggers via HubSpot, Klaviyo, or Mailchimp. Convert and retain customers at every stage of the funnel." },
-  { icon: "📊", title: "Analytics & Attribution (GA4)", desc: "GA4 setup, custom Looker Studio dashboards, and multi-touch attribution modelling to understand exactly which channels drive revenue — and which are wasting budget." },
-  { icon: "🎯", title: "Conversion Rate Optimization (CRO)", desc: "A/B testing, landing page redesigns, heatmap analysis (Hotjar), and UX improvements that turn more of your existing traffic into leads and paying customers." },
+  { icon: "🔍", title: "SEO & Content Marketing", desc: "Technical SEO audits, on-page optimization, keyword strategy, and link building that ranks your site for high-value search terms on Google. Includes GA4, Google Search Console, and Core Web Vitals optimization.", href: "/marketing-services/seo" },
+  { icon: "📱", title: "Social Media Marketing", desc: "Platform-native strategies for Instagram, LinkedIn, X (Twitter), TikTok, and Facebook that build engaged communities and convert followers into customers. Includes content creation and community management.", href: "/marketing-services/social-media" },
+  { icon: "💰", title: "PPC & Paid Ads (Google + Meta)", desc: "Google Ads (Search, Display, Shopping, YouTube) and Meta Ads (Facebook, Instagram) campaigns managed for maximum ROAS using AI-powered bidding strategies and continuous A/B testing.", href: "/marketing-services/ppc" },
+  { icon: "📧", title: "Email Marketing & Automation", desc: "Automated email sequences, drip campaigns, newsletters, and behavioral triggers via HubSpot, Klaviyo, or Mailchimp. Convert and retain customers at every stage of the funnel.", href: "/marketing-services/email-marketing" },
+  { icon: "📊", title: "Analytics & Attribution (GA4)", desc: "GA4 setup, custom Looker Studio dashboards, and multi-touch attribution modelling to understand exactly which channels drive revenue — and which are wasting budget.", href: "/marketing-services/analytics" },
+  { icon: "🎯", title: "Conversion Rate Optimization (CRO)", desc: "A/B testing, landing page redesigns, heatmap analysis (Hotjar), and UX improvements that turn more of your existing traffic into leads and paying customers.", href: "/marketing-services/cro" },
 ];
 
 const STATS = [

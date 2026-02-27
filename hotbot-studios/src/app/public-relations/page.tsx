@@ -78,12 +78,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "📰", title: "Media Relations & Press Coverage", desc: "Active relationships with 500+ US journalists and editors at national and trade publications. Personalized pitches — not spray-and-pray press releases — result in genuine editorial coverage that builds lasting credibility." },
-  { icon: "🗞️", title: "Press Release Writing & Distribution", desc: "Compelling press releases written by former journalists. Distributed via PR Newswire, BusinessWire, and direct journalist relationships for maximum pickup in relevant publications." },
-  { icon: "🎯", title: "Crisis Communications", desc: "24/7 rapid response PR strategy to protect and restore your brand reputation. Includes media holding statements, spokesperson preparation, and proactive narrative control." },
-  { icon: "🏆", title: "Awards & Thought Leadership", desc: "Industry award submissions, conference speaking opportunities (keynotes, panels), and thought leadership article placement that positions your executives as go-to experts in your field." },
-  { icon: "👥", title: "Podcast & Influencer PR", desc: "Strategic guest placements on the top podcasts your target audience listens to. Plus influencer partnership management for B2C and B2B brands seeking authentic endorsements." },
-  { icon: "🌐", title: "Digital PR & SEO Link Building", desc: "High Domain Authority (DA50+) backlink acquisition through editorial coverage in major publications. Every media placement improves your Google ranking — PR and SEO working together." },
+  { icon: "📰", title: "Media Relations & Press Coverage", desc: "Active relationships with 500+ US journalists and editors at national and trade publications. Personalized pitches — not spray-and-pray press releases — result in genuine editorial coverage that builds lasting credibility.", href: "/public-relations/media-relations" },
+  { icon: "🗞️", title: "Press Release Writing & Distribution", desc: "Compelling press releases written by former journalists. Distributed via PR Newswire, BusinessWire, and direct journalist relationships for maximum pickup in relevant publications.", href: "/public-relations/press-releases" },
+  { icon: "🎯", title: "Crisis Communications", desc: "24/7 rapid response PR strategy to protect and restore your brand reputation. Includes media holding statements, spokesperson preparation, and proactive narrative control.", href: "/public-relations/crisis-communications" },
+  { icon: "🏆", title: "Awards & Thought Leadership", desc: "Industry award submissions, conference speaking opportunities (keynotes, panels), and thought leadership article placement that positions your executives as go-to experts in your field.", href: "/public-relations/thought-leadership" },
+  { icon: "👥", title: "Podcast & Influencer PR", desc: "Strategic guest placements on the top podcasts your target audience listens to. Plus influencer partnership management for B2C and B2B brands seeking authentic endorsements.", href: "/public-relations/podcast-pr" },
+  { icon: "🌐", title: "Digital PR & SEO Link Building", desc: "High Domain Authority (DA50+) backlink acquisition through editorial coverage in major publications. Every media placement improves your Google ranking — PR and SEO working together.", href: "/public-relations/digital-pr-seo" },
 ];
 
 const STATS = [

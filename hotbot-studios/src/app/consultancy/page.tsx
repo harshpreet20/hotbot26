@@ -78,12 +78,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "🗺️", title: "Growth Strategy & Roadmap", desc: "Build a clear, executable 90-day and 12-month growth roadmap — from market analysis and competitive positioning through to channel mix and budget allocation. Grounded in data, not guesswork." },
-  { icon: "🔄", title: "Digital Transformation", desc: "Modernize your marketing tech stack (MarTech), automate manual processes, and upskill your team's digital capabilities. We've led digital transformations for companies from $2M to $200M in revenue." },
-  { icon: "📊", title: "Marketing Audit & Gap Analysis", desc: "A comprehensive 360° review of your current marketing — channels, spend, creative, messaging, tech stack, and attribution. Delivered as a prioritized list of quick wins and strategic opportunities." },
-  { icon: "🏗️", title: "MarTech Stack Design & Implementation", desc: "Select, configure, and integrate the right CRM (HubSpot, Salesforce), marketing automation (Marketo, ActiveCampaign), and analytics tools for your team size, budget, and goals." },
-  { icon: "👥", title: "Marketing Team Building & Training", desc: "Help you hire, structure, and upskill your in-house marketing team. Includes role scoping, interview frameworks, onboarding plans, and 1:1 coaching for your marketing leaders." },
-  { icon: "🌍", title: "Go-To-Market & Market Entry", desc: "Research, positioning, messaging, channel strategy, and launch support for entering new US markets, launching new products, or targeting new customer segments." },
+  { icon: "🗺️", title: "Growth Strategy & Roadmap", desc: "Build a clear, executable 90-day and 12-month growth roadmap — from market analysis and competitive positioning through to channel mix and budget allocation. Grounded in data, not guesswork.", href: "/consultancy/growth-strategy" },
+  { icon: "🔄", title: "Digital Transformation", desc: "Modernize your marketing tech stack (MarTech), automate manual processes, and upskill your team's digital capabilities. We've led digital transformations for companies from $2M to $200M in revenue.", href: "/consultancy/digital-transformation" },
+  { icon: "📊", title: "Marketing Audit & Gap Analysis", desc: "A comprehensive 360° review of your current marketing — channels, spend, creative, messaging, tech stack, and attribution. Delivered as a prioritized list of quick wins and strategic opportunities.", href: "/consultancy/marketing-audit" },
+  { icon: "🏗️", title: "MarTech Stack Design & Implementation", desc: "Select, configure, and integrate the right CRM (HubSpot, Salesforce), marketing automation (Marketo, ActiveCampaign), and analytics tools for your team size, budget, and goals.", href: "/consultancy/martech-stack" },
+  { icon: "👥", title: "Marketing Team Building & Training", desc: "Help you hire, structure, and upskill your in-house marketing team. Includes role scoping, interview frameworks, onboarding plans, and 1:1 coaching for your marketing leaders.", href: "/consultancy/team-building" },
+  { icon: "🌍", title: "Go-To-Market & Market Entry", desc: "Research, positioning, messaging, channel strategy, and launch support for entering new US markets, launching new products, or targeting new customer segments.", href: "/consultancy/go-to-market" },
 ];
 
 const STATS = [

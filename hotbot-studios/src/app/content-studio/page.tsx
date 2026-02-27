@@ -77,12 +77,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "🎬", title: "Video Production", desc: "Brand films, product explainer videos, customer testimonial videos, social media Reels, YouTube content, and corporate documentaries — scripted, filmed, and edited to broadcast quality." },
-  { icon: "📸", title: "Photography & Visual Assets", desc: "Product photography, brand lifestyle shoots, executive portraits, event coverage, and stock asset libraries. Shot for digital-first use: social media, website, and paid ads." },
-  { icon: "✍️", title: "Copywriting & Long-Form Content", desc: "Website copy, SEO blog articles, whitepapers, case studies, email sequences, and LinkedIn thought leadership. Written by senior copywriters trained on conversion principles and SEO." },
-  { icon: "🎙️", title: "Podcast Production", desc: "End-to-end podcast production — concept development, recording, editing, audio mastering, show notes, and multi-platform distribution (Spotify, Apple Podcasts, YouTube)." },
-  { icon: "📱", title: "Social Media Content", desc: "Platform-native content for Instagram Reels, TikTok, LinkedIn, and YouTube Shorts — built on trend analysis and platform algorithm expertise to maximize organic reach." },
-  { icon: "🖨️", title: "Print & Design Collateral", desc: "Brochures, pitch decks, trade show materials, infographics, and all print collateral. Designed in Figma to brand guidelines, print-ready and optimized for digital delivery." },
+  { icon: "🎬", title: "Video Production", desc: "Brand films, product explainer videos, customer testimonial videos, social media Reels, YouTube content, and corporate documentaries — scripted, filmed, and edited to broadcast quality.", href: "/content-studio/video-production" },
+  { icon: "📸", title: "Photography & Visual Assets", desc: "Product photography, brand lifestyle shoots, executive portraits, event coverage, and stock asset libraries. Shot for digital-first use: social media, website, and paid ads.", href: "/content-studio/photography" },
+  { icon: "✍️", title: "Copywriting & Long-Form Content", desc: "Website copy, SEO blog articles, whitepapers, case studies, email sequences, and LinkedIn thought leadership. Written by senior copywriters trained on conversion principles and SEO.", href: "/content-studio/copywriting" },
+  { icon: "🎙️", title: "Podcast Production", desc: "End-to-end podcast production — concept development, recording, editing, audio mastering, show notes, and multi-platform distribution (Spotify, Apple Podcasts, YouTube).", href: "/content-studio/podcast-production" },
+  { icon: "📱", title: "Social Media Content", desc: "Platform-native content for Instagram Reels, TikTok, LinkedIn, and YouTube Shorts — built on trend analysis and platform algorithm expertise to maximize organic reach.", href: "/content-studio/social-media-content" },
+  { icon: "🖨️", title: "Print & Design Collateral", desc: "Brochures, pitch decks, trade show materials, infographics, and all print collateral. Designed in Figma to brand guidelines, print-ready and optimized for digital delivery.", href: "/content-studio/print-design" },
 ];
 
 const STATS = [

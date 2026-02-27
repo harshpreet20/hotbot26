@@ -77,12 +77,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "🌐", title: "Web Applications", desc: "Scalable, high-performance web apps built with React, Next.js 15, and TypeScript on cloud infrastructure (AWS, Vercel, GCP). From dashboards to complex multi-user platforms." },
-  { icon: "📱", title: "Mobile Apps (iOS & Android)", desc: "Cross-platform mobile apps built with React Native and Flutter. Native performance, single codebase, deployed to both App Store and Google Play." },
-  { icon: "☁️", title: "SaaS Platform Development", desc: "Multi-tenant SaaS platforms with Stripe billing, Auth0 authentication, role-based access control, analytics dashboards, and white-label capabilities." },
-  { icon: "🔌", title: "API Development & Integration", desc: "RESTful and GraphQL APIs that power your products, integrate your tools, and expose your data. OpenAPI specification, rate limiting, and enterprise-grade security." },
-  { icon: "🛒", title: "E-Commerce Development", desc: "Custom Shopify apps, headless commerce (Next.js + Shopify/WooCommerce), and bespoke checkout experiences engineered for maximum conversion rate." },
-  { icon: "🔐", title: "Enterprise Systems & Portals", desc: "Custom CRM systems, ERP integrations, internal portals, and enterprise workflow tools built to your exact specifications with SSO and compliance requirements." },
+  { icon: "🌐", title: "Web Applications", desc: "Scalable, high-performance web apps built with React, Next.js 15, and TypeScript on cloud infrastructure (AWS, Vercel, GCP). From dashboards to complex multi-user platforms.", href: "/software-development/web-app-development" },
+  { icon: "📱", title: "Mobile Apps (iOS & Android)", desc: "Cross-platform mobile apps built with React Native and Flutter. Native performance, single codebase, deployed to both App Store and Google Play.", href: "/software-development/mobile-app-development" },
+  { icon: "☁️", title: "SaaS Platform Development", desc: "Multi-tenant SaaS platforms with Stripe billing, Auth0 authentication, role-based access control, analytics dashboards, and white-label capabilities.", href: "/software-development/saas-development" },
+  { icon: "🔌", title: "API Development & Integration", desc: "RESTful and GraphQL APIs that power your products, integrate your tools, and expose your data. OpenAPI specification, rate limiting, and enterprise-grade security.", href: "/software-development/api-integrations" },
+  { icon: "🛒", title: "E-Commerce Development", desc: "Custom Shopify apps, headless commerce (Next.js + Shopify/WooCommerce), and bespoke checkout experiences engineered for maximum conversion rate.", href: "/software-development/ecommerce-development" },
+  { icon: "🔐", title: "Enterprise Systems & Portals", desc: "Custom CRM systems, ERP integrations, internal portals, and enterprise workflow tools built to your exact specifications with SSO and compliance requirements.", href: "/software-development/enterprise-software" },
 ];
 
 const STATS = [

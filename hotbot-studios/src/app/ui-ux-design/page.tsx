@@ -75,12 +75,12 @@ const faqSchema = {
 };
 
 const SUB_SERVICES = [
-  { icon: "🔭", title: "UX Research & User Testing", desc: "User interviews, surveys, heatmap analysis (Hotjar), session recordings, and Maze usability tests to understand exactly what users need — before making costly design decisions." },
-  { icon: "📐", title: "Wireframing & Information Architecture", desc: "Low and high-fidelity wireframes that map user journeys, navigation structures, and feature priorities before any final UI is designed. The structural foundation of great products." },
-  { icon: "🎨", title: "Visual UI Design & Design Systems", desc: "Beautiful, consistent interfaces built on atomic design systems in Figma — design tokens, component libraries, and detailed specs that enable pixel-perfect development handoff." },
-  { icon: "⚡", title: "Interactive Prototyping", desc: "Clickable Figma prototypes for user testing, investor demos, and stakeholder sign-off before development begins. Catch problems when fixes cost hours, not sprints." },
-  { icon: "📱", title: "Mobile App Design (iOS & Android)", desc: "Native iOS (Human Interface Guidelines) and Android (Material Design 3) design patterns. Responsive layouts that feel intuitive on every screen size, designed mobile-first." },
-  { icon: "♿", title: "Accessibility Design (WCAG 2.2 AA)", desc: "WCAG 2.2 AA compliant designs meeting ADA and Section 508 requirements. Color contrast, keyboard navigation, screen reader compatibility, and inclusive interaction design built in from the start." },
+  { icon: "🔭", title: "UX Research & User Testing", desc: "User interviews, surveys, heatmap analysis (Hotjar), session recordings, and Maze usability tests to understand exactly what users need — before making costly design decisions.", href: "/ui-ux-design/ux-research" },
+  { icon: "📐", title: "Wireframing & Information Architecture", desc: "Low and high-fidelity wireframes that map user journeys, navigation structures, and feature priorities before any final UI is designed. The structural foundation of great products.", href: "/ui-ux-design/wireframing" },
+  { icon: "🎨", title: "Visual UI Design & Design Systems", desc: "Beautiful, consistent interfaces built on atomic design systems in Figma — design tokens, component libraries, and detailed specs that enable pixel-perfect development handoff.", href: "/ui-ux-design/visual-ui-design" },
+  { icon: "⚡", title: "Interactive Prototyping", desc: "Clickable Figma prototypes for user testing, investor demos, and stakeholder sign-off before development begins. Catch problems when fixes cost hours, not sprints.", href: "/ui-ux-design/prototyping" },
+  { icon: "📱", title: "Mobile App Design (iOS & Android)", desc: "Native iOS (Human Interface Guidelines) and Android (Material Design 3) design patterns. Responsive layouts that feel intuitive on every screen size, designed mobile-first.", href: "/ui-ux-design/mobile-design" },
+  { icon: "♿", title: "Accessibility Design (WCAG 2.2 AA)", desc: "WCAG 2.2 AA compliant designs meeting ADA and Section 508 requirements. Color contrast, keyboard navigation, screen reader compatibility, and inclusive interaction design built in from the start.", href: "/ui-ux-design/accessibility" },
 ];
 
 const STATS = [

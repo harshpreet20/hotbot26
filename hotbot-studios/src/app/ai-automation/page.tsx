@@ -82,12 +82,12 @@ const faqSchema = {
 
 // ── Content Data ─────────────────────────────────────────────────────────────
 const SUB_SERVICES = [
-  { icon: "🤖", title: "Custom AI Agents", desc: "Autonomous AI agents built on GPT-4o, Claude 3, and Gemini that handle complex multi-step workflows, research, lead qualification, and decision-making — running 24/7 without human intervention." },
-  { icon: "🎙️", title: "Voice AI — Heka", desc: "AI voice receptionist powered by Sarvam AI that qualifies inbound leads, answers FAQs, and books calendar appointments around the clock. Integrates with Salesforce, HubSpot, and Calendly." },
-  { icon: "💬", title: "AI Chatbots", desc: "Intelligent conversational AI for your website, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads at scale, 24/7." },
-  { icon: "⚙️", title: "Workflow Automation (n8n)", desc: "Connect your CRM (HubSpot, Salesforce, Pipedrive), email (Gmail, Outlook), Slack, Google Sheets, Notion, and 500+ tools into trigger-based automated workflows. Zero manual data entry." },
-  { icon: "📊", title: "AI Analytics & Business Intelligence", desc: "Intelligent data pipelines, predictive forecasting models, and real-time BI dashboards powered by your own first-party data. Integrates with GA4, Looker Studio, and BigQuery." },
-  { icon: "🧠", title: "LLM & GPT Integration", desc: "Custom GPT-4o, Claude 3 Opus, and Gemini Pro integrations embedded into your internal tools, customer-facing products, and business processes. Fine-tuning and RAG (Retrieval-Augmented Generation) available." },
+  { icon: "🤖", title: "Custom AI Agents", desc: "Autonomous AI agents built on GPT-4o, Claude 3, and Gemini that handle complex multi-step workflows, research, lead qualification, and decision-making — running 24/7 without human intervention.", href: "/ai-automation/custom-ai-agents" },
+  { icon: "🎙️", title: "Voice AI — Heka", desc: "AI voice receptionist powered by Sarvam AI that qualifies inbound leads, answers FAQs, and books calendar appointments around the clock. Integrates with Salesforce, HubSpot, and Calendly.", href: "/ai-automation/voice-ai-heka" },
+  { icon: "💬", title: "AI Chatbots", desc: "Intelligent conversational AI for your website, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads at scale, 24/7.", href: "/ai-automation/ai-chatbots" },
+  { icon: "⚙️", title: "Workflow Automation (n8n)", desc: "Connect your CRM (HubSpot, Salesforce, Pipedrive), email (Gmail, Outlook), Slack, Google Sheets, Notion, and 500+ tools into trigger-based automated workflows. Zero manual data entry.", href: "/ai-automation/n8n-workflow-automation" },
+  { icon: "📊", title: "AI Analytics & Business Intelligence", desc: "Intelligent data pipelines, predictive forecasting models, and real-time BI dashboards powered by your own first-party data. Integrates with GA4, Looker Studio, and BigQuery.", href: "/ai-automation/ai-analytics" },
+  { icon: "🧠", title: "LLM & GPT Integration", desc: "Custom GPT-4o, Claude 3 Opus, and Gemini Pro integrations embedded into your internal tools, customer-facing products, and business processes. Fine-tuning and RAG (Retrieval-Augmented Generation) available.", href: "/ai-automation/llm-gpt-integration" },
 ];
 
 const STATS = [
