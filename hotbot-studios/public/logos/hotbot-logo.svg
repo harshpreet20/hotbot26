@@ -1,30 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" role="img" aria-label="HotBot Studios logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 44" fill="none" role="img" aria-label="HotBot Studios logo">
   <title>HotBot Studios</title>
-  <!-- Robot head icon -->
-  <rect x="2" y="8" width="28" height="24" rx="4" fill="url(#logoGrad)"/>
-  <rect x="8" y="4" width="16" height="6" rx="2" fill="url(#logoGrad)"/>
-  <circle cx="12" cy="20" r="3" fill="white" opacity="0.9"/>
-  <circle cx="22" cy="20" r="3" fill="white" opacity="0.9"/>
-  <circle cx="12" cy="20" r="1.5" fill="#0a0e1a"/>
-  <circle cx="22" cy="20" r="1.5" fill="#0a0e1a"/>
-  <path d="M11 28 Q16 31 21 28" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
-  <rect x="0" y="17" width="3" height="6" rx="1.5" fill="url(#logoGrad)"/>
-  <rect x="29" y="17" width="3" height="6" rx="1.5" fill="url(#logoGrad)"/>
+  <!-- Robot head icon — white solid for use on dark backgrounds -->
+  <rect x="2" y="9" width="28" height="24" rx="4" fill="white"/>
+  <rect x="8" y="4" width="16" height="7" rx="2" fill="white"/>
+  <circle cx="12" cy="21" r="3.2" fill="#0a0e1a"/>
+  <circle cx="22" cy="21" r="3.2" fill="#0a0e1a"/>
+  <circle cx="12" cy="21" r="1.4" fill="white" opacity="0.45"/>
+  <circle cx="22" cy="21" r="1.4" fill="white" opacity="0.45"/>
+  <path d="M11 29 Q16 32.5 21 29" stroke="#0a0e1a" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="0" y="18" width="3" height="6" rx="1.5" fill="white"/>
+  <rect x="29" y="18" width="3" height="6" rx="1.5" fill="white"/>
+  <circle cx="16" cy="3" r="2" fill="white" opacity="0.7"/>
   <!-- Wordmark -->
-  <text x="40" y="27" font-family="'Inter', 'SF Pro Display', -apple-system, sans-serif" font-size="16" font-weight="800" letter-spacing="-0.5" fill="white">
-    HotBot
-  </text>
-  <text x="104" y="27" font-family="'Inter', 'SF Pro Display', -apple-system, sans-serif" font-size="16" font-weight="400" letter-spacing="0" fill="url(#textGrad)">
-    Studios
-  </text>
-  <defs>
-    <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
-    </linearGradient>
-    <linearGradient id="textGrad" x1="104" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#60a5fa"/>
-      <stop offset="100%" stop-color="#a78bfa"/>
-    </linearGradient>
-  </defs>
+  <text x="42" y="29" font-family="'Inter','SF Pro Display',-apple-system,sans-serif" font-size="17" font-weight="800" letter-spacing="-0.5" fill="white">HotBot</text>
+  <text x="113" y="29" font-family="'Inter','SF Pro Display',-apple-system,sans-serif" font-size="17" font-weight="400" letter-spacing="0.2" fill="rgba(255,255,255,0.72)">Studios</text>
 </svg>
