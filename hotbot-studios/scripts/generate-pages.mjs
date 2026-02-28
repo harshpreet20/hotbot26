@@ -3,7 +3,7 @@
 // Registry-driven deterministic page generator for HotBot Studios
 // Usage: node scripts/generate-pages.mjs
 
-import { readFileSync, mkdirSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, mkdirSync, writeFileSync, existsSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -590,23 +590,27 @@ async function main() {
     console.warn("  ⚠ No products.json found at", productsPath);
   }
 
-  // Batches 2-7: Sub-service pages
-  const subservicesPath = join(__dirname, "registry", "subservices.json");
-  if (existsSync(subservicesPath)) {
-    const subservices = JSON.parse(readFileSync(subservicesPath, "utf-8"));
-    console.log(`\nGenerating ${subservices.length} sub-service pages...`);
+  // Sub-service pages — read every registry/*.json except products.json
+  const registryDir = join(__dirname, "registry");
+  const registryFiles = readdirSync(registryDir)
+    .filter((f) => f.endsWith(".json") && f !== "products.json")
+    .sort();
 
-    for (const sub of subservices) {
-      const parentSlug = sub.parentService.replace(/^\//, "");
-      const outPath = join(ROOT, "src", "app", parentSlug, sub.slug, "page.tsx");
-      ensureDir(outPath);
-      const content = buildSubServicePage(sub);
-      writeFileSync(outPath, content, "utf-8");
-      created.push(outPath.replace(ROOT, ""));
-      console.log(`  ✓ Created: ${sub.parentService}/${sub.slug}/page.tsx`);
-    }
-  } else {
-    console.warn("  ⚠ No subservices.json found at", subservicesPath);
+  let allSubservices = [];
+  for (const file of registryFiles) {
+    const entries = JSON.parse(readFileSync(join(registryDir, file), "utf-8"));
+    allSubservices = allSubservices.concat(entries);
+  }
+
+  console.log(`\nGenerating ${allSubservices.length} sub-service pages (from ${registryFiles.length} registry files)...`);
+  for (const sub of allSubservices) {
+    const parentSlug = sub.parentService.replace(/^\//, "");
+    const outPath = join(ROOT, "src", "app", parentSlug, sub.slug, "page.tsx");
+    ensureDir(outPath);
+    const pageContent = buildSubServicePage(sub);
+    writeFileSync(outPath, pageContent, "utf-8");
+    created.push(outPath.replace(ROOT, ""));
+    console.log(`  ✓ Created: ${sub.parentService}/${sub.slug}/page.tsx`);
   }
 
   console.log(`\nDone. ${created.length} files generated.\n`);
