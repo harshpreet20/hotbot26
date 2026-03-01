@@ -1,13 +1,13 @@
 import { Metadata } from "next";
-import PageHeader from "@/components/sections/PageHeader";
-import SubServices from "@/components/sections/SubServices";
-import ServiceStats from "@/components/sections/ServiceStats";
-import ProcessSteps from "@/components/sections/ProcessSteps";
-import FAQSection from "@/components/sections/FAQSection";
-import CTASection from "@/components/sections/CTASection";
-import RelatedServices from "@/components/sections/RelatedServices";
-import GlassCard from "@/components/ui/GlassCard";
-import Reveal from "@/components/ui/Reveal";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { SubServices } from "@/components/sections/SubServices";
+import { ServiceStats } from "@/components/sections/ServiceStats";
+import { ProcessSteps } from "@/components/sections/ProcessSteps";
+import { FAQSection } from "@/components/sections/FAQSection";
+import { CTASection } from "@/components/sections/CTASection";
+import { RelatedServices } from "@/components/sections/RelatedServices";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { Reveal } from "@/components/shared/Reveal";
 
 export const metadata: Metadata = {
   title: "Podcast & Influencer PR Services USA | Guest Placements & Partnerships | HotBot Studios",
