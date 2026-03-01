@@ -80,7 +80,7 @@ const STATS = [
   { value: 40, suffix: "%", label: "Faster Dev with a Design System", color: "#8b5cf6" },
   { value: 94, suffix: "%", label: "First Impressions Driven by Design", color: "#8b5cf6" },
   { value: 0.05, suffix: "s", label: "Time to Form a Visual Impression", color: "#8b5cf6" },
-};
+];
 
 const PROCESS = [
   { n: 1, title: "Visual Direction & Moodboard", desc: "Define the visual language — typography scale, color palette, corner radius, shadow depth, illustration style — with 2–3 moodboard directions for stakeholder alignment before design begins.", icon: "🎨" },

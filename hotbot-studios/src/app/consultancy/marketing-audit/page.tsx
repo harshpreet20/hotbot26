@@ -80,7 +80,7 @@ const STATS = [
   { value: 40, suffix: "%", label: "Avg Wasted Budget Found in Paid Audits", color: "#8b5cf6" },
   { value: 4, suffix: "wk", label: "Standard Audit Delivery Timeline", color: "#8b5cf6" },
   { value: 100, suffix: "%", label: "Audits Deliver Actionable Prioritized Findings", color: "#8b5cf6" },
-};
+];
 
 const PROCESS = [
   { n: 1, title: "Access Provisioning & Data Collection", desc: "Read-only access setup to GA4, ad accounts, CRM, and email platforms. Data extraction, benchmark comparison, and competitor landscape mapping before analysis begins.", icon: "🔑" },
