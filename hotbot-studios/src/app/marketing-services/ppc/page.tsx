@@ -9,7 +9,7 @@ import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "PPC Management Services for US Businesses — Google Ads Agency | HotBot Studios",
+  title: "PPC Management Services for US Businesses, Google Ads Agency | HotBot Studios",
   description: "Google Ads, Meta Ads, and LinkedIn Ads management for US B2B companies. Revenue-focused PPC with full attribution from click to closed deal.",
   keywords: [
     "PPC management agency USA",
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     "performance marketing agency USA"
   ],
   openGraph: {
-    title: "PPC Management Services for US Businesses — Google Ads Agency | HotBot Studios",
+    title: "PPC Management Services for US Businesses, Google Ads Agency | HotBot Studios",
     description: "Google Ads, Meta Ads, and LinkedIn Ads management for US B2B companies. Revenue-focused PPC with full attribution from click to closed deal.",
     url: "https://hotbotstudios.com/marketing-services/ppc",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "PPC Management That Turns Ad Spend Into Qualified Pipeline" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PPC Management Services for US Businesses — Google Ads Agency | HotBot Studios",
+    title: "PPC Management Services for US Businesses, Google Ads Agency | HotBot Studios",
     description: "Google Ads, Meta Ads, and LinkedIn Ads management for US B2B companies. Revenue-focused PPC with full attribution from click to closed deal.",
   },
   alternates: { canonical: "https://hotbotstudios.com/marketing-services/ppc" },
@@ -97,7 +97,7 @@ const faqSchema = {
       "name": "What budget is required to see results?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Minimum effective budgets vary by platform and market. For Google Search in competitive B2B categories, $3,000 to $5,000 per month is typically the minimum to generate statistically meaningful data. LinkedIn Ads require minimum $1,500 per month to exit the learning phase. We will advise on realistic budget expectations before onboarding — not after."
+        "text": "Minimum effective budgets vary by platform and market. For Google Search in competitive B2B categories, $3,000 to $5,000 per month is typically the minimum to generate statistically meaningful data. LinkedIn Ads require minimum $1,500 per month to exit the learning phase. We will advise on realistic budget expectations before onboarding, not after."
       }
     },
     {
@@ -135,7 +135,7 @@ const PROCESS = [
 
 const FAQS = [
     { q: "What PPC platforms do you manage?", a: "Google Search Ads, Google Performance Max, Google Display, YouTube Ads, Meta Ads (Facebook and Instagram), LinkedIn Ads, and Microsoft Advertising (Bing). We recommend the right mix based on your buyer type, deal size, and budget. B2B companies with deal sizes above \$10K typically see strongest ROI from Google Search and LinkedIn. E-commerce brands generally lead with Meta and Google Shopping." },
-    { q: "What budget is required to see results?", a: "Minimum effective budgets vary by platform and market. For Google Search in competitive B2B categories, \$3,000 to \$5,000 per month is typically the minimum to generate statistically meaningful data. LinkedIn Ads require minimum \$1,500 per month to exit the learning phase. We will advise on realistic budget expectations before onboarding — not after." },
+    { q: "What budget is required to see results?", a: "Minimum effective budgets vary by platform and market. For Google Search in competitive B2B categories, \$3,000 to \$5,000 per month is typically the minimum to generate statistically meaningful data. LinkedIn Ads require minimum \$1,500 per month to exit the learning phase. We will advise on realistic budget expectations before onboarding, not after." },
     { q: "How do you measure PPC ROI beyond clicks and conversions?", a: "We integrate GA4 conversion data with your CRM to trace leads from click to qualified opportunity to closed deal. This allows us to calculate true cost per acquisition and pipeline-attributed revenue by campaign, ad group, and keyword. Vanity metrics like impressions and CTR are secondary to business outcomes." },
     { q: "Can you improve existing underperforming campaigns?", a: "Yes. Account audits frequently uncover structural issues: poor match type usage, missing negative keywords, landing pages that do not match ad intent, conversion tracking gaps, and budget allocation across campaigns that favors low-performers. Most inherited accounts can be improved materially within 60 days before requiring budget increases." }
 ];
@@ -143,7 +143,7 @@ const FAQS = [
 const RELATED = [
     { title: "SEO Services", href: "/marketing-services/seo", desc: "Organic traffic builds the long-term channel while paid generates immediate pipeline.", icon: "🔍" },
     { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "Revenue attribution connecting PPC spend to pipeline and closed revenue.", icon: "📊" },
-    { title: "CRO — Conversion Rate Optimization", href: "/marketing-services/cro", desc: "Higher landing page conversion rates reduce CPA without increasing budget.", icon: "🎯" }
+    { title: "CRO, Conversion Rate Optimization", href: "/marketing-services/cro", desc: "Higher landing page conversion rates reduce CPA without increasing budget.", icon: "🎯" }
 ];
 
 export default function PpcPage() {
@@ -188,7 +188,7 @@ export default function PpcPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">PPC (Pay-Per-Click) Management:</strong>{" "}
-              PPC management is the ongoing process of planning, building, optimizing, and measuring paid advertising campaigns across search engines and social platforms. For US B2B organizations, effective PPC management means placing ads in front of high-intent buyers at exactly the right moment — with bidding, copy, landing pages, and attribution all optimized together to reduce cost per acquisition and increase qualified lead volume.
+              PPC management is the ongoing process of planning, building, optimizing, and measuring paid advertising campaigns across search engines and social platforms. For US B2B organizations, effective PPC management means placing ads in front of high-intent buyers at exactly the right moment, with bidding, copy, landing pages, and attribution all optimized together to reduce cost per acquisition and increase qualified lead volume.
             </p>
           </div>
         </section>
@@ -306,7 +306,7 @@ export default function PpcPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Landing page conversion rate is addressed before scaling spend — higher conversion rate reduces CPA immediately`}</span>
+            <span>{String.raw`Landing page conversion rate is addressed before scaling spend, higher conversion rate reduces CPA immediately`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -318,7 +318,7 @@ export default function PpcPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Weekly reporting covers spend efficiency and pipeline contribution — not just traffic and clicks`}</span>
+            <span>{String.raw`Weekly reporting covers spend efficiency and pipeline contribution, not just traffic and clicks`}</span>
           </li>
           </ul>
         </section>

@@ -9,7 +9,7 @@ import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "AI Chatbots for Lead Generation & Customer Support — US Businesses | HotBot Studios",
+  title: "AI Chatbots for Lead Generation & Customer Support, US Businesses | HotBot Studios",
   description: "HotBot Studios builds AI chatbots for websites, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads 24/7. GPT-4o powered. Book a free demo.",
   keywords: [
     "AI chatbot for business USA",
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     "custom AI chatbot development USA"
   ],
   openGraph: {
-    title: "AI Chatbots for Lead Generation & Customer Support — US Businesses | HotBot Studios",
+    title: "AI Chatbots for Lead Generation & Customer Support, US Businesses | HotBot Studios",
     description: "HotBot Studios builds AI chatbots for websites, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads 24/7. GPT-4o powered. Book a free demo.",
     url: "https://hotbotstudios.com/ai-automation/ai-chatbots",
-    images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "AI Chatbots That Qualify Leads and Convert Visitors — 24/7" }],
+    images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "AI Chatbots That Qualify Leads and Convert Visitors, 24/7" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Chatbots for Lead Generation & Customer Support — US Businesses | HotBot Studios",
+    title: "AI Chatbots for Lead Generation & Customer Support, US Businesses | HotBot Studios",
     description: "HotBot Studios builds AI chatbots for websites, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads 24/7. GPT-4o powered. Book a free demo.",
   },
   alternates: { canonical: "https://hotbotstudios.com/ai-automation/ai-chatbots" },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 const serviceSchema = {
   "@context": "https://schema.org",
   "@type": "Service",
-  "name": "AI Chatbots That Qualify Leads and Convert Visitors — 24/7",
+  "name": "AI Chatbots That Qualify Leads and Convert Visitors, 24/7",
   "description": "HotBot Studios builds AI chatbots for websites, WhatsApp Business, Telegram, and Instagram DMs. Converts visitors into qualified leads 24/7. GPT-4o powered. Book a free demo.",
   "provider": {
     "@type": "Organization",
@@ -89,7 +89,7 @@ const faqSchema = {
       "name": "How is your AI chatbot different from tools like Intercom or Drift?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Platform chatbots use templates and limited NLP. Our chatbots are built on GPT-4o with custom-trained knowledge bases specific to your business — delivering far more accurate, nuanced responses and deeper integration with your qualification and sales workflows."
+        "text": "Platform chatbots use templates and limited NLP. Our chatbots are built on GPT-4o with custom-trained knowledge bases specific to your business, delivering far more accurate, nuanced responses and deeper integration with your qualification and sales workflows."
       }
     },
     {
@@ -97,7 +97,7 @@ const faqSchema = {
       "name": "Will the chatbot give wrong or made-up answers?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We implement Retrieval-Augmented Generation (RAG) — the chatbot only answers from your approved knowledge base. For questions outside its knowledge, it routes to a human rather than hallucinating. This is critical for accuracy in sensitive industries."
+        "text": "We implement Retrieval-Augmented Generation (RAG), the chatbot only answers from your approved knowledge base. For questions outside its knowledge, it routes to a human rather than hallucinating. This is critical for accuracy in sensitive industries."
       }
     },
     {
@@ -105,7 +105,7 @@ const faqSchema = {
       "name": "Can we customise the chatbot's personality and tone?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Absolutely. We define a custom persona — name, tone of voice, formality level, and brand language — so the chatbot feels like a natural extension of your brand, not a generic bot."
+        "text": "Absolutely. We define a custom persona, name, tone of voice, formality level, and brand language, so the chatbot feels like a natural extension of your brand, not a generic bot."
       }
     },
     {
@@ -121,28 +121,28 @@ const faqSchema = {
 
 const STATS = [
     { value: 67, suffix: "%", label: "of consumers prefer messaging a chatbot over calling for support (Salesforce)", color: "#10b981" },
-    { value: 3, suffix: "×", label: "more leads captured vs. contact forms alone — chatbots engage passive visitors", color: "#06b6d4" },
+    { value: 3, suffix: "×", label: "more leads captured vs. contact forms alone, chatbots engage passive visitors", color: "#06b6d4" },
     { value: 60, suffix: "%", label: "average reduction in support ticket volume after AI chatbot deployment", color: "#8b5cf6" },
     { value: 4, suffix: "wk", label: "average time to full production deployment with CRM integration", color: "#f59e0b" }
 ];
 
 const PROCESS = [
-    { n: 1, title: "Conversation Design", desc: "We map your buyer journey, define qualification criteria, and design conversation flows that feel natural — not scripted or robotic.", icon: "🗺️" },
+    { n: 1, title: "Conversation Design", desc: "We map your buyer journey, define qualification criteria, and design conversation flows that feel natural, not scripted or robotic.", icon: "🗺️" },
     { n: 2, title: "Knowledge Base Build", desc: "We upload your product documentation, FAQs, case studies, and pricing to train the chatbot's knowledge base for accurate, on-brand responses.", icon: "📚" },
     { n: 3, title: "Integration & Testing", desc: "CRM, calendar, and channel integrations are connected and tested end-to-end. We run hundreds of test conversations to validate accuracy and edge-case handling.", icon: "🔧" },
-    { n: 4, title: "Launch & Continuous Optimisation", desc: "Post-launch, we monitor conversation quality, fallback rates, and lead conversion weekly — updating the knowledge base and flows based on real user data.", icon: "📈" }
+    { n: 4, title: "Launch & Continuous Optimisation", desc: "Post-launch, we monitor conversation quality, fallback rates, and lead conversion weekly, updating the knowledge base and flows based on real user data.", icon: "📈" }
 ];
 
 const FAQS = [
-    { q: "How is your AI chatbot different from tools like Intercom or Drift?", a: "Platform chatbots use templates and limited NLP. Our chatbots are built on GPT-4o with custom-trained knowledge bases specific to your business — delivering far more accurate, nuanced responses and deeper integration with your qualification and sales workflows." },
-    { q: "Will the chatbot give wrong or made-up answers?", a: "We implement Retrieval-Augmented Generation (RAG) — the chatbot only answers from your approved knowledge base. For questions outside its knowledge, it routes to a human rather than hallucinating. This is critical for accuracy in sensitive industries." },
-    { q: "Can we customise the chatbot's personality and tone?", a: "Absolutely. We define a custom persona — name, tone of voice, formality level, and brand language — so the chatbot feels like a natural extension of your brand, not a generic bot." },
+    { q: "How is your AI chatbot different from tools like Intercom or Drift?", a: "Platform chatbots use templates and limited NLP. Our chatbots are built on GPT-4o with custom-trained knowledge bases specific to your business, delivering far more accurate, nuanced responses and deeper integration with your qualification and sales workflows." },
+    { q: "Will the chatbot give wrong or made-up answers?", a: "We implement Retrieval-Augmented Generation (RAG), the chatbot only answers from your approved knowledge base. For questions outside its knowledge, it routes to a human rather than hallucinating. This is critical for accuracy in sensitive industries." },
+    { q: "Can we customise the chatbot's personality and tone?", a: "Absolutely. We define a custom persona, name, tone of voice, formality level, and brand language, so the chatbot feels like a natural extension of your brand, not a generic bot." },
     { q: "Does it work in languages other than English?", a: "GPT-4o supports over 50 languages natively. We can deploy multilingual chatbots for US brands serving diverse markets, or for international expansion." }
 ];
 
 const RELATED = [
-    { title: "Voice AI — Heka", href: "/ai-automation/voice-ai-heka", desc: "AI phone receptionist for inbound calls — the voice equivalent of your chatbot.", icon: "🎙️" },
-    { title: "n8n Workflow Automation", href: "/ai-automation/n8n-workflow-automation", desc: "Automate what happens after the chatbot qualifies a lead — follow-up emails, tasks, and CRM updates.", icon: "⚙️" },
+    { title: "Voice AI, Heka", href: "/ai-automation/voice-ai-heka", desc: "AI phone receptionist for inbound calls, the voice equivalent of your chatbot.", icon: "🎙️" },
+    { title: "n8n Workflow Automation", href: "/ai-automation/n8n-workflow-automation", desc: "Automate what happens after the chatbot qualifies a lead, follow-up emails, tasks, and CRM updates.", icon: "⚙️" },
     { title: "Custom AI Agents", href: "/ai-automation/custom-ai-agents", desc: "Take chatbot-captured leads further with autonomous agents that research and personalise follow-up.", icon: "🤖" }
 ];
 
@@ -175,8 +175,8 @@ export default function AiChatbotsPage() {
 
       <PageHeader
         label="AI Chatbots"
-        title="AI Chatbots That Qualify Leads and Convert Visitors — 24/7"
-        subtitle="Custom AI chatbots that engage every website visitor, qualify prospects with natural conversation, and hand off warm leads to your sales team — across web, WhatsApp, and social."
+        title="AI Chatbots That Qualify Leads and Convert Visitors, 24/7"
+        subtitle="Custom AI chatbots that engage every website visitor, qualify prospects with natural conversation, and hand off warm leads to your sales team, across web, WhatsApp, and social."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function AiChatbotsPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">AI Chatbot:</strong>{" "}
-              An AI chatbot is a conversational interface powered by a large language model (GPT-4o or Claude 3) that understands natural language, maintains conversation context, and takes action — qualifying leads, answering complex product questions, booking demos, and escalating to humans when needed. Unlike rule-based bots with rigid decision trees, AI chatbots handle open-ended questions with human-like intelligence.
+              An AI chatbot is a conversational interface powered by a large language model (GPT-4o or Claude 3) that understands natural language, maintains conversation context, and takes action, qualifying leads, answering complex product questions, booking demos, and escalating to humans when needed. Unlike rule-based bots with rigid decision trees, AI chatbots handle open-ended questions with human-like intelligence.
             </p>
           </div>
         </section>
@@ -206,17 +206,17 @@ export default function AiChatbotsPage() {
         <div key="GPT-4o Conversational Intelligence" className="p-5 rounded-2xl border" style={{ background: "#10b98110", borderColor: "#10b98125" }}>
           <div className="text-2xl mb-3">{String.raw`🧠`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`GPT-4o Conversational Intelligence`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Powered by the latest GPT-4o model, our chatbots understand nuance, context, and intent — handling complex objections and multi-turn conversations that rule-based bots cannot.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Powered by the latest GPT-4o model, our chatbots understand nuance, context, and intent, handling complex objections and multi-turn conversations that rule-based bots cannot.`}</p>
         </div>
         <div key="Omnichannel Deployment" className="p-5 rounded-2xl border" style={{ background: "#06b6d410", borderColor: "#06b6d425" }}>
           <div className="text-2xl mb-3">{String.raw`📱`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Omnichannel Deployment`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Deploy on your website, WhatsApp Business API, Telegram, Instagram DMs, and Facebook Messenger — with unified conversation history across channels in one dashboard.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Deploy on your website, WhatsApp Business API, Telegram, Instagram DMs, and Facebook Messenger, with unified conversation history across channels in one dashboard.`}</p>
         </div>
         <div key="Custom Lead Qualification Logic" className="p-5 rounded-2xl border" style={{ background: "#8b5cf610", borderColor: "#8b5cf625" }}>
           <div className="text-2xl mb-3">{String.raw`📋`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Custom Lead Qualification Logic`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`We program your ideal lead profile into the bot — company size, budget, pain points, timeline — and it qualifies every visitor against these criteria in real time.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`We program your ideal lead profile into the bot, company size, budget, pain points, timeline, and it qualifies every visitor against these criteria in real time.`}</p>
         </div>
         <div key="CRM & Calendar Integration" className="p-5 rounded-2xl border" style={{ background: "#f59e0b10", borderColor: "#f59e0b25" }}>
           <div className="text-2xl mb-3">{String.raw`🔗`}</div>
@@ -226,7 +226,7 @@ export default function AiChatbotsPage() {
         <div key="Knowledge Base Training" className="p-5 rounded-2xl border" style={{ background: "#ec489910", borderColor: "#ec489925" }}>
           <div className="text-2xl mb-3">{String.raw`📚`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Knowledge Base Training`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Upload your product docs, FAQs, pricing pages, and case studies. The chatbot answers questions from your own knowledge base — not generic AI responses.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Upload your product docs, FAQs, pricing pages, and case studies. The chatbot answers questions from your own knowledge base, not generic AI responses.`}</p>
         </div>
         <div key="Human Handoff" className="p-5 rounded-2xl border" style={{ background: "#3b82f610", borderColor: "#3b82f625" }}>
           <div className="text-2xl mb-3">{String.raw`🔄`}</div>
@@ -250,12 +250,12 @@ export default function AiChatbotsPage() {
         <div key="E-Commerce Brands" className="p-6 rounded-2xl border" style={{ background: "#06b6d408", borderColor: "#06b6d420" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#06b6d4" }}>{String.raw`E-Commerce Brands`}</h3>
           <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`High cart abandonment and support ticket volume from shipping, returns, and product questions`}</p>
-          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Chatbot handles order tracking, return requests, product recommendations, and size guidance — deflecting 60% of support tickets automatically`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Chatbot handles order tracking, return requests, product recommendations, and size guidance, deflecting 60% of support tickets automatically`}</p>
         </div>
         <div key="Financial Services & Insurance" className="p-6 rounded-2xl border" style={{ background: "#8b5cf608", borderColor: "#8b5cf620" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#8b5cf6" }}>{String.raw`Financial Services & Insurance`}</h3>
           <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Compliance-sensitive product questions that require accurate, consistent answers at scale`}</p>
-          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Knowledge-base-trained chatbot delivers compliant, accurate answers from approved content — with escalation for regulated advice scenarios`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Knowledge-base-trained chatbot delivers compliant, accurate answers from approved content, with escalation for regulated advice scenarios`}</p>
         </div>
         <div key="Education & Coaching" className="p-6 rounded-2xl border" style={{ background: "#f59e0b08", borderColor: "#f59e0b20" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#f59e0b" }}>{String.raw`Education & Coaching`}</h3>
@@ -298,7 +298,7 @@ export default function AiChatbotsPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`AI chatbots capture leads from visitors who would never fill in a contact form — passive browsers who respond to conversation but not static CTAs`}</span>
+            <span>{String.raw`AI chatbots capture leads from visitors who would never fill in a contact form, passive browsers who respond to conversation but not static CTAs`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -310,11 +310,11 @@ export default function AiChatbotsPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Defining a clear qualification threshold — and routing unqualified leads to nurture sequences — prevents your sales team from being overwhelmed with low-quality conversations`}</span>
+            <span>{String.raw`Defining a clear qualification threshold, and routing unqualified leads to nurture sequences, prevents your sales team from being overwhelmed with low-quality conversations`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Human handoff with full conversation context is not optional — it is what makes AI + human collaboration seamless`}</span>
+            <span>{String.raw`Human handoff with full conversation context is not optional, it is what makes AI + human collaboration seamless`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>

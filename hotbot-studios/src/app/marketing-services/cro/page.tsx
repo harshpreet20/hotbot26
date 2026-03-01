@@ -9,7 +9,7 @@ import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "CRO — Conversion Rate Optimization Services USA | HotBot Studios",
+  title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
   description: "A/B testing, landing page redesigns, heatmap analysis, and UX optimization for US businesses. Turn more of your existing traffic into leads and paying customers without increasing ad spend.",
   keywords: [
     "conversion rate optimization agency USA",
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     "Hotjar analysis services USA"
   ],
   openGraph: {
-    title: "CRO — Conversion Rate Optimization Services USA | HotBot Studios",
+    title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
     description: "A/B testing, landing page redesigns, heatmap analysis, and UX optimization for US businesses. Turn more of your existing traffic into leads and paying customers without increasing ad spend.",
     url: "https://hotbotstudios.com/marketing-services/cro",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "CRO Services That Turn Existing Traffic Into More Leads and Revenue" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CRO — Conversion Rate Optimization Services USA | HotBot Studios",
+    title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
     description: "A/B testing, landing page redesigns, heatmap analysis, and UX optimization for US businesses. Turn more of your existing traffic into leads and paying customers without increasing ad spend.",
   },
   alternates: { canonical: "https://hotbotstudios.com/marketing-services/cro" },
@@ -89,7 +89,7 @@ const faqSchema = {
       "name": "How much traffic is needed to run meaningful A/B tests?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A minimum of 1,000 sessions per variant per week (2,000 total) is required to reach statistical significance within a reasonable timeframe for most conversion goals. For low-traffic pages or low-frequency conversion actions (like high-ticket purchases), we recommend qualitative research methods — heatmaps, session recordings, user interviews — as the primary optimization input, with A/B testing deployed only where traffic supports it."
+        "text": "A minimum of 1,000 sessions per variant per week (2,000 total) is required to reach statistical significance within a reasonable timeframe for most conversion goals. For low-traffic pages or low-frequency conversion actions (like high-ticket purchases), we recommend qualitative research methods, heatmaps, session recordings, user interviews, as the primary optimization input, with A/B testing deployed only where traffic supports it."
       }
     },
     {
@@ -97,7 +97,7 @@ const faqSchema = {
       "name": "What is a realistic CRO improvement to expect?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Initial audits of underoptimized landing pages and checkout flows typically yield 20 to 50% conversion rate improvements within the first 90 days. Mature, already-optimized programs see 5 to 15% incremental gains per quarter. The compounding effect — each improvement becomes the new baseline for the next test — means CRO programs become more valuable over time, not less."
+        "text": "Initial audits of underoptimized landing pages and checkout flows typically yield 20 to 50% conversion rate improvements within the first 90 days. Mature, already-optimized programs see 5 to 15% incremental gains per quarter. The compounding effect, each improvement becomes the new baseline for the next test, means CRO programs become more valuable over time, not less."
       }
     },
     {
@@ -105,7 +105,7 @@ const faqSchema = {
       "name": "Can CRO work without a high-volume traffic site?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes, though the approach differs. For low-traffic sites (fewer than 5,000 sessions per month), we use qualitative research — heatmaps, session recordings, user interviews, and expert UX review — to generate high-confidence hypotheses. These are then implemented as direct changes rather than A/B tests, with before-and-after measurement over 30 to 60 day windows. This approach produces reliable improvements without requiring statistical testing infrastructure."
+        "text": "Yes, though the approach differs. For low-traffic sites (fewer than 5,000 sessions per month), we use qualitative research, heatmaps, session recordings, user interviews, and expert UX review, to generate high-confidence hypotheses. These are then implemented as direct changes rather than A/B tests, with before-and-after measurement over 30 to 60 day windows. This approach produces reliable improvements without requiring statistical testing infrastructure."
       }
     },
     {
@@ -113,7 +113,7 @@ const faqSchema = {
       "name": "How does CRO interact with SEO and paid advertising?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "CRO multiplies the ROI of every other channel. Higher landing page conversion rate means lower CPA from paid search, more leads from the same organic traffic volume, and better email signup rates from the same social following. We typically recommend running a CRO audit alongside any new paid search campaign launch — the average landing page improvement reduces first-quarter CPA by 25 to 40% before bidding optimizations even take effect."
+        "text": "CRO multiplies the ROI of every other channel. Higher landing page conversion rate means lower CPA from paid search, more leads from the same organic traffic volume, and better email signup rates from the same social following. We typically recommend running a CRO audit alongside any new paid search campaign launch, the average landing page improvement reduces first-quarter CPA by 25 to 40% before bidding optimizations even take effect."
       }
     }
   ]
@@ -134,10 +134,10 @@ const PROCESS = [
 ];
 
 const FAQS = [
-    { q: "How much traffic is needed to run meaningful A/B tests?", a: "A minimum of 1,000 sessions per variant per week (2,000 total) is required to reach statistical significance within a reasonable timeframe for most conversion goals. For low-traffic pages or low-frequency conversion actions (like high-ticket purchases), we recommend qualitative research methods — heatmaps, session recordings, user interviews — as the primary optimization input, with A/B testing deployed only where traffic supports it." },
-    { q: "What is a realistic CRO improvement to expect?", a: "Initial audits of underoptimized landing pages and checkout flows typically yield 20 to 50% conversion rate improvements within the first 90 days. Mature, already-optimized programs see 5 to 15% incremental gains per quarter. The compounding effect — each improvement becomes the new baseline for the next test — means CRO programs become more valuable over time, not less." },
-    { q: "Can CRO work without a high-volume traffic site?", a: "Yes, though the approach differs. For low-traffic sites (fewer than 5,000 sessions per month), we use qualitative research — heatmaps, session recordings, user interviews, and expert UX review — to generate high-confidence hypotheses. These are then implemented as direct changes rather than A/B tests, with before-and-after measurement over 30 to 60 day windows. This approach produces reliable improvements without requiring statistical testing infrastructure." },
-    { q: "How does CRO interact with SEO and paid advertising?", a: "CRO multiplies the ROI of every other channel. Higher landing page conversion rate means lower CPA from paid search, more leads from the same organic traffic volume, and better email signup rates from the same social following. We typically recommend running a CRO audit alongside any new paid search campaign launch — the average landing page improvement reduces first-quarter CPA by 25 to 40% before bidding optimizations even take effect." }
+    { q: "How much traffic is needed to run meaningful A/B tests?", a: "A minimum of 1,000 sessions per variant per week (2,000 total) is required to reach statistical significance within a reasonable timeframe for most conversion goals. For low-traffic pages or low-frequency conversion actions (like high-ticket purchases), we recommend qualitative research methods, heatmaps, session recordings, user interviews, as the primary optimization input, with A/B testing deployed only where traffic supports it." },
+    { q: "What is a realistic CRO improvement to expect?", a: "Initial audits of underoptimized landing pages and checkout flows typically yield 20 to 50% conversion rate improvements within the first 90 days. Mature, already-optimized programs see 5 to 15% incremental gains per quarter. The compounding effect, each improvement becomes the new baseline for the next test, means CRO programs become more valuable over time, not less." },
+    { q: "Can CRO work without a high-volume traffic site?", a: "Yes, though the approach differs. For low-traffic sites (fewer than 5,000 sessions per month), we use qualitative research, heatmaps, session recordings, user interviews, and expert UX review, to generate high-confidence hypotheses. These are then implemented as direct changes rather than A/B tests, with before-and-after measurement over 30 to 60 day windows. This approach produces reliable improvements without requiring statistical testing infrastructure." },
+    { q: "How does CRO interact with SEO and paid advertising?", a: "CRO multiplies the ROI of every other channel. Higher landing page conversion rate means lower CPA from paid search, more leads from the same organic traffic volume, and better email signup rates from the same social following. We typically recommend running a CRO audit alongside any new paid search campaign launch, the average landing page improvement reduces first-quarter CPA by 25 to 40% before bidding optimizations even take effect." }
 ];
 
 const RELATED = [
@@ -176,7 +176,7 @@ export default function CroPage() {
       <PageHeader
         label="Conversion Rate Optimization"
         title="CRO Services That Turn Existing Traffic Into More Leads and Revenue"
-        subtitle="Every US business spending money on traffic is also losing money to poor conversion rate. A 1-percentage-point improvement in conversion rate produces the same revenue as doubling your traffic — at zero additional acquisition cost. HotBot Studios runs structured A/B testing, heatmap analysis, and landing page redesigns that compound conversion gains month over month."
+        subtitle="Every US business spending money on traffic is also losing money to poor conversion rate. A 1-percentage-point improvement in conversion rate produces the same revenue as doubling your traffic, at zero additional acquisition cost. HotBot Studios runs structured A/B testing, heatmap analysis, and landing page redesigns that compound conversion gains month over month."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function CroPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">Conversion Rate Optimization (CRO):</strong>{" "}
-              Conversion rate optimization (CRO) is the systematic process of improving the percentage of website visitors who complete a desired action — a form submission, purchase, trial signup, or phone call. CRO combines qualitative user research (heatmaps, session recordings, user interviews) with quantitative A/B testing to identify why visitors leave without converting and to validate improvements before full deployment. For US businesses, effective CRO multiplies the return from every existing traffic source without increasing acquisition spend.
+              Conversion rate optimization (CRO) is the systematic process of improving the percentage of website visitors who complete a desired action, a form submission, purchase, trial signup, or phone call. CRO combines qualitative user research (heatmaps, session recordings, user interviews) with quantitative A/B testing to identify why visitors leave without converting and to validate improvements before full deployment. For US businesses, effective CRO multiplies the return from every existing traffic source without increasing acquisition spend.
             </p>
           </div>
         </section>
@@ -206,7 +206,7 @@ export default function CroPage() {
         <div key="Heatmap and Session Recording Analysis" className="p-5 rounded-2xl border" style={{ background: "#f59e0b10", borderColor: "#f59e0b25" }}>
           <div className="text-2xl mb-3">{String.raw`🔥`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Heatmap and Session Recording Analysis`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Hotjar, Microsoft Clarity, and FullStory analysis of user click patterns, scroll depth, and session recordings. Identify exactly where users drop off, which CTAs are ignored, and which page elements create confusion — before writing a single line of test code.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Hotjar, Microsoft Clarity, and FullStory analysis of user click patterns, scroll depth, and session recordings. Identify exactly where users drop off, which CTAs are ignored, and which page elements create confusion, before writing a single line of test code.`}</p>
         </div>
         <div key="A/B and Multivariate Testing" className="p-5 rounded-2xl border" style={{ background: "#3b82f610", borderColor: "#3b82f625" }}>
           <div className="text-2xl mb-3">{String.raw`🧪`}</div>
@@ -221,7 +221,7 @@ export default function CroPage() {
         <div key="Form and Checkout Optimization" className="p-5 rounded-2xl border" style={{ background: "#06b6d410", borderColor: "#06b6d425" }}>
           <div className="text-2xl mb-3">{String.raw`📋`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Form and Checkout Optimization`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Lead form field reduction, multi-step form conversion, progressive profiling implementation, and checkout flow streamlining. Every additional required field reduces conversion rate — we find the minimum effective field set for your qualification needs.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Lead form field reduction, multi-step form conversion, progressive profiling implementation, and checkout flow streamlining. Every additional required field reduces conversion rate, we find the minimum effective field set for your qualification needs.`}</p>
         </div>
         <div key="Mobile Experience Optimization" className="p-5 rounded-2xl border" style={{ background: "#22c55e10", borderColor: "#22c55e25" }}>
           <div className="text-2xl mb-3">{String.raw`📱`}</div>
@@ -231,7 +231,7 @@ export default function CroPage() {
         <div key="Page Speed and Core Web Vitals" className="p-5 rounded-2xl border" style={{ background: "#ec489910", borderColor: "#ec489925" }}>
           <div className="text-2xl mb-3">{String.raw`🚀`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Page Speed and Core Web Vitals`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`LCP, CLS, and INP optimization through image compression, code splitting, render-blocking elimination, and CDN configuration. A 1-second page speed improvement produces 7% higher conversion rate — measurable and repeatable.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`LCP, CLS, and INP optimization through image compression, code splitting, render-blocking elimination, and CDN configuration. A 1-second page speed improvement produces 7% higher conversion rate, measurable and repeatable.`}</p>
         </div>
         </div>
       </section>
@@ -259,7 +259,7 @@ export default function CroPage() {
         </div>
         <div key="Lead Generation Businesses" className="p-6 rounded-2xl border" style={{ background: "#06b6d408", borderColor: "#06b6d420" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#06b6d4" }}>{String.raw`Lead Generation Businesses`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Website visitors browsing multiple service pages but not submitting inquiry forms — high engagement but low conversion.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Website visitors browsing multiple service pages but not submitting inquiry forms, high engagement but low conversion.`}</p>
           <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Exit-intent modal testing, chatbot trigger configuration, and form field reduction. Trust signal audit (testimonials, certifications, guarantees) with placement testing. Lead magnet introduction as lower-commitment conversion point for undecided visitors.`}</p>
         </div>
         </div>
@@ -298,7 +298,7 @@ export default function CroPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`A 1-percentage-point conversion rate improvement delivers the same revenue impact as doubling traffic — at zero additional acquisition cost`}</span>
+            <span>{String.raw`A 1-percentage-point conversion rate improvement delivers the same revenue impact as doubling traffic, at zero additional acquisition cost`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -306,15 +306,15 @@ export default function CroPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Heatmaps and session recordings identify why visitors are not converting before any test code is written — research-first approach prevents wasted test cycles`}</span>
+            <span>{String.raw`Heatmaps and session recordings identify why visitors are not converting before any test code is written, research-first approach prevents wasted test cycles`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Statistical significance gates (95% confidence minimum) ensure only real improvements are deployed — not random variation mistaken for signal`}</span>
+            <span>{String.raw`Statistical significance gates (95% confidence minimum) ensure only real improvements are deployed, not random variation mistaken for signal`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Mobile conversion optimization is typically the highest-impact opportunity — mobile sessions convert at 40 to 60% below desktop across most industries`}</span>
+            <span>{String.raw`Mobile conversion optimization is typically the highest-impact opportunity, mobile sessions convert at 40 to 60% below desktop across most industries`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -330,7 +330,7 @@ export default function CroPage() {
       {/* CTA */}
       <CTASection
         title="Get a Free CRO Audit"
-        subtitle="We will install heatmaps, analyze your highest-traffic pages, and deliver a prioritized list of conversion improvements — specific, actionable, ranked by revenue impact."
+        subtitle="We will install heatmaps, analyze your highest-traffic pages, and deliver a prioritized list of conversion improvements, specific, actionable, ranked by revenue impact."
         formType="get-started"
       />
     </>

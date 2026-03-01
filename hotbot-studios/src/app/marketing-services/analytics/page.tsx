@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Marketing Analytics and Attribution Services USA | HotBot Studios",
-  description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue — not just sessions and conversions.",
+  description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue, not just sessions and conversions.",
   keywords: [
     "marketing analytics agency USA",
     "GA4 setup and configuration",
@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Marketing Analytics and Attribution Services USA | HotBot Studios",
-    description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue — not just sessions and conversions.",
+    description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue, not just sessions and conversions.",
     url: "https://hotbotstudios.com/marketing-services/analytics",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "Marketing Analytics That Connect Every Channel to Revenue" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Marketing Analytics and Attribution Services USA | HotBot Studios",
-    description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue — not just sessions and conversions.",
+    description: "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue, not just sessions and conversions.",
   },
   alternates: { canonical: "https://hotbotstudios.com/marketing-services/analytics" },
 };
@@ -41,7 +41,7 @@ const serviceSchema = {
   "@context": "https://schema.org",
   "@type": "Service",
   "name": "Marketing Analytics That Connect Every Channel to Revenue",
-  "description": "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue — not just sessions and conversions.",
+  "description": "GA4 setup, CRM attribution, and revenue reporting for US businesses. Connect marketing spend to pipeline and closed revenue, not just sessions and conversions.",
   "provider": {
     "@type": "Organization",
     "name": "HotBot Studios",
@@ -89,7 +89,7 @@ const faqSchema = {
       "name": "What is the difference between GA4 and CRM attribution?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "GA4 tracks website behavior — sessions, events, and on-site conversions like form fills. CRM attribution tracks what happens after a lead is created — pipeline stage progression, deal value, and closed revenue. Connecting both systems gives you end-to-end attribution from first website visit to closed deal, which is the only attribution model that actually tells you which marketing activities drive revenue."
+        "text": "GA4 tracks website behavior, sessions, events, and on-site conversions like form fills. CRM attribution tracks what happens after a lead is created, pipeline stage progression, deal value, and closed revenue. Connecting both systems gives you end-to-end attribution from first website visit to closed deal, which is the only attribution model that actually tells you which marketing activities drive revenue."
       }
     },
     {
@@ -134,7 +134,7 @@ const PROCESS = [
 ];
 
 const FAQS = [
-    { q: "What is the difference between GA4 and CRM attribution?", a: "GA4 tracks website behavior — sessions, events, and on-site conversions like form fills. CRM attribution tracks what happens after a lead is created — pipeline stage progression, deal value, and closed revenue. Connecting both systems gives you end-to-end attribution from first website visit to closed deal, which is the only attribution model that actually tells you which marketing activities drive revenue." },
+    { q: "What is the difference between GA4 and CRM attribution?", a: "GA4 tracks website behavior, sessions, events, and on-site conversions like form fills. CRM attribution tracks what happens after a lead is created, pipeline stage progression, deal value, and closed revenue. Connecting both systems gives you end-to-end attribution from first website visit to closed deal, which is the only attribution model that actually tells you which marketing activities drive revenue." },
     { q: "How does server-side tracking improve attribution accuracy?", a: "Browser-based tracking (via JavaScript tags) is blocked by ad blockers, browser privacy settings, and iOS restrictions. Server-side tracking sends conversion data directly from your server to ad platforms and analytics tools, bypassing client-side blockers. This restores between 20 and 40 percent of conversions that browser tracking typically misses, giving you more accurate ROAS calculations and bidding signals." },
     { q: "How long does analytics implementation take?", a: "A standard GA4 setup with event tracking, CRM integration, and Looker Studio dashboard can be completed in 10 to 14 days. Server-side GTM deployment and ad platform integration (Meta CAPI, Google Enhanced Conversions) adds 5 to 7 additional days. Complex implementations with custom data models, API integrations, or BigQuery warehousing take 4 to 6 weeks." },
     { q: "Can you fix an existing GA4 setup that is reporting inaccurately?", a: "Yes. GA4 audit and remediation is one of our most common engagements. Common issues include duplicate event firing, incorrect conversion counting, missing UTM parameters, GA4 and Google Ads link misconfigurations, and session channel grouping errors. We document every issue found, fix it, and QA the corrected tracking against ground truth data before signing off." }
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
       <PageHeader
         label="Analytics and Attribution"
         title="Marketing Analytics That Connect Every Channel to Revenue"
-        subtitle="Most US businesses cannot answer one question: which marketing channels are driving closed revenue? Not sessions. Not leads. Revenue. HotBot Studios builds attribution infrastructure that traces every deal back to its source — giving your team the data to allocate budget with confidence."
+        subtitle="Most US businesses cannot answer one question: which marketing channels are driving closed revenue? Not sessions. Not leads. Revenue. HotBot Studios builds attribution infrastructure that traces every deal back to its source, giving your team the data to allocate budget with confidence."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function AnalyticsPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">Marketing Attribution:</strong>{" "}
-              Marketing attribution is the process of identifying which marketing channels, campaigns, and touchpoints contributed to a conversion or closed sale. For US B2B organizations, proper attribution requires connecting website analytics (GA4), paid media platforms (Google Ads, Meta, LinkedIn), and CRM data (HubSpot, Salesforce) into a single reporting system that shows which activities generate qualified pipeline — not just traffic or form fills.
+              Marketing attribution is the process of identifying which marketing channels, campaigns, and touchpoints contributed to a conversion or closed sale. For US B2B organizations, proper attribution requires connecting website analytics (GA4), paid media platforms (Google Ads, Meta, LinkedIn), and CRM data (HubSpot, Salesforce) into a single reporting system that shows which activities generate qualified pipeline, not just traffic or form fills.
             </p>
           </div>
         </section>
@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
         <div key="Revenue Reporting Dashboards" className="p-5 rounded-2xl border" style={{ background: "#22c55e10", borderColor: "#22c55e25" }}>
           <div className="text-2xl mb-3">{String.raw`📈`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Revenue Reporting Dashboards`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Custom Looker Studio dashboards showing channel-attributed revenue, customer acquisition cost by source, pipeline velocity by lead origin, and marketing-influenced revenue per period. Built for CMOs and revenue teams — not just digital analysts.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Custom Looker Studio dashboards showing channel-attributed revenue, customer acquisition cost by source, pipeline velocity by lead origin, and marketing-influenced revenue per period. Built for CMOs and revenue teams, not just digital analysts.`}</p>
         </div>
         <div key="Server-Side Tracking and Privacy Compliance" className="p-5 rounded-2xl border" style={{ background: "#f59e0b10", borderColor: "#f59e0b25" }}>
           <div className="text-2xl mb-3">{String.raw`🔒`}</div>
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
         <div key="B2B SaaS with Long Sales Cycles" className="p-6 rounded-2xl border" style={{ background: "#06b6d408", borderColor: "#06b6d420" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#06b6d4" }}>{String.raw`B2B SaaS with Long Sales Cycles`}</h3>
           <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Multiple touchpoints across 60 to 180-day cycles make it impossible to understand which early-funnel activities ultimately drive closed revenue.`}</p>
-          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`CRM integration maps every marketing touchpoint — content download, webinar attendance, paid click, organic search visit — to the eventual closed deal. Time-decay attribution gives appropriate credit to early-funnel awareness activities.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`CRM integration maps every marketing touchpoint, content download, webinar attendance, paid click, organic search visit, to the eventual closed deal. Time-decay attribution gives appropriate credit to early-funnel awareness activities.`}</p>
         </div>
         <div key="E-Commerce Brands" className="p-6 rounded-2xl border" style={{ background: "#3b82f608", borderColor: "#3b82f620" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#3b82f6" }}>{String.raw`E-Commerce Brands`}</h3>
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Revenue attribution connects marketing spend to pipeline and closed revenue — not just sessions and form fills`}</span>
+            <span>{String.raw`Revenue attribution connects marketing spend to pipeline and closed revenue, not just sessions and form fills`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`First-party data infrastructure is owned entirely by your organization — not locked in a vendor platform`}</span>
+            <span>{String.raw`First-party data infrastructure is owned entirely by your organization, not locked in a vendor platform`}</span>
           </li>
           </ul>
         </section>

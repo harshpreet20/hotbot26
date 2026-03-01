@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 const serviceSchema = {
   "@context": "https://schema.org", "@type": "Service",
   name: "Accessibility Design (WCAG 2.2 AA)",
-  description: "WCAG 2.2 AA compliant UI/UX design meeting ADA and Section 508 requirements — color contrast, keyboard navigation, screen reader compatibility, and inclusive interaction design for US businesses.",
+  description: "WCAG 2.2 AA compliant UI/UX design meeting ADA and Section 508 requirements, color contrast, keyboard navigation, screen reader compatibility, and inclusive interaction design for US businesses.",
   provider: { "@type": "Organization", name: "HotBot Studios", url: "https://hotbotstudios.com" },
   areaServed: { "@type": "Country", name: "United States" },
   serviceType: "Accessibility Design",
@@ -57,21 +57,21 @@ const breadcrumbSchema = {
 const faqSchema = {
   "@context": "https://schema.org", "@type": "FAQPage",
   mainEntity: [
-    { "@type": "Question", name: "What is WCAG 2.2 AA and is it legally required in the USA?", acceptedAnswer: { "@type": "Answer", text: "WCAG 2.2 AA (Web Content Accessibility Guidelines) is the internationally recognized standard for digital accessibility. In the USA, Title III of the Americans with Disabilities Act (ADA) has been interpreted by courts to require WCAG 2.1 AA compliance for websites of businesses open to the public. Section 508 requires compliance for US federal agencies and their contractors. US ADA website lawsuits have increased by over 300% in recent years — compliance is both legally prudent and ethically correct." } },
+    { "@type": "Question", name: "What is WCAG 2.2 AA and is it legally required in the USA?", acceptedAnswer: { "@type": "Answer", text: "WCAG 2.2 AA (Web Content Accessibility Guidelines) is the internationally recognized standard for digital accessibility. In the USA, Title III of the Americans with Disabilities Act (ADA) has been interpreted by courts to require WCAG 2.1 AA compliance for websites of businesses open to the public. Section 508 requires compliance for US federal agencies and their contractors. US ADA website lawsuits have increased by over 300% in recent years, compliance is both legally prudent and ethically correct." } },
     { "@type": "Question", name: "What is the minimum color contrast ratio required by WCAG 2.2 AA?", acceptedAnswer: { "@type": "Answer", text: "WCAG 2.2 AA requires a minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text (18pt+ or 14pt+ bold). For UI components (buttons, form inputs, focus indicators) the minimum ratio is 3:1 against adjacent colors. We test every color combination in our designs using automated contrast checking tools and document pass/fail ratios in our accessibility report." } },
-    { "@type": "Question", name: "What does keyboard navigation accessibility mean in UI design?", acceptedAnswer: { "@type": "Answer", text: "Keyboard navigation accessibility means every interactive element in your product (links, buttons, form fields, modals, dropdowns) can be accessed and operated using only a keyboard — no mouse required. This supports users with motor disabilities who rely on keyboards, switch devices, or voice control software. In design, this means specifying focus order, visible focus indicators (focus rings), skip navigation links, and modal trap logic." } },
-    { "@type": "Question", name: "How do you test accessibility during the design phase?", acceptedAnswer: { "@type": "Answer", text: "We use multiple methods: automated contrast ratio checking (Figma plugins: Contrast, A11y - Color Contrast Checker), manual design review against WCAG 2.2 success criteria, text scaling tests (200% zoom), and screen reader annotation reviews. We also produce an accessibility annotation layer in Figma — documenting ARIA roles, focus order, alt text guidance, and error message patterns for developer implementation." } },
-    { "@type": "Question", name: "Can you audit our existing product for accessibility compliance?", acceptedAnswer: { "@type": "Answer", text: "Yes — we offer full WCAG 2.2 AA accessibility audits of existing live websites and apps. The audit covers color contrast, keyboard operability, focus visibility, form labels, error identification, alt text, heading hierarchy, landmark regions, ARIA usage, and time-based media. Deliverables include a prioritised issue list with screenshots, WCAG criterion references, and recommended fixes for each violation." } },
-    { "@type": "Question", name: "Does WCAG accessibility hurt visual design quality?", acceptedAnswer: { "@type": "Answer", text: "No — when accessibility is designed in from the start rather than retrofitted, it enhances rather than restricts visual design. High contrast ratios make designs feel crisp and legible for all users. Clear focus indicators improve navigation for everyone. Logical heading hierarchy improves SEO and readability. Inclusive design consistently produces cleaner, more considered visual systems. The myth that accessibility makes things ugly comes from retrofitting compliance onto designs that weren't built accessibly." } },
+    { "@type": "Question", name: "What does keyboard navigation accessibility mean in UI design?", acceptedAnswer: { "@type": "Answer", text: "Keyboard navigation accessibility means every interactive element in your product (links, buttons, form fields, modals, dropdowns) can be accessed and operated using only a keyboard, no mouse required. This supports users with motor disabilities who rely on keyboards, switch devices, or voice control software. In design, this means specifying focus order, visible focus indicators (focus rings), skip navigation links, and modal trap logic." } },
+    { "@type": "Question", name: "How do you test accessibility during the design phase?", acceptedAnswer: { "@type": "Answer", text: "We use multiple methods: automated contrast ratio checking (Figma plugins: Contrast, A11y - Color Contrast Checker), manual design review against WCAG 2.2 success criteria, text scaling tests (200% zoom), and screen reader annotation reviews. We also produce an accessibility annotation layer in Figma, documenting ARIA roles, focus order, alt text guidance, and error message patterns for developer implementation." } },
+    { "@type": "Question", name: "Can you audit our existing product for accessibility compliance?", acceptedAnswer: { "@type": "Answer", text: "Yes, we offer full WCAG 2.2 AA accessibility audits of existing live websites and apps. The audit covers color contrast, keyboard operability, focus visibility, form labels, error identification, alt text, heading hierarchy, landmark regions, ARIA usage, and time-based media. Deliverables include a prioritised issue list with screenshots, WCAG criterion references, and recommended fixes for each violation." } },
+    { "@type": "Question", name: "Does WCAG accessibility hurt visual design quality?", acceptedAnswer: { "@type": "Answer", text: "No, when accessibility is designed in from the start rather than retrofitted, it enhances rather than restricts visual design. High contrast ratios make designs feel crisp and legible for all users. Clear focus indicators improve navigation for everyone. Logical heading hierarchy improves SEO and readability. Inclusive design consistently produces cleaner, more considered visual systems. The myth that accessibility makes things ugly comes from retrofitting compliance onto designs that weren't built accessibly." } },
   ],
 };
 
 const SUB_SERVICES = [
-  { icon: "♿", title: "WCAG 2.2 AA Design Compliance", desc: "All new UI designed to WCAG 2.2 AA standard from day one — color contrast, focus states, text scaling, and inclusive interaction patterns built in, not bolted on.", href: "/ui-ux-design/accessibility" },
+  { icon: "♿", title: "WCAG 2.2 AA Design Compliance", desc: "All new UI designed to WCAG 2.2 AA standard from day one, color contrast, focus states, text scaling, and inclusive interaction patterns built in, not bolted on.", href: "/ui-ux-design/accessibility" },
   { icon: "🔍", title: "Accessibility Design Audit", desc: "Full WCAG 2.2 AA audit of existing live products with prioritised violation list, WCAG criterion references, and recommended design fixes for every identified issue.", href: "/ui-ux-design/accessibility" },
-  { icon: "⌨️", title: "Keyboard Navigation Design", desc: "Focus order specification, visible focus ring design, skip navigation links, and modal trap logic — ensuring every user can navigate your product without a mouse.", href: "/ui-ux-design/accessibility" },
+  { icon: "⌨️", title: "Keyboard Navigation Design", desc: "Focus order specification, visible focus ring design, skip navigation links, and modal trap logic, ensuring every user can navigate your product without a mouse.", href: "/ui-ux-design/accessibility" },
   { icon: "🔊", title: "Screen Reader Annotation", desc: "Figma accessibility annotation layer documenting ARIA roles, focus order numbers, alt text guidance, live region flags, and error message patterns for developer implementation.", href: "/ui-ux-design/accessibility" },
-  { icon: "🎨", title: "Color Contrast Remediation", desc: "Full color palette audit against 4.5:1 AA text and 3:1 UI component ratios — with alternative accessible color variants that maintain your brand identity.", href: "/ui-ux-design/accessibility" },
+  { icon: "🎨", title: "Color Contrast Remediation", desc: "Full color palette audit against 4.5:1 AA text and 3:1 UI component ratios, with alternative accessible color variants that maintain your brand identity.", href: "/ui-ux-design/accessibility" },
   { icon: "📋", title: "ADA Compliance Documentation", desc: "Written accessibility statement, VPAT (Voluntary Product Accessibility Template) documentation, and remediation roadmap for legal and procurement compliance requirements.", href: "/ui-ux-design/accessibility" },
 ];
 
@@ -92,10 +92,10 @@ const PROCESS = [
 const FAQS = [
   { q: "What is WCAG 2.2 AA and is it legally required in the USA?", a: "WCAG 2.2 AA is the internationally recognized standard for digital accessibility. In the USA, Title III of the ADA has been interpreted by courts to require WCAG 2.1 AA compliance for websites of businesses open to the public. Section 508 requires compliance for US federal agencies and contractors. US ADA website lawsuits have increased by over 300% in recent years." },
   { q: "What is the minimum color contrast ratio required by WCAG 2.2 AA?", a: "WCAG 2.2 AA requires a minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text (18pt+ or 14pt+ bold). For UI components (buttons, form inputs, focus indicators), the minimum is 3:1 against adjacent colors. We test every color combination and document pass/fail ratios in our accessibility report." },
-  { q: "What does keyboard navigation accessibility mean in UI design?", a: "Keyboard navigation means every interactive element — links, buttons, form fields, modals, dropdowns — can be accessed using only a keyboard. In design, this means specifying focus order, visible focus indicators (focus rings), skip navigation links, and modal trap logic." },
+  { q: "What does keyboard navigation accessibility mean in UI design?", a: "Keyboard navigation means every interactive element, links, buttons, form fields, modals, dropdowns, can be accessed using only a keyboard. In design, this means specifying focus order, visible focus indicators (focus rings), skip navigation links, and modal trap logic." },
   { q: "How do you test accessibility during the design phase?", a: "We use automated contrast checking (Figma plugins), manual design review against WCAG 2.2 success criteria, text scaling tests at 200% zoom, and screen reader annotation reviews. We produce an accessibility annotation layer in Figma documenting ARIA roles, focus order, alt text guidance, and error message patterns." },
-  { q: "Can you audit our existing product for accessibility compliance?", a: "Yes — we offer full WCAG 2.2 AA accessibility audits covering color contrast, keyboard operability, focus visibility, form labels, error identification, alt text, heading hierarchy, landmark regions, ARIA usage, and time-based media. Deliverables include a prioritised issue list with screenshots and WCAG criterion references." },
-  { q: "Does WCAG accessibility hurt visual design quality?", a: "No — when designed in from the start, accessibility enhances visual design. High contrast ratios make designs feel crisp and legible for all users. Clear focus indicators improve navigation for everyone. Logical heading hierarchy improves SEO. The myth that accessibility makes things ugly comes from retrofitting compliance onto non-accessible designs." },
+  { q: "Can you audit our existing product for accessibility compliance?", a: "Yes, we offer full WCAG 2.2 AA accessibility audits covering color contrast, keyboard operability, focus visibility, form labels, error identification, alt text, heading hierarchy, landmark regions, ARIA usage, and time-based media. Deliverables include a prioritised issue list with screenshots and WCAG criterion references." },
+  { q: "Does WCAG accessibility hurt visual design quality?", a: "No, when designed in from the start, accessibility enhances visual design. High contrast ratios make designs feel crisp and legible for all users. Clear focus indicators improve navigation for everyone. Logical heading hierarchy improves SEO. The myth that accessibility makes things ugly comes from retrofitting compliance onto non-accessible designs." },
 ];
 
 const RELATED = [
@@ -105,10 +105,10 @@ const RELATED = [
 ];
 
 const wcagPrinciples = [
-  { principle: "Perceivable", desc: "Information and UI components must be presentable to users in ways they can perceive — color contrast, alt text, captions", color: "#22c55e", icon: "👁️" },
-  { principle: "Operable", desc: "UI components and navigation must be operable — keyboard accessible, no keyboard traps, sufficient time limits", color: "#3b82f6", icon: "⌨️" },
-  { principle: "Understandable", desc: "Information and operation of the UI must be understandable — readable text, predictable navigation, error identification", color: "#8b5cf6", icon: "🧠" },
-  { principle: "Robust", desc: "Content must be robust enough to be interpreted by assistive technologies — valid ARIA, semantic HTML, future-compatible", color: "#f59e0b", icon: "🔧" },
+  { principle: "Perceivable", desc: "Information and UI components must be presentable to users in ways they can perceive, color contrast, alt text, captions", color: "#22c55e", icon: "👁️" },
+  { principle: "Operable", desc: "UI components and navigation must be operable, keyboard accessible, no keyboard traps, sufficient time limits", color: "#3b82f6", icon: "⌨️" },
+  { principle: "Understandable", desc: "Information and operation of the UI must be understandable, readable text, predictable navigation, error identification", color: "#8b5cf6", icon: "🧠" },
+  { principle: "Robust", desc: "Content must be robust enough to be interpreted by assistive technologies, valid ARIA, semantic HTML, future-compatible", color: "#f59e0b", icon: "🔧" },
 ];
 
 export default function AccessibilityPage() {
@@ -120,16 +120,16 @@ export default function AccessibilityPage() {
 
       <PageHeader
         label="Accessibility Design (WCAG 2.2 AA)"
-        title="Build Products Every American Can Use — and That Comply With ADA"
-        subtitle="26% of US adults have a disability. 97% of top websites fail basic WCAG accessibility checks. ADA lawsuits against non-compliant websites exceeded 4,200 in 2023. HotBot Studios designs accessibility in from day one — not as an afterthought, not as a retrofit."
+        title="Build Products Every American Can Use, and That Comply With ADA"
+        subtitle="26% of US adults have a disability. 97% of top websites fail basic WCAG accessibility checks. ADA lawsuits against non-compliant websites exceeded 4,200 in 2023. HotBot Studios designs accessibility in from day one, not as an afterthought, not as a retrofit."
       />
 
       <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
         <Reveal>
           <div className="rounded-xl p-6" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#22c55e" }}>Definition — WCAG 2.2 AA Accessibility Design</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#22c55e" }}>Definition, WCAG 2.2 AA Accessibility Design</p>
             <p className="text-slate-300 text-sm leading-relaxed">
-              <strong className="text-white">WCAG 2.2 AA</strong> (Web Content Accessibility Guidelines, Level AA) is the internationally recognised standard that defines how to make digital content accessible to people with visual, auditory, motor, and cognitive disabilities. In the USA, WCAG 2.1 AA compliance is the benchmark for ADA Title III website compliance and Section 508 federal requirements. Designing to WCAG standards expands your accessible market to 61 million US adults with a disability — and protects your business from legal liability.
+              <strong className="text-white">WCAG 2.2 AA</strong> (Web Content Accessibility Guidelines, Level AA) is the internationally recognised standard that defines how to make digital content accessible to people with visual, auditory, motor, and cognitive disabilities. In the USA, WCAG 2.1 AA compliance is the benchmark for ADA Title III website compliance and Section 508 federal requirements. Designing to WCAG standards expands your accessible market to 61 million US adults with a disability, and protects your business from legal liability.
             </p>
           </div>
         </Reveal>
@@ -163,11 +163,11 @@ export default function AccessibilityPage() {
             <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
             <ul className="space-y-2">
               {[
-                "26% of US adults have a disability — inaccessible products exclude 61 million potential customers",
-                "ADA Title III applies to commercial websites — WCAG 2.1 AA is the legal benchmark for US compliance",
+                "26% of US adults have a disability, inaccessible products exclude 61 million potential customers",
+                "ADA Title III applies to commercial websites, WCAG 2.1 AA is the legal benchmark for US compliance",
                 "4.5:1 color contrast ratio for normal text; 3:1 for large text and UI components",
                 "Keyboard navigation, visible focus indicators, and ARIA annotations designed in from day one",
-                "Accessibility annotations delivered in a separate Figma layer — giving developers exact implementation specs",
+                "Accessibility annotations delivered in a separate Figma layer, giving developers exact implementation specs",
                 "Accessibility audit available for existing products with prioritised fix list and WCAG criterion references",
               ].map((point) => (
                 <li key={point} className="flex items-start gap-2 text-sm text-slate-300">
@@ -183,7 +183,7 @@ export default function AccessibilityPage() {
       <RelatedServices services={RELATED} />
       <CTASection
         title="Make Your Product Accessible and ADA Compliant"
-        subtitle="Book an accessibility audit or start a new design project with WCAG 2.2 AA compliance built in from day one — protecting your business and opening your product to every American."
+        subtitle="Book an accessibility audit or start a new design project with WCAG 2.2 AA compliance built in from day one, protecting your business and opening your product to every American."
         formType="get-started"
       />
     </>

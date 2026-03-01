@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Social Media Marketing Services for US Businesses | HotBot Studios",
-  description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline — not just followers.",
+  description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
   keywords: [
     "social media marketing agency USA",
     "LinkedIn marketing for B2B",
@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Social Media Marketing Services for US Businesses | HotBot Studios",
-    description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline — not just followers.",
+    description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
     url: "https://hotbotstudios.com/marketing-services/social-media",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "Social Media Marketing That Builds Brand Authority and Drives Leads" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Social Media Marketing Services for US Businesses | HotBot Studios",
-    description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline — not just followers.",
+    description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
   },
   alternates: { canonical: "https://hotbotstudios.com/marketing-services/social-media" },
 };
@@ -41,7 +41,7 @@ const serviceSchema = {
   "@context": "https://schema.org",
   "@type": "Service",
   "name": "Social Media Marketing That Builds Brand Authority and Drives Leads",
-  "description": "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline — not just followers.",
+  "description": "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
   "provider": {
     "@type": "Organization",
     "name": "HotBot Studios",
@@ -89,7 +89,7 @@ const faqSchema = {
       "name": "Which social media platforms should my business prioritize?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Platform selection depends entirely on your buyer type. B2B companies selling to mid-market and enterprise buyers should prioritize LinkedIn. Consumer brands and DTC companies typically see the best ROI from Instagram and TikTok. Professional services firms benefit from LinkedIn and X for thought leadership. We recommend based on ICP research and competitor analysis — not platform trends or personal preference."
+        "text": "Platform selection depends entirely on your buyer type. B2B companies selling to mid-market and enterprise buyers should prioritize LinkedIn. Consumer brands and DTC companies typically see the best ROI from Instagram and TikTok. Professional services firms benefit from LinkedIn and X for thought leadership. We recommend based on ICP research and competitor analysis, not platform trends or personal preference."
       }
     },
     {
@@ -134,7 +134,7 @@ const PROCESS = [
 ];
 
 const FAQS = [
-    { q: "Which social media platforms should my business prioritize?", a: "Platform selection depends entirely on your buyer type. B2B companies selling to mid-market and enterprise buyers should prioritize LinkedIn. Consumer brands and DTC companies typically see the best ROI from Instagram and TikTok. Professional services firms benefit from LinkedIn and X for thought leadership. We recommend based on ICP research and competitor analysis — not platform trends or personal preference." },
+    { q: "Which social media platforms should my business prioritize?", a: "Platform selection depends entirely on your buyer type. B2B companies selling to mid-market and enterprise buyers should prioritize LinkedIn. Consumer brands and DTC companies typically see the best ROI from Instagram and TikTok. Professional services firms benefit from LinkedIn and X for thought leadership. We recommend based on ICP research and competitor analysis, not platform trends or personal preference." },
     { q: "How do you measure social media ROI for B2B?", a: "We use UTM-tracked links on every CTA to measure social-attributed website sessions, landing page conversions, and form fills. Where CRM integration is in place, we trace social-sourced leads through the pipeline to closed revenue. Vanity metrics like impressions and follower count are reported but never treated as primary KPIs." },
     { q: "Do you create the content or do we provide it?", a: "Both models work. We offer full-service content production including copywriting, graphic design, and video scripting. Alternatively, we can provide content briefs and creative direction for your in-house team, with us handling strategy, scheduling, and community management. Most clients start with full-service and transition to hybrid as their team builds capability." },
     { q: "How long before social media produces measurable results?", a: "Engagement and reach metrics improve within the first 30 to 60 days as content cadence and platform optimization take effect. LinkedIn thought leadership programs typically produce first inbound inquiry mentions within 60 to 90 days. Pipeline-attributable results from organic social require 3 to 6 months of consistent execution." }
@@ -176,7 +176,7 @@ export default function SocialMediaPage() {
       <PageHeader
         label="Social Media Marketing"
         title="Social Media Marketing That Builds Brand Authority and Drives Leads"
-        subtitle="Social media managed for vanity metrics is wasted budget. HotBot Studios runs platform-native content programs on LinkedIn, Instagram, TikTok, and X that build genuine audience authority — and ties every activity to pipeline contribution through proper UTM tracking and CRM attribution."
+        subtitle="Social media managed for vanity metrics is wasted budget. HotBot Studios runs platform-native content programs on LinkedIn, Instagram, TikTok, and X that build genuine audience authority, and ties every activity to pipeline contribution through proper UTM tracking and CRM attribution."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function SocialMediaPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">Social Media Marketing for Business:</strong>{" "}
-              Social media marketing for business is the strategic use of social platforms to build brand authority, engage target audiences, and generate qualified leads. For US B2B companies, this primarily means LinkedIn for direct buyer reach and thought leadership. For B2C and DTC brands, Instagram, TikTok, and Facebook drive discovery and purchase intent. Effective social media marketing combines original content, community engagement, and paid amplification — measured against pipeline contribution, not follower count.
+              Social media marketing for business is the strategic use of social platforms to build brand authority, engage target audiences, and generate qualified leads. For US B2B companies, this primarily means LinkedIn for direct buyer reach and thought leadership. For B2C and DTC brands, Instagram, TikTok, and Facebook drive discovery and purchase intent. Effective social media marketing combines original content, community engagement, and paid amplification, measured against pipeline contribution, not follower count.
             </p>
           </div>
         </section>
@@ -298,7 +298,7 @@ export default function SocialMediaPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Platform selection is driven by ICP behavior data — not trending platform popularity`}</span>
+            <span>{String.raw`Platform selection is driven by ICP behavior data, not trending platform popularity`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -310,15 +310,15 @@ export default function SocialMediaPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Organic content is tested first — paid amplification scales winners, not experiments`}</span>
+            <span>{String.raw`Organic content is tested first, paid amplification scales winners, not experiments`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Community management with sub-24-hour response time is standard — slow response costs followers and credibility`}</span>
+            <span>{String.raw`Community management with sub-24-hour response time is standard, slow response costs followers and credibility`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Strategy adapts quarterly to algorithm changes — what worked six months ago may require a different approach today`}</span>
+            <span>{String.raw`Strategy adapts quarterly to algorithm changes, what worked six months ago may require a different approach today`}</span>
           </li>
           </ul>
         </section>

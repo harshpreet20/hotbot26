@@ -142,7 +142,7 @@ const FAQS = [
 
 const RELATED = [
     { title: "SEO Services", href: "/marketing-services/seo", desc: "SEO drives the organic traffic that feeds your email list with qualified subscribers.", icon: "🔍" },
-    { title: "CRO — Conversion Rate Optimization", href: "/marketing-services/cro", desc: "Higher opt-in page conversion rates grow your list faster from the same traffic.", icon: "🎯" },
+    { title: "CRO, Conversion Rate Optimization", href: "/marketing-services/cro", desc: "Higher opt-in page conversion rates grow your list faster from the same traffic.", icon: "🎯" },
     { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "Email revenue attribution in GA4 and CRM to measure full-funnel ROI.", icon: "📊" }
 ];
 
@@ -176,7 +176,7 @@ export default function EmailMarketingPage() {
       <PageHeader
         label="Email Marketing and Automation"
         title="Email Marketing and Automation That Converts Leads and Retains Customers"
-        subtitle="Email delivers an average \$36 for every \$1 spent — but only when sequences are built around buyer behavior, not generic blast cadences. HotBot Studios designs, builds, and manages email programs across HubSpot, Klaviyo, and Mailchimp that move leads through the funnel and retain customers past first purchase."
+        subtitle="Email delivers an average \$36 for every \$1 spent, but only when sequences are built around buyer behavior, not generic blast cadences. HotBot Studios designs, builds, and manages email programs across HubSpot, Klaviyo, and Mailchimp that move leads through the funnel and retain customers past first purchase."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function EmailMarketingPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">Email Marketing Automation:</strong>{" "}
-              Email marketing automation is the process of sending behavior-triggered or time-based email sequences to prospects and customers automatically — without manual sending. For US businesses, effective email automation means the right message reaches the right person at the right moment in their buying journey: from initial lead magnet welcome sequences through post-purchase retention flows. Automated email consistently outperforms broadcast campaigns on open rate, click rate, and revenue per recipient.
+              Email marketing automation is the process of sending behavior-triggered or time-based email sequences to prospects and customers automatically, without manual sending. For US businesses, effective email automation means the right message reaches the right person at the right moment in their buying journey: from initial lead magnet welcome sequences through post-purchase retention flows. Automated email consistently outperforms broadcast campaigns on open rate, click rate, and revenue per recipient.
             </p>
           </div>
         </section>
@@ -226,7 +226,7 @@ export default function EmailMarketingPage() {
         <div key="Newsletter and Broadcast Strategy" className="p-5 rounded-2xl border" style={{ background: "#06b6d410", borderColor: "#06b6d425" }}>
           <div className="text-2xl mb-3">{String.raw`📰`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Newsletter and Broadcast Strategy`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Weekly or bi-weekly newsletters positioned as genuine business intelligence resources — not promotional blasts. Subject line A/B testing, send time optimization, and segment-based personalization for consistent open rates above 35%.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Weekly or bi-weekly newsletters positioned as genuine business intelligence resources, not promotional blasts. Subject line A/B testing, send time optimization, and segment-based personalization for consistent open rates above 35%.`}</p>
         </div>
         <div key="Deliverability and List Health" className="p-5 rounded-2xl border" style={{ background: "#ec489910", borderColor: "#ec489925" }}>
           <div className="text-2xl mb-3">{String.raw`📊`}</div>
@@ -249,12 +249,12 @@ export default function EmailMarketingPage() {
         </div>
         <div key="E-Commerce Brands" className="p-6 rounded-2xl border" style={{ background: "#3b82f608", borderColor: "#3b82f620" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#3b82f6" }}>{String.raw`E-Commerce Brands`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`One-time buyers not returning — high acquisition cost not justified without repeat purchase.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`One-time buyers not returning, high acquisition cost not justified without repeat purchase.`}</p>
           <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Post-purchase sequence with product education, related product recommendation (day 7 and day 21), and loyalty offer (day 45). Winback sequence at 90-day inactivity with progressive discount offer. Average 20 to 30% repeat purchase rate improvement.`}</p>
         </div>
         <div key="Professional Services Firms" className="p-6 rounded-2xl border" style={{ background: "#8b5cf608", borderColor: "#8b5cf620" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#8b5cf6" }}>{String.raw`Professional Services Firms`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Long sales cycles mean leads go cold between initial inquiry and decision — no structured nurture program keeps them warm.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Long sales cycles mean leads go cold between initial inquiry and decision, no structured nurture program keeps them warm.`}</p>
           <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Inquiry response sequence with case study delivery, thought leadership content drip, and soft CTA check-in at day 14 and day 30. Behavioral triggers detect re-engagement (email opens, website return visits) and alert sales for follow-up.`}</p>
         </div>
         <div key="Content and Media Brands" className="p-6 rounded-2xl border" style={{ background: "#f59e0b08", borderColor: "#f59e0b20" }}>
@@ -298,7 +298,7 @@ export default function EmailMarketingPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Email delivers \$36 return per \$1 spent — the highest ROI of any digital marketing channel when managed with proper segmentation and automation`}</span>
+            <span>{String.raw`Email delivers \$36 return per \$1 spent, the highest ROI of any digital marketing channel when managed with proper segmentation and automation`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -306,11 +306,11 @@ export default function EmailMarketingPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Deliverability is configured from day one — domain authentication and list hygiene prevent inbox placement from degrading over time`}</span>
+            <span>{String.raw`Deliverability is configured from day one, domain authentication and list hygiene prevent inbox placement from degrading over time`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Platform choice is matched to business model — Klaviyo for e-commerce, HubSpot for B2B CRM integration, Mailchimp for early-stage simplicity`}</span>
+            <span>{String.raw`Platform choice is matched to business model, Klaviyo for e-commerce, HubSpot for B2B CRM integration, Mailchimp for early-stage simplicity`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -318,7 +318,7 @@ export default function EmailMarketingPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`List growth is built through owned channels and value exchange — purchased lists destroy deliverability and are never used`}</span>
+            <span>{String.raw`List growth is built through owned channels and value exchange, purchased lists destroy deliverability and are never used`}</span>
           </li>
           </ul>
         </section>

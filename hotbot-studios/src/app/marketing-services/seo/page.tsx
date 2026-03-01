@@ -9,7 +9,7 @@ import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "SEO Services for US Businesses — Organic Growth Agency | HotBot Studios",
+  title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
   description: "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
   keywords: [
     "SEO agency for US businesses",
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     "link building services United States"
   ],
   openGraph: {
-    title: "SEO Services for US Businesses — Organic Growth Agency | HotBot Studios",
+    title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
     description: "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
     url: "https://hotbotstudios.com/marketing-services/seo",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "SEO Services That Drive Qualified Organic Traffic for US Businesses" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SEO Services for US Businesses — Organic Growth Agency | HotBot Studios",
+    title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
     description: "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
   },
   alternates: { canonical: "https://hotbotstudios.com/marketing-services/seo" },
@@ -89,7 +89,7 @@ const faqSchema = {
       "name": "How long does SEO take to show results?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Technical fixes and quick-win content updates can produce ranking movements within 30 to 90 days. Significant organic traffic growth from competitive keywords typically takes 4 to 9 months. Link acquisition compounds over time. We set realistic timelines based on your current domain authority, competitive landscape, and keyword targets — not promises designed to close the deal."
+        "text": "Technical fixes and quick-win content updates can produce ranking movements within 30 to 90 days. Significant organic traffic growth from competitive keywords typically takes 4 to 9 months. Link acquisition compounds over time. We set realistic timelines based on your current domain authority, competitive landscape, and keyword targets, not promises designed to close the deal."
       }
     },
     {
@@ -97,7 +97,7 @@ const faqSchema = {
       "name": "What makes HotBot Studios SEO different from other agencies?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We build SEO programs around revenue attribution, not ranking reports. Every keyword we target is mapped to a buyer intent stage and tied to CRM data so you can see which organic sessions become qualified leads and closed deals. We do not separate SEO from the broader marketing system — content, links, and technical foundations work as one program."
+        "text": "We build SEO programs around revenue attribution, not ranking reports. Every keyword we target is mapped to a buyer intent stage and tied to CRM data so you can see which organic sessions become qualified leads and closed deals. We do not separate SEO from the broader marketing system, content, links, and technical foundations work as one program."
       }
     },
     {
@@ -134,14 +134,14 @@ const PROCESS = [
 ];
 
 const FAQS = [
-    { q: "How long does SEO take to show results?", a: "Technical fixes and quick-win content updates can produce ranking movements within 30 to 90 days. Significant organic traffic growth from competitive keywords typically takes 4 to 9 months. Link acquisition compounds over time. We set realistic timelines based on your current domain authority, competitive landscape, and keyword targets — not promises designed to close the deal." },
-    { q: "What makes HotBot Studios SEO different from other agencies?", a: "We build SEO programs around revenue attribution, not ranking reports. Every keyword we target is mapped to a buyer intent stage and tied to CRM data so you can see which organic sessions become qualified leads and closed deals. We do not separate SEO from the broader marketing system — content, links, and technical foundations work as one program." },
+    { q: "How long does SEO take to show results?", a: "Technical fixes and quick-win content updates can produce ranking movements within 30 to 90 days. Significant organic traffic growth from competitive keywords typically takes 4 to 9 months. Link acquisition compounds over time. We set realistic timelines based on your current domain authority, competitive landscape, and keyword targets, not promises designed to close the deal." },
+    { q: "What makes HotBot Studios SEO different from other agencies?", a: "We build SEO programs around revenue attribution, not ranking reports. Every keyword we target is mapped to a buyer intent stage and tied to CRM data so you can see which organic sessions become qualified leads and closed deals. We do not separate SEO from the broader marketing system, content, links, and technical foundations work as one program." },
     { q: "Do you handle both on-page and off-page SEO?", a: "Yes. Our program covers technical SEO, on-page optimization, content production, and link acquisition. We treat these as a single coordinated system, not separate services to be bought individually. The ratio of effort between each discipline shifts based on your current baseline and the competitive landscape." },
     { q: "Can SEO work for local US businesses?", a: "Yes. Local SEO for US businesses includes Google Business Profile optimization, local citation building, geo-targeted content, and review acquisition strategy. For multi-location businesses, we build centralized programs with location-specific content templates and reporting by market." }
 ];
 
 const RELATED = [
-    { title: "PPC and Paid Search", href: "/marketing-services/ppc", desc: "Paid search complements SEO — capture demand while organic rankings build.", icon: "💰" },
+    { title: "PPC and Paid Search", href: "/marketing-services/ppc", desc: "Paid search complements SEO, capture demand while organic rankings build.", icon: "💰" },
     { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "Connect organic search performance to revenue and pipeline in your CRM.", icon: "📊" },
     { title: "Content Studio", href: "/content-studio", desc: "SEO content production: copywriting, video, and thought leadership at scale.", icon: "✍️" }
 ];
@@ -176,7 +176,7 @@ export default function SeoPage() {
       <PageHeader
         label="Search Engine Optimization"
         title="SEO Services That Drive Qualified Organic Traffic for US Businesses"
-        subtitle="Most SEO agencies chase rankings that do not convert. HotBot Studios builds search programs around buyer intent — connecting your brand to decision-makers at the exact moment they are evaluating solutions. Technical foundations, topical authority content, and authoritative link acquisition working as one system."
+        subtitle="Most SEO agencies chase rankings that do not convert. HotBot Studios builds search programs around buyer intent, connecting your brand to decision-makers at the exact moment they are evaluating solutions. Technical foundations, topical authority content, and authoritative link acquisition working as one system."
       />
 
       {/* AEO Definition Block */}
@@ -188,7 +188,7 @@ export default function SeoPage() {
           >
             <p className="text-slate-300 text-sm leading-relaxed">
               <strong className="text-white">SEO for Business:</strong>{" "}
-              Search engine optimization (SEO) for business is the systematic process of improving a website's visibility in organic search results for queries that indicate commercial intent. For US B2B organizations, this means ranking for transactional and informational keywords that decision-makers use during the buying process — not vanity traffic that inflates sessions without influencing revenue.
+              Search engine optimization (SEO) for business is the systematic process of improving a website's visibility in organic search results for queries that indicate commercial intent. For US B2B organizations, this means ranking for transactional and informational keywords that decision-makers use during the buying process, not vanity traffic that inflates sessions without influencing revenue.
             </p>
           </div>
         </section>
@@ -302,7 +302,7 @@ export default function SeoPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Technical foundations are resolved before content or links — no ranking ceiling from crawl or speed issues`}</span>
+            <span>{String.raw`Technical foundations are resolved before content or links, no ranking ceiling from crawl or speed issues`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -310,7 +310,7 @@ export default function SeoPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Link acquisition is editorial and placement-verified — every link on a real topically relevant domain`}</span>
+            <span>{String.raw`Link acquisition is editorial and placement-verified, every link on a real topically relevant domain`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -318,7 +318,7 @@ export default function SeoPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Programs are calibrated to your competitive landscape and domain authority baseline — not a generic playbook`}</span>
+            <span>{String.raw`Programs are calibrated to your competitive landscape and domain authority baseline, not a generic playbook`}</span>
           </li>
           </ul>
         </section>

@@ -9,8 +9,8 @@ import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "n8n Workflow Automation for US Businesses — HubSpot, Salesforce & 500+ Tools | HotBot Studios",
-  description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools — eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
+  title: "n8n Workflow Automation for US Businesses, HubSpot, Salesforce & 500+ Tools | HotBot Studios",
+  description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools, eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
   keywords: [
     "n8n workflow automation USA",
     "business process automation USA",
@@ -24,15 +24,15 @@ export const metadata: Metadata = {
     "n8n developer USA"
   ],
   openGraph: {
-    title: "n8n Workflow Automation for US Businesses — HubSpot, Salesforce & 500+ Tools | HotBot Studios",
-    description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools — eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
+    title: "n8n Workflow Automation for US Businesses, HubSpot, Salesforce & 500+ Tools | HotBot Studios",
+    description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools, eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
     url: "https://hotbotstudios.com/ai-automation/n8n-workflow-automation",
-    images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "n8n Workflow Automation — Connect Everything, Automate Anything" }],
+    images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "n8n Workflow Automation, Connect Everything, Automate Anything" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "n8n Workflow Automation for US Businesses — HubSpot, Salesforce & 500+ Tools | HotBot Studios",
-    description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools — eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
+    title: "n8n Workflow Automation for US Businesses, HubSpot, Salesforce & 500+ Tools | HotBot Studios",
+    description: "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools, eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
   },
   alternates: { canonical: "https://hotbotstudios.com/ai-automation/n8n-workflow-automation" },
 };
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
 const serviceSchema = {
   "@context": "https://schema.org",
   "@type": "Service",
-  "name": "n8n Workflow Automation — Connect Everything, Automate Anything",
-  "description": "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools — eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
+  "name": "n8n Workflow Automation, Connect Everything, Automate Anything",
+  "description": "HotBot Studios builds n8n automation workflows that connect your CRM, email, Slack, Google Sheets, and 500+ tools, eliminating manual data entry and repetitive tasks. Book a free workflow audit.",
   "provider": {
     "@type": "Organization",
     "name": "HotBot Studios",
@@ -97,7 +97,7 @@ const faqSchema = {
       "name": "Do we need to manage n8n's server infrastructure ourselves?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. HotBot Studios fully manages your n8n instance on AWS or GCP — including server setup, updates, backups, monitoring, and scaling. You interact only with the n8n visual editor, or we manage it entirely on your behalf."
+        "text": "No. HotBot Studios fully manages your n8n instance on AWS or GCP, including server setup, updates, backups, monitoring, and scaling. You interact only with the n8n visual editor, or we manage it entirely on your behalf."
       }
     },
     {
@@ -113,7 +113,7 @@ const faqSchema = {
       "name": "Can you automate workflows that involve AI decisions?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. n8n has native OpenAI and Anthropic integrations. We build hybrid workflows where n8n handles data movement and triggering, and GPT-4o or Claude 3 handles intelligent decisions — like classifying emails, scoring leads, or generating personalised content at scale."
+        "text": "Yes. n8n has native OpenAI and Anthropic integrations. We build hybrid workflows where n8n handles data movement and triggering, and GPT-4o or Claude 3 handles intelligent decisions, like classifying emails, scoring leads, or generating personalised content at scale."
       }
     }
   ]
@@ -127,17 +127,17 @@ const STATS = [
 ];
 
 const PROCESS = [
-    { n: 1, title: "Workflow Mapping", desc: "We document your current manual processes, identify automation opportunities, and prioritise by ROI — starting with the highest-volume, most repetitive workflows.", icon: "🗺️" },
+    { n: 1, title: "Workflow Mapping", desc: "We document your current manual processes, identify automation opportunities, and prioritise by ROI, starting with the highest-volume, most repetitive workflows.", icon: "🗺️" },
     { n: 2, title: "Architecture & Security Design", desc: "We design the workflow logic, choose self-hosted vs. cloud deployment based on your data requirements, and set up secure API credential management.", icon: "🏗️" },
-    { n: 3, title: "Build, Test & Validate", desc: "Workflows are built, tested with real data, and validated for edge cases — including error handling, retry logic, and failure notifications.", icon: "🔧" },
+    { n: 3, title: "Build, Test & Validate", desc: "Workflows are built, tested with real data, and validated for edge cases, including error handling, retry logic, and failure notifications.", icon: "🔧" },
     { n: 4, title: "Deploy, Train & Maintain", desc: "We deploy workflows, document each one, train your team on monitoring and simple modifications, and provide ongoing maintenance and updates.", icon: "📈" }
 ];
 
 const FAQS = [
     { q: "How is n8n better than Zapier or Make for our business?", a: "n8n offers self-hosted deployment (your data never leaves your servers), no per-task pricing at scale, more powerful branching and error-handling logic, and the ability to embed AI steps (GPT-4o, Claude) directly into workflows. For high-volume or data-sensitive automations, n8n significantly outperforms Zapier and Make." },
-    { q: "Do we need to manage n8n's server infrastructure ourselves?", a: "No. HotBot Studios fully manages your n8n instance on AWS or GCP — including server setup, updates, backups, monitoring, and scaling. You interact only with the n8n visual editor, or we manage it entirely on your behalf." },
+    { q: "Do we need to manage n8n's server infrastructure ourselves?", a: "No. HotBot Studios fully manages your n8n instance on AWS or GCP, including server setup, updates, backups, monitoring, and scaling. You interact only with the n8n visual editor, or we manage it entirely on your behalf." },
     { q: "What happens if a workflow fails?", a: "We configure automatic failure alerts (Slack or email) and implement retry logic for transient errors. For critical workflows, we set up backup execution paths. Every failed execution is logged with full debug information so issues are resolved quickly." },
-    { q: "Can you automate workflows that involve AI decisions?", a: "Yes. n8n has native OpenAI and Anthropic integrations. We build hybrid workflows where n8n handles data movement and triggering, and GPT-4o or Claude 3 handles intelligent decisions — like classifying emails, scoring leads, or generating personalised content at scale." }
+    { q: "Can you automate workflows that involve AI decisions?", a: "Yes. n8n has native OpenAI and Anthropic integrations. We build hybrid workflows where n8n handles data movement and triggering, and GPT-4o or Claude 3 handles intelligent decisions, like classifying emails, scoring leads, or generating personalised content at scale." }
 ];
 
 const RELATED = [
@@ -175,8 +175,8 @@ export default function N8nWorkflowAutomationPage() {
 
       <PageHeader
         label="Workflow Automation"
-        title="n8n Workflow Automation — Connect Everything, Automate Anything"
-        subtitle="Trigger-based automation workflows that connect your CRM, email, Slack, Google Sheets, Notion, and 500+ tools — eliminating manual handoffs and data silos forever."
+        title="n8n Workflow Automation, Connect Everything, Automate Anything"
+        subtitle="Trigger-based automation workflows that connect your CRM, email, Slack, Google Sheets, Notion, and 500+ tools, eliminating manual handoffs and data silos forever."
       />
 
       {/* AEO Definition Block */}
@@ -206,32 +206,32 @@ export default function N8nWorkflowAutomationPage() {
         <div key="500+ Native Integrations" className="p-5 rounded-2xl border" style={{ background: "#f59e0b10", borderColor: "#f59e0b25" }}>
           <div className="text-2xl mb-3">{String.raw`⚙️`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`500+ Native Integrations`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Connect HubSpot, Salesforce, Pipedrive, Gmail, Outlook, Slack, Notion, Airtable, Google Sheets, Jira, Stripe, Shopify, and 500+ tools via native connectors — no custom code required.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Connect HubSpot, Salesforce, Pipedrive, Gmail, Outlook, Slack, Notion, Airtable, Google Sheets, Jira, Stripe, Shopify, and 500+ tools via native connectors, no custom code required.`}</p>
         </div>
         <div key="AI-Enhanced Workflows" className="p-5 rounded-2xl border" style={{ background: "#8b5cf610", borderColor: "#8b5cf625" }}>
           <div className="text-2xl mb-3">{String.raw`🧠`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`AI-Enhanced Workflows`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Embed GPT-4o or Claude 3 steps directly into workflows for intelligent data processing — email classification, lead scoring, content generation, and sentiment analysis at scale.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Embed GPT-4o or Claude 3 steps directly into workflows for intelligent data processing, email classification, lead scoring, content generation, and sentiment analysis at scale.`}</p>
         </div>
         <div key="Complex Branching Logic" className="p-5 rounded-2xl border" style={{ background: "#06b6d410", borderColor: "#06b6d425" }}>
           <div className="text-2xl mb-3">{String.raw`🔀`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Complex Branching Logic`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Build workflows with conditional branches, loops, error handling, and parallel execution paths — handling edge cases that simpler tools cannot.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Build workflows with conditional branches, loops, error handling, and parallel execution paths, handling edge cases that simpler tools cannot.`}</p>
         </div>
         <div key="Self-Hosted Data Security" className="p-5 rounded-2xl border" style={{ background: "#10b98110", borderColor: "#10b98125" }}>
           <div className="text-2xl mb-3">{String.raw`🔒`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Self-Hosted Data Security`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Unlike Zapier or Make, n8n can run on your own infrastructure (AWS, GCP, or on-premise) — keeping sensitive customer and business data within your security perimeter.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Unlike Zapier or Make, n8n can run on your own infrastructure (AWS, GCP, or on-premise), keeping sensitive customer and business data within your security perimeter.`}</p>
         </div>
         <div key="Real-Time Monitoring" className="p-5 rounded-2xl border" style={{ background: "#ec489910", borderColor: "#ec489925" }}>
           <div className="text-2xl mb-3">{String.raw`📊`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`Real-Time Monitoring`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Every workflow execution is logged with inputs, outputs, timing, and error details. Instant Slack or email alerts when a workflow fails — before it impacts your business.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Every workflow execution is logged with inputs, outputs, timing, and error details. Instant Slack or email alerts when a workflow fails, before it impacts your business.`}</p>
         </div>
         <div key="No Per-Task Pricing" className="p-5 rounded-2xl border" style={{ background: "#3b82f610", borderColor: "#3b82f625" }}>
           <div className="text-2xl mb-3">{String.raw`💰`}</div>
           <h3 className="font-semibold text-white text-sm mb-2">{String.raw`No Per-Task Pricing`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Unlike Zapier (which charges per task), n8n on self-hosted infrastructure scales to millions of executions per month without incremental cost — critical for high-volume automations.`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed">{String.raw`Unlike Zapier (which charges per task), n8n on self-hosted infrastructure scales to millions of executions per month without incremental cost, critical for high-volume automations.`}</p>
         </div>
         </div>
       </section>
@@ -244,12 +244,12 @@ export default function N8nWorkflowAutomationPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div key="Sales Operations Teams" className="p-6 rounded-2xl border" style={{ background: "#f59e0b08", borderColor: "#f59e0b20" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#f59e0b" }}>{String.raw`Sales Operations Teams`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`SDRs manually moving leads between spreadsheets, email, Slack, and CRM — losing data and wasting 2+ hours daily`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`SDRs manually moving leads between spreadsheets, email, Slack, and CRM, losing data and wasting 2+ hours daily`}</p>
           <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`n8n workflow: New form submission → enrich with Clearbit → score lead → create HubSpot contact → assign to rep → Slack notification → sequence enrollment`}</p>
         </div>
         <div key="E-Commerce & DTC Brands" className="p-6 rounded-2xl border" style={{ background: "#06b6d408", borderColor: "#06b6d420" }}>
           <h3 className="font-semibold mb-2 text-sm" style={{ color: "#06b6d4" }}>{String.raw`E-Commerce & DTC Brands`}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Order data scattered across Shopify, Klaviyo, Google Sheets, and accounting software — requiring manual reconciliation weekly`}</p>
+          <p className="text-slate-400 text-xs leading-relaxed mb-3"><strong className="text-slate-300">Challenge:</strong> {String.raw`Order data scattered across Shopify, Klaviyo, Google Sheets, and accounting software, requiring manual reconciliation weekly`}</p>
           <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-slate-300">Solution:</strong> {String.raw`Real-time Shopify → Google Sheets → Klaviyo → QuickBooks sync with automatic refund processing and inventory alerts`}</p>
         </div>
         <div key="Marketing Agencies" className="p-6 rounded-2xl border" style={{ background: "#8b5cf608", borderColor: "#8b5cf620" }}>
@@ -298,19 +298,19 @@ export default function N8nWorkflowAutomationPage() {
           <ul className="space-y-4">
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`The best automation candidates are high-frequency, multi-system, rule-based tasks — not creative or relationship work`}</span>
+            <span>{String.raw`The best automation candidates are high-frequency, multi-system, rule-based tasks, not creative or relationship work`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Self-hosted n8n eliminates per-task costs that make Zapier prohibitively expensive at scale — a single high-volume workflow can save \$2,000+/month in tool costs alone`}</span>
+            <span>{String.raw`Self-hosted n8n eliminates per-task costs that make Zapier prohibitively expensive at scale, a single high-volume workflow can save \$2,000+/month in tool costs alone`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`AI-enhanced workflows (n8n + GPT-4o) can handle tasks that pure automation cannot — like classifying messy data, drafting personalised responses, and making nuanced routing decisions`}</span>
+            <span>{String.raw`AI-enhanced workflows (n8n + GPT-4o) can handle tasks that pure automation cannot, like classifying messy data, drafting personalised responses, and making nuanced routing decisions`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Error handling and monitoring are not optional — an unmonitored workflow that silently fails is worse than no automation at all`}</span>
+            <span>{String.raw`Error handling and monitoring are not optional, an unmonitored workflow that silently fails is worse than no automation at all`}</span>
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
@@ -318,7 +318,7 @@ export default function N8nWorkflowAutomationPage() {
           </li>
           <li className="flex items-start gap-2 text-slate-300 text-sm">
             <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-            <span>{String.raw`Documentation of each workflow is critical — well-documented automations are maintained and extended by your team; undocumented ones become black boxes`}</span>
+            <span>{String.raw`Documentation of each workflow is critical, well-documented automations are maintained and extended by your team; undocumented ones become black boxes`}</span>
           </li>
           </ul>
         </section>

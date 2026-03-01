@@ -12,7 +12,7 @@ import { Reveal } from "@/components/shared/Reveal";
 export const metadata: Metadata = {
   title: "UX Research & User Testing Services USA | HotBot Studios",
   description:
-    "Professional UX research and user testing for US businesses. User interviews, Maze usability testing, Hotjar heatmaps, and session recordings that uncover exactly why users drop off — before you build the wrong thing.",
+    "Professional UX research and user testing for US businesses. User interviews, Maze usability testing, Hotjar heatmaps, and session recordings that uncover exactly why users drop off, before you build the wrong thing.",
   keywords: [
     "UX research agency USA",
     "user testing services USA",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "UX Research & User Testing Services USA | HotBot Studios",
-    description: "User interviews, Maze usability testing, Hotjar heatmaps and session recordings. Stop guessing — start knowing what users actually need.",
+    description: "User interviews, Maze usability testing, Hotjar heatmaps and session recordings. Stop guessing, start knowing what users actually need.",
     url: "https://hotbotstudios.com/ui-ux-design/ux-research",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
@@ -57,9 +57,9 @@ const breadcrumbSchema = {
 const faqSchema = {
   "@context": "https://schema.org", "@type": "FAQPage",
   mainEntity: [
-    { "@type": "Question", name: "What's the difference between UX research and usability testing?", acceptedAnswer: { "@type": "Answer", text: "UX research is the broader discipline — it includes interviews, surveys, competitive analysis, and analytics review to understand user needs, goals, and mental models. Usability testing is a specific method within UX research that tests whether real users can complete tasks in your product without friction. We do both, in the right sequence." } },
-    { "@type": "Question", name: "How many users do you need for meaningful usability testing?", acceptedAnswer: { "@type": "Answer", text: "Nielsen Norman Group's research shows 5 users uncover ~85% of usability problems. We recommend 5–8 participants per round for qualitative usability testing. For quantitative studies (statistical significance on conversion rates), we need 300–500 users minimum — typically run via Maze or A/B testing tools." } },
-    { "@type": "Question", name: "Do you recruit test participants or use our existing users?", acceptedAnswer: { "@type": "Answer", text: "Both. For products with an existing user base, we recruit from your customers via email surveys or in-app prompts — this gives the most relevant insights. For new products or pre-launch validation, we recruit from our panel of screened US participants matching your ICP demographics and job titles." } },
+    { "@type": "Question", name: "What's the difference between UX research and usability testing?", acceptedAnswer: { "@type": "Answer", text: "UX research is the broader discipline, it includes interviews, surveys, competitive analysis, and analytics review to understand user needs, goals, and mental models. Usability testing is a specific method within UX research that tests whether real users can complete tasks in your product without friction. We do both, in the right sequence." } },
+    { "@type": "Question", name: "How many users do you need for meaningful usability testing?", acceptedAnswer: { "@type": "Answer", text: "Nielsen Norman Group's research shows 5 users uncover ~85% of usability problems. We recommend 5–8 participants per round for qualitative usability testing. For quantitative studies (statistical significance on conversion rates), we need 300–500 users minimum, typically run via Maze or A/B testing tools." } },
+    { "@type": "Question", name: "Do you recruit test participants or use our existing users?", acceptedAnswer: { "@type": "Answer", text: "Both. For products with an existing user base, we recruit from your customers via email surveys or in-app prompts, this gives the most relevant insights. For new products or pre-launch validation, we recruit from our panel of screened US participants matching your ICP demographics and job titles." } },
     { "@type": "Question", name: "What tools do you use for UX research?", acceptedAnswer: { "@type": "Answer", text: "Maze for unmoderated usability testing and first-click tests; Hotjar for heatmaps, session recordings, and on-site surveys; Google Analytics 4 for behavioural funnel analysis; Lookback or Zoom for moderated user interviews; Typeform/Google Forms for screener and satisfaction surveys. All tools are set up and managed by our team." } },
     { "@type": "Question", name: "How long does a UX research engagement take?", acceptedAnswer: { "@type": "Answer", text: "A focused usability test study (recruit + test + report) typically takes 2–3 weeks. A comprehensive discovery UX research engagement (interviews + heatmap analysis + competitive UX audit + synthesis) runs 4–6 weeks. We can run expedited studies in as little as 5 business days for urgent product decisions." } },
     { "@type": "Question", name: "What deliverables do we receive after UX research?", acceptedAnswer: { "@type": "Answer", text: "You receive: a research report with prioritised insights, annotated session recordings highlighting key moments, heatmap screenshots with commentary, a list of ranked UX issues by severity and frequency, recommended design solutions for the top 5 problems, and an executive summary slide deck for stakeholder sharing." } },
@@ -67,11 +67,11 @@ const faqSchema = {
 };
 
 const SUB_SERVICES = [
-  { icon: "🎤", title: "User Interviews", desc: "1:1 moderated interviews with 5–10 users from your ICP to understand goals, pain points, and mental models — the foundation of evidence-based design.", href: "/ui-ux-design/ux-research" },
+  { icon: "🎤", title: "User Interviews", desc: "1:1 moderated interviews with 5–10 users from your ICP to understand goals, pain points, and mental models, the foundation of evidence-based design.", href: "/ui-ux-design/ux-research" },
   { icon: "🧪", title: "Maze Usability Testing", desc: "Unmoderated task-based usability tests on Figma prototypes or live products. 50–200 participants, with quantitative completion rates and time-on-task data.", href: "/ui-ux-design/ux-research" },
-  { icon: "🔥", title: "Hotjar Heatmap & Session Analysis", desc: "Click maps, scroll maps, and session recordings that show where users actually engage — revealing friction, confusion, and conversion drop-off in your live product.", href: "/ui-ux-design/ux-research" },
+  { icon: "🔥", title: "Hotjar Heatmap & Session Analysis", desc: "Click maps, scroll maps, and session recordings that show where users actually engage, revealing friction, confusion, and conversion drop-off in your live product.", href: "/ui-ux-design/ux-research" },
   { icon: "📋", title: "UX Surveys & Screeners", desc: "Post-task satisfaction surveys, NPS measurements, and screener questionnaires to collect quantitative user sentiment at scale across your entire user base.", href: "/ui-ux-design/ux-research" },
-  { icon: "🔍", title: "Competitive UX Audit", desc: "Side-by-side analysis of 3–5 competitor products — UX patterns, navigation conventions, feature discoverability — to identify gaps and opportunities for your product.", href: "/ui-ux-design/ux-research" },
+  { icon: "🔍", title: "Competitive UX Audit", desc: "Side-by-side analysis of 3–5 competitor products, UX patterns, navigation conventions, feature discoverability, to identify gaps and opportunities for your product.", href: "/ui-ux-design/ux-research" },
   { icon: "📊", title: "Analytics Funnel Analysis", desc: "GA4 funnel analysis, drop-off mapping, and event tracking audit to identify where users exit your product and quantify the revenue impact of each friction point.", href: "/ui-ux-design/ux-research" },
 ];
 
@@ -90,8 +90,8 @@ const PROCESS = [
 ];
 
 const FAQS = [
-  { q: "What's the difference between UX research and usability testing?", a: "UX research is the broader discipline — it includes interviews, surveys, competitive analysis, and analytics review to understand user needs, goals, and mental models. Usability testing is a specific method within UX research that tests whether real users can complete tasks in your product without friction. We do both, in the right sequence." },
-  { q: "How many users do you need for meaningful usability testing?", a: "Nielsen Norman Group's research shows 5 users uncover ~85% of usability problems. We recommend 5–8 participants per round for qualitative usability testing. For quantitative studies, we need 300–500 users minimum — typically run via Maze or A/B testing tools." },
+  { q: "What's the difference between UX research and usability testing?", a: "UX research is the broader discipline, it includes interviews, surveys, competitive analysis, and analytics review to understand user needs, goals, and mental models. Usability testing is a specific method within UX research that tests whether real users can complete tasks in your product without friction. We do both, in the right sequence." },
+  { q: "How many users do you need for meaningful usability testing?", a: "Nielsen Norman Group's research shows 5 users uncover ~85% of usability problems. We recommend 5–8 participants per round for qualitative usability testing. For quantitative studies, we need 300–500 users minimum, typically run via Maze or A/B testing tools." },
   { q: "Do you recruit test participants or use our existing users?", a: "Both. For products with an existing user base, we recruit from your customers via email surveys or in-app prompts. For new products or pre-launch validation, we recruit from our panel of screened US participants matching your ICP demographics and job titles." },
   { q: "What tools do you use for UX research?", a: "Maze for unmoderated usability testing and first-click tests; Hotjar for heatmaps, session recordings, and on-site surveys; Google Analytics 4 for behavioural funnel analysis; Lookback or Zoom for moderated user interviews; Typeform for screener and satisfaction surveys." },
   { q: "How long does a UX research engagement take?", a: "A focused usability test study (recruit + test + report) typically takes 2–3 weeks. A comprehensive discovery UX research engagement runs 4–6 weeks. We can run expedited studies in as little as 5 business days for urgent product decisions." },
@@ -123,15 +123,15 @@ export default function UXResearchPage() {
       <PageHeader
         label="UX Research & User Testing"
         title="Stop Guessing. Start Knowing What Users Actually Need."
-        subtitle="Bad UX costs US businesses billions in lost conversions every year — and most of it is invisible until you watch real users try to use your product. HotBot Studios runs rigorous UX research so you build the right solution, not just a polished one."
+        subtitle="Bad UX costs US businesses billions in lost conversions every year, and most of it is invisible until you watch real users try to use your product. HotBot Studios runs rigorous UX research so you build the right solution, not just a polished one."
       />
 
       <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
         <Reveal>
           <div className="rounded-xl p-6" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#8b5cf6" }}>Definition — UX Research</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#8b5cf6" }}>Definition, UX Research</p>
             <p className="text-slate-300 text-sm leading-relaxed">
-              <strong className="text-white">UX Research</strong> is the systematic study of users — their goals, behaviours, and pain points — using methods like interviews, usability tests, and heatmap analysis. It replaces assumption-driven design with evidence-based decisions, reducing costly post-launch fixes and increasing product-market fit. Research conducted before design begins delivers 5× greater ROI than fixing usability problems after development.
+              <strong className="text-white">UX Research</strong> is the systematic study of users, their goals, behaviours, and pain points, using methods like interviews, usability tests, and heatmap analysis. It replaces assumption-driven design with evidence-based decisions, reducing costly post-launch fixes and increasing product-market fit. Research conducted before design begins delivers 5× greater ROI than fixing usability problems after development.
             </p>
           </div>
         </Reveal>
@@ -140,7 +140,7 @@ export default function UXResearchPage() {
       <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
         <Reveal>
           <div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-xl font-bold text-white mb-2">Research Method — Insight Depth Index</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Research Method, Insight Depth Index</h2>
             <p className="text-slate-400 text-sm mb-6">Relative depth of actionable insight generated per research method</p>
             <div className="space-y-4">
               {researchMethods.map((row) => (
@@ -170,9 +170,9 @@ export default function UXResearchPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               { trigger: "Before Design Begins", why: "Validate assumptions about user needs before investing design and dev time in the wrong direction.", icon: "🔭" },
-              { trigger: "Before Development Starts", why: "Test wireframes and prototypes with real users — fixes cost hours at this stage, not weeks of rework.", icon: "🏗️" },
+              { trigger: "Before Development Starts", why: "Test wireframes and prototypes with real users, fixes cost hours at this stage, not weeks of rework.", icon: "🏗️" },
               { trigger: "After Launch (Low Conversion)", why: "Heatmaps and session recordings reveal exactly where and why users are abandoning your funnel.", icon: "📉" },
-              { trigger: "Before a Major Redesign", why: "Know which parts of your product users love (keep) vs hate (fix) — not just what stakeholders think.", icon: "🔄" },
+              { trigger: "Before a Major Redesign", why: "Know which parts of your product users love (keep) vs hate (fix), not just what stakeholders think.", icon: "🔄" },
             ].map((item) => (
               <GlassCard key={item.trigger} className="p-6">
                 <div className="text-3xl mb-3">{item.icon}</div>
@@ -192,10 +192,10 @@ export default function UXResearchPage() {
             <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
             <ul className="space-y-2">
               {[
-                "5 users in usability testing uncover ~85% of critical usability issues — you don't need a huge sample",
+                "5 users in usability testing uncover ~85% of critical usability issues, you don't need a huge sample",
                 "UX research before design saves 5× the cost of fixing usability problems post-development",
                 "Hotjar heatmaps + session recordings reveal invisible conversion killers in live products",
-                "Maze enables unmoderated usability testing at scale on Figma prototypes — no dev required",
+                "Maze enables unmoderated usability testing at scale on Figma prototypes, no dev required",
                 "Every engagement delivers a prioritised, severity-ranked issue list with recommended design fixes",
                 "We recruit participants from your existing users or our screened US ICP panel",
               ].map((point) => (
@@ -212,7 +212,7 @@ export default function UXResearchPage() {
       <RelatedServices services={RELATED} />
       <CTASection
         title="Find Out Exactly Why Users Drop Off"
-        subtitle="Book a UX research audit — we'll identify the top 5 usability problems costing you conversions, with evidence and recommended fixes delivered in 2 weeks."
+        subtitle="Book a UX research audit, we'll identify the top 5 usability problems costing you conversions, with evidence and recommended fixes delivered in 2 weeks."
         formType="get-started"
       />
     </>
