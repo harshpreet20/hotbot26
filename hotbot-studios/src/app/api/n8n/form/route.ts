@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
 
+    // Capture client IP for lead tracing (works behind proxies / Vercel Edge)
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
     const data = await triggerN8n<Record<string, string>>("leads", {
       name,
       email,
@@ -53,6 +59,7 @@ export async function POST(req: NextRequest) {
       message: message || "",
       formType: formType || "get-started",
       source: page || "unknown",
+      ip,
     });
 
     return NextResponse.json({
