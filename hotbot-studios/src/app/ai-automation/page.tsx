@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { N8nWorkflowWidget } from "@/components/sections/N8nWorkflowWidget";
 import { PRODUCTS } from "@/lib/constants";
 import { GlassCard } from "@/components/shared/GlassCard";
 import Link from "next/link";
@@ -188,6 +189,8 @@ export default function AIAutomationPage() {
           </div>
         </Reveal>
       </section>
+
+      <N8nWorkflowWidget />
 
       {/* ── AI Products ──────────────────────────────────────────────── */}
       <section className="relative z-10 px-6 max-w-6xl mx-auto py-8">
