@@ -1,52 +1,45 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { SubServices } from "@/components/sections/SubServices";
-import { ServiceStats } from "@/components/sections/ServiceStats";
-import { ProcessSteps } from "@/components/sections/ProcessSteps";
-import { FAQSection } from "@/components/sections/FAQSection";
-import { CTASection } from "@/components/sections/CTASection";
-import { RelatedServices } from "@/components/sections/RelatedServices";
-import { GlassCard } from "@/components/shared/GlassCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
 
 export const metadata: Metadata = {
-  title: "Wireframing & Information Architecture Services USA | HotBot Studios",
+  title: "Wireframing & Information Architecture Design USA — Figma Wireframes & User Flows | HotBot Studios",
   description:
-    "Professional wireframing and information architecture for US digital products. Low and high-fidelity wireframes in Figma, user journey mapping, navigation structure design, and feature prioritization before any visual design begins.",
+    "HotBot Studios delivers low and high-fidelity wireframes and information architecture for US product teams — user journeys, navigation structures, and feature prioritisation before final UI design. Free design consultation.",
   keywords: [
-    "wireframing services USA",
+    "wireframing agency USA",
     "information architecture design USA",
-    "UX wireframe agency",
-    "Figma wireframing",
-    "user journey mapping USA",
-    "navigation design UX",
-    "low fidelity wireframe",
-    "high fidelity wireframe",
-    "IA design agency USA",
-    "product structure design",
+    "UX wireframes USA",
+    "Figma wireframing USA",
+    "user flow design USA",
+    "product wireframe design USA",
+    "low fidelity wireframes USA",
+    "high fidelity wireframes USA",
   ],
-  openGraph: {
-    title: "Wireframing & Information Architecture Services USA | HotBot Studios",
-    description: "Low and high-fidelity wireframes, user journey maps, and IA design that give your product a clear structural foundation before visual design begins.",
-    url: "https://hotbotstudios.com/ui-ux-design/wireframing",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  twitter: { card: "summary_large_image", title: "Wireframing & Information Architecture USA | HotBot Studios", description: "Figma wireframes and IA design for US digital products." },
   alternates: { canonical: "https://hotbotstudios.com/ui-ux-design/wireframing" },
+  openGraph: {
+    title: "Wireframing & Information Architecture Design USA | HotBot Studios",
+    description: "Low and high-fidelity wireframes and information architecture that define your user flows and navigation structure before visual design begins.",
+    url: "https://hotbotstudios.com/ui-ux-design/wireframing",
+  },
 };
 
-const serviceSchema = {
-  "@context": "https://schema.org", "@type": "Service",
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
   name: "Wireframing & Information Architecture",
-  description: "Low and high-fidelity wireframes, user journey maps, navigation structure design, and feature prioritization that form the structural foundation of great digital products.",
   provider: { "@type": "Organization", name: "HotBot Studios", url: "https://hotbotstudios.com" },
+  serviceType: "UX Wireframing and Information Architecture Design",
   areaServed: { "@type": "Country", name: "United States" },
-  serviceType: "Wireframing & Information Architecture",
+  description: "Low and high-fidelity wireframes and information architecture design for US product teams — user journeys, navigation structures, and feature prioritisation delivered in Figma.",
   url: "https://hotbotstudios.com/ui-ux-design/wireframing",
 };
 
-const breadcrumbSchema = {
-  "@context": "https://schema.org", "@type": "BreadcrumbList",
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
     { "@type": "ListItem", position: 2, name: "UI/UX Design", item: "https://hotbotstudios.com/ui-ux-design" },
@@ -54,143 +47,67 @@ const breadcrumbSchema = {
   ],
 };
 
-const faqSchema = {
-  "@context": "https://schema.org", "@type": "FAQPage",
-  mainEntity: [
-    { "@type": "Question", name: "What is the difference between low-fidelity and high-fidelity wireframes?", acceptedAnswer: { "@type": "Answer", text: "Low-fidelity wireframes are rough structural sketches, boxes, lines, placeholder text, used early in the process to explore layout options quickly without design investment. High-fidelity wireframes include real content, accurate spacing, and detailed component placement but still lack final visual styling (color, typography, imagery). We typically use lo-fi for discovery alignment and hi-fi for developer handoff preparation." } },
-    { "@type": "Question", name: "Why do we need wireframes if we already know what we want to build?", acceptedAnswer: { "@type": "Answer", text: "Wireframes are structural blueprints that reveal navigation logic, feature placement, content hierarchy, and user flow gaps that don't surface in written specifications or stakeholder discussions. Building without wireframes is like constructing a building without architectural drawings, the final result rarely matches the vision, and structural changes mid-build are extremely expensive." } },
-    { "@type": "Question", name: "What is information architecture (IA) and why does it matter?", acceptedAnswer: { "@type": "Answer", text: "Information architecture is the organization, labelling, and navigation structure of a digital product, how content is grouped, how menus are structured, and how users move between sections. Poor IA is the leading cause of users failing to find what they need, resulting in frustration, drop-off, and support tickets. Good IA is invisible, users just find things effortlessly." } },
-    { "@type": "Question", name: "Do you deliver wireframes in Figma?", acceptedAnswer: { "@type": "Answer", text: "Yes, all wireframes are delivered as Figma files with organized frames, named layers, and component annotations. Figma enables real-time stakeholder comments, easy version control, and seamless handoff to our visual design team or your in-house developers. We also export static PDF versions for stakeholders who don't use Figma." } },
-    { "@type": "Question", name: "How many rounds of revisions are included?", acceptedAnswer: { "@type": "Answer", text: "Standard wireframing engagements include two rounds of revisions after the initial delivery. Revisions address structural feedback, layout changes, flow adjustments, content hierarchy shifts. Visual design preferences (colors, fonts) are deferred to the visual UI design phase. Additional revision rounds can be purchased if needed." } },
-    { "@type": "Question", name: "Can wireframing be done in isolation or does it need UX research first?", acceptedAnswer: { "@type": "Answer", text: "Wireframing is most effective when informed by UX research, user goals, pain points, and mental models directly shape navigation decisions and feature prioritization. Without research, wireframes reflect the design team's assumptions rather than user needs. We recommend at minimum a 1-week discovery sprint before wireframing begins, even if a full research study isn't feasible." } },
-  ],
-};
-
-const SUB_SERVICES = [
-  { icon: "✏️", title: "Low-Fidelity Wireframes", desc: "Rapid structural sketches that map layout, content zones, and navigation before design investment, enabling fast stakeholder alignment without visual distraction.", href: "/ui-ux-design/wireframing" },
-  { icon: "📐", title: "High-Fidelity Wireframes", desc: "Detailed, annotated wireframes with real content, accurate spacing, and component definitions, ready for developer reference or visual design overlay.", href: "/ui-ux-design/wireframing" },
-  { icon: "🗺️", title: "Information Architecture (IA)", desc: "Site maps, menu taxonomy, content grouping, and navigation structure design tested via card sorting and tree testing to ensure users find things naturally.", href: "/ui-ux-design/wireframing" },
-  { icon: "🔄", title: "User Journey Mapping", desc: "Visual maps of every step a user takes from awareness to task completion, highlighting touchpoints, emotional states, pain points, and design opportunities.", href: "/ui-ux-design/wireframing" },
-  { icon: "⚡", title: "Feature Prioritization (MoSCoW)", desc: "Structured feature prioritization using MoSCoW (Must/Should/Could/Won't) to align stakeholders on what goes in the MVP vs future sprints, preventing scope creep.", href: "/ui-ux-design/wireframing" },
-  { icon: "🧭", title: "User Flow Diagrams", desc: "End-to-end flow diagrams for every key user journey, registration, onboarding, purchase, dashboard navigation, that development teams use as implementation blueprints.", href: "/ui-ux-design/wireframing" },
-];
-
-const STATS = [
-  { value: 60, suffix: "%", label: "Reduction in Design Rework with Wireframes", color: "#3b82f6" },
-  { value: 10, suffix: "×", label: "Cheaper to Fix in Wireframe vs Code", color: "#3b82f6" },
-  { value: 30, suffix: "%", label: "Faster Dev Velocity with Annotated Wireframes", color: "#3b82f6" },
-  { value: 2, suffix: "wk", label: "Typical Wireframing Engagement Duration", color: "#3b82f6" },
-];
-
-const PROCESS = [
-  { n: 1, title: "Discovery & Content Inventory", desc: "Review existing product, content, user research findings, and business requirements to understand scope, user goals, and structural constraints before the first wireframe is drawn.", icon: "🔍" },
-  { n: 2, title: "IA Design & Site Map", desc: "Design the navigation taxonomy, content grouping, and site map structure, validated through card sorting exercises or stakeholder workshops before wireframing begins.", icon: "🗺️" },
-  { n: 3, title: "Wireframe Creation", desc: "Produce lo-fi explorations for key screens, iterate to stakeholder alignment, then develop hi-fi annotated wireframes for all core user journeys in Figma.", icon: "📐" },
-  { n: 4, title: "Review, Revision & Handoff", desc: "Structured review session with stakeholders, two rounds of revisions included, then Figma file handoff with annotations, component notes, and user flow documentation.", icon: "✅" },
-];
-
-const FAQS = [
-  { q: "What is the difference between low-fidelity and high-fidelity wireframes?", a: "Low-fidelity wireframes are rough structural sketches, boxes, lines, placeholder text, used early in the process to explore layout options quickly without design investment. High-fidelity wireframes include real content, accurate spacing, and detailed component placement but still lack final visual styling. We use lo-fi for discovery alignment and hi-fi for developer handoff preparation." },
-  { q: "Why do we need wireframes if we already know what we want to build?", a: "Wireframes reveal navigation logic, feature placement, content hierarchy, and user flow gaps that don't surface in written specifications. Building without wireframes is like constructing a building without architectural drawings, the final result rarely matches the vision, and structural changes mid-build are extremely expensive." },
-  { q: "What is information architecture (IA) and why does it matter?", a: "Information architecture is the organization, labelling, and navigation structure of a digital product, how content is grouped, how menus are structured, and how users move between sections. Poor IA is the leading cause of users failing to find what they need, resulting in frustration, drop-off, and support tickets." },
-  { q: "Do you deliver wireframes in Figma?", a: "Yes, all wireframes are delivered as Figma files with organized frames, named layers, and component annotations. Figma enables real-time stakeholder comments, easy version control, and seamless handoff to our visual design team or your in-house developers. We also export static PDF versions for stakeholders who don't use Figma." },
-  { q: "How many rounds of revisions are included?", a: "Standard wireframing engagements include two rounds of revisions after the initial delivery. Revisions address structural feedback, layout changes, flow adjustments, content hierarchy shifts. Visual design preferences are deferred to the visual UI design phase. Additional revision rounds can be purchased if needed." },
-  { q: "Can wireframing be done in isolation or does it need UX research first?", a: "Wireframing is most effective when informed by UX research. Without research, wireframes reflect the design team's assumptions rather than user needs. We recommend at minimum a 1-week discovery sprint before wireframing begins, even if a full research study isn't feasible." },
-];
-
-const RELATED = [
-  { title: "UX Research & User Testing", href: "/ui-ux-design/ux-research", desc: "Research-informed wireframes that reflect real user needs.", icon: "🔭" },
-  { title: "Visual UI Design & Design Systems", href: "/ui-ux-design/visual-ui-design", desc: "Apply visual polish to the wireframe structure.", icon: "🎨" },
-  { title: "Interactive Prototyping", href: "/ui-ux-design/prototyping", desc: "Make wireframes clickable for user testing and demos.", icon: "⚡" },
-];
-
-const wireframeTypes = [
-  { type: "Sketches (Paper/Digital)", fidelity: "Lo-Fi", best: "Initial concept exploration", speed: "Hours" },
-  { type: "Structural Wireframes", fidelity: "Lo-Fi", best: "Layout & flow alignment", speed: "1–2 days/screen" },
-  { type: "Annotated Wireframes", fidelity: "Hi-Fi", best: "Developer handoff reference", speed: "3–5 days/screen" },
-  { type: "Content Wireframes", fidelity: "Hi-Fi", best: "Copywriter + designer collaboration", speed: "2–3 days/screen" },
+const CONTENT = [
+  {
+    heading: "Why Skipping Wireframes Is the Most Expensive Shortcut in Product Design",
+    body: "The temptation to skip wireframing and go straight to high-fidelity visual design is understandable — wireframes look unfinished, stakeholders find them hard to evaluate, and the visual design phase is where the product starts to feel real. But the cost of discovering structural problems (wrong navigation hierarchy, missing user flows, incorrect feature prioritisation) during the visual design or development phase is orders of magnitude higher than discovering them in wireframes. A navigation architecture problem found during wireframing takes two days to fix. The same problem found during development requires redesigning the component library, rewriting routing logic, and re-testing the user flows — typically two to four weeks of wasted effort. HotBot Studios treats wireframing as the most important phase of the design process: the moment when user research insights become concrete structural decisions, before those decisions have been made expensive by the investment of visual design and development effort.",
+    color: "#3b82f6",
+  },
+  {
+    heading: "Information Architecture: The Navigation Structure Users Actually Find Intuitive",
+    body: "Information architecture (IA) is the practice of organising the content, features, and navigation of a product in a structure that matches users' mental models — the way they naturally think about the problem your product solves. Good IA is invisible: users find what they need without consciously thinking about how they navigated there. Bad IA is immediately apparent: users ask where things are, navigation labels require explanations, and users cannot predict which section of the product contains the feature they need. HotBot Studios develops information architecture through card sorting (having representative users group and label features) and tree testing (having users navigate a navigation-only prototype to find specific items) — empirical methods that produce IA decisions based on how your specific users think, not how your team assumes they think. The output is a site map or app structure that has been tested and validated before a single wireframe screen is drawn.",
+    color: "#8b5cf6",
+  },
+  {
+    heading: "Low to High Fidelity: From Concept to Development-Ready Wireframes",
+    body: "Wireframing moves through fidelity levels, each serving a different purpose. Low-fidelity sketches (hand-drawn or rough Figma boxes) are the fastest way to explore multiple structural approaches in parallel — the goal is to generate and eliminate options quickly, not to communicate a finished design. Mid-fidelity wireframes define the layout, content hierarchy, and interaction patterns for each screen with enough detail to make structural decisions and begin usability testing. High-fidelity wireframes are the transition to visual design: every element placed with precise dimensions, content replaced with realistic data, and annotations added for the developer who will build each component. HotBot Studios delivers wireframes in Figma across all fidelity levels, with each screen annotated with interaction notes, responsive behaviour specifications, and the UX reasoning behind key design decisions — giving developers everything they need to build the product without interpretation errors.",
+    color: "#22c55e",
+  },
+  {
+    heading: "User Flows, Edge Cases, and the States That Development Teams Need",
+    body: "A common gap between design delivery and development reality is the treatment of edge cases and UI states. Wireframes that show only the happy path — the ideal user journey with valid data, no errors, and a full account — leave development teams making ad-hoc design decisions for every exception: empty states (what does the dashboard look like before any data has been added?), error states (what happens when an API call fails?), loading states (what does the user see while data is being fetched?), and permission states (what does a read-only user see instead of the edit button?). HotBot Studios maps every user flow in full — including onboarding, primary task completion, error recovery, and edge cases — and wireframes every state that development needs. This completeness is what separates wireframes that accelerate development from wireframes that generate a constant stream of design questions during the build sprint. Request a consultation below and we will scope the wireframing engagement for your product.",
+    color: "#f59e0b",
+  },
 ];
 
 export default function WireframingPage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <PageHeader
         label="Wireframing & Information Architecture"
-        title="The Blueprint Every Great Product Needs Before Visual Design"
-        subtitle="Building a digital product without wireframes is like pouring a concrete foundation without a blueprint. HotBot Studios maps every user journey, navigation structure, and screen layout before a single pixel of visual design is committed, so what gets built is right, not just beautiful."
+        title="The Structural Foundation That Makes Everything Else Work"
+        subtitle="Low and high-fidelity wireframes and information architecture that map user journeys, navigation structures, and feature priorities — delivered in Figma before visual design begins."
       />
 
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#3b82f6" }}>Definition, Wireframing & Information Architecture</p>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              <strong className="text-white">Wireframing</strong> is the creation of structural layout blueprints for digital screens, defining content placement, navigation, and feature location before visual styling begins. <strong className="text-white">Information Architecture (IA)</strong> is the underlying organizational structure: how content is grouped, labelled, and connected so users can navigate intuitively. Together, they form the structural foundation of any digital product and reduce development rework by up to 60%.
-            </p>
-          </div>
-        </Reveal>
+      <section className="relative z-10 px-6 max-w-4xl mx-auto py-10 space-y-6">
+        {CONTENT.map((block, i) => (
+          <Reveal key={i} delay={i * 0.07}>
+            <GlassCard className="p-6 md:p-8">
+              <div className="w-1 h-10 rounded-full mb-4" style={{ background: `linear-gradient(180deg, ${block.color}, ${block.color}44)` }} />
+              <h2 className="text-xl font-bold text-white mb-3">{block.heading}</h2>
+              <p className="text-slate-300 leading-relaxed text-[15px]">{block.body}</p>
+            </GlassCard>
+          </Reveal>
+        ))}
       </section>
 
-      <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
+      <section className="relative z-10 px-6 max-w-2xl mx-auto pb-24">
         <Reveal>
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Wireframe Type Comparison</h2>
-          <div className="grid grid-cols-1 gap-4">
-            {wireframeTypes.map((item) => (
-              <GlassCard key={item.type} className="p-5">
-                <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-white font-bold text-sm">{item.type}</h3>
-                  </div>
-                  <div className="flex gap-6 flex-wrap">
-                    <div className="text-center"><p className="text-xs text-slate-500 mb-0.5">Fidelity</p><p className="text-xs font-bold" style={{ color: "#3b82f6" }}>{item.fidelity}</p></div>
-                    <div className="text-center"><p className="text-xs text-slate-500 mb-0.5">Best For</p><p className="text-xs text-white">{item.best}</p></div>
-                    <div className="text-center"><p className="text-xs text-slate-500 mb-0.5">Turnaround</p><p className="text-xs font-bold text-slate-300">{item.speed}</p></div>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Get a Free Design Consultation</h2>
+            <p className="text-slate-400">Tell us about your product, your users, and your development timeline. We will scope the wireframing engagement and recommend the right level of fidelity within 24 hours.</p>
           </div>
+          <LeadCaptureForm
+            sourceId="uiux-wireframing"
+            accentColor="#3b82f6"
+            title="Start Your Wireframing Project"
+            subtitle="No obligation. Share your product brief and we will scope the information architecture and wireframing approach."
+          />
         </Reveal>
       </section>
-
-      <SubServices services={SUB_SERVICES} title="Wireframing & IA Services" columns={3} />
-      <ServiceStats stats={STATS} title="The Impact of Wireframing on Product Quality" />
-      <ProcessSteps steps={PROCESS} title="Our Wireframing Process" />
-      <FAQSection faqs={FAQS} />
-
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
-            <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
-            <ul className="space-y-2">
-              {[
-                "Wireframing reduces design rework by 60% and structural code changes by up to 10× in cost savings",
-                "Information architecture design prevents the #1 UX failure: users can't find what they need",
-                "All wireframes delivered in Figma with named layers, annotations, and stakeholder comment access",
-                "Two revision rounds included, structural changes are cheap at wireframe stage, expensive in code",
-                "User journey maps and flow diagrams give development teams a clear implementation blueprint",
-                "Feature prioritization (MoSCoW) sessions prevent scope creep and keep MVPs lean and shippable",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-slate-300">
-                  <span style={{ color: "#22c55e" }} className="mt-0.5 shrink-0">✓</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Reveal>
-      </section>
-
-      <RelatedServices services={RELATED} />
-      <CTASection
-        title="Get Your Product's Blueprint Right Before Building"
-        subtitle="Share your product vision, we'll map user flows, IA structure, and wireframes that give your development team a clear, validated blueprint to build from."
-        formType="get-started"
-      />
     </>
   );
 }

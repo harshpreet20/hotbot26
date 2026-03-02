@@ -1,52 +1,45 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { SubServices } from "@/components/sections/SubServices";
-import { ServiceStats } from "@/components/sections/ServiceStats";
-import { ProcessSteps } from "@/components/sections/ProcessSteps";
-import { FAQSection } from "@/components/sections/FAQSection";
-import { CTASection } from "@/components/sections/CTASection";
-import { RelatedServices } from "@/components/sections/RelatedServices";
-import { GlassCard } from "@/components/shared/GlassCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
 
 export const metadata: Metadata = {
-  title: "Visual UI Design & Design Systems USA | Figma Agency | HotBot Studios",
+  title: "Visual UI Design & Design Systems Agency USA — Figma Component Libraries | HotBot Studios",
   description:
-    "High-fidelity visual UI design and scalable Figma design systems for US businesses. Atomic component libraries, design tokens, dark/light mode, and pixel-perfect developer handoff. Average 65% conversion lift.",
+    "HotBot Studios creates beautiful, consistent UI designs and Figma design systems for US product teams — design tokens, component libraries, and developer-ready specs for pixel-perfect handoffs. Free design consultation.",
   keywords: [
-    "visual UI design agency USA",
-    "Figma design system agency",
-    "design system USA",
-    "UI design services USA",
-    "atomic design system",
-    "component library design",
-    "design tokens USA",
-    "SaaS UI design",
-    "B2B UI design agency",
-    "pixel perfect UI design",
+    "UI design agency USA",
+    "visual UI design USA",
+    "design system agency USA",
+    "Figma design system USA",
+    "component library design USA",
+    "product UI design USA",
+    "UI design consultant USA",
+    "atomic design system USA",
   ],
-  openGraph: {
-    title: "Visual UI Design & Design Systems USA | HotBot Studios",
-    description: "Figma design systems, atomic component libraries, and high-fidelity UI design for US businesses. Pixel-perfect developer handoff included.",
-    url: "https://hotbotstudios.com/ui-ux-design/visual-ui-design",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  twitter: { card: "summary_large_image", title: "Visual UI Design & Design Systems USA | HotBot Studios", description: "Figma design systems and high-fidelity UI for US products." },
   alternates: { canonical: "https://hotbotstudios.com/ui-ux-design/visual-ui-design" },
+  openGraph: {
+    title: "Visual UI Design & Design Systems Agency USA | HotBot Studios",
+    description: "Beautiful, consistent UI design and Figma design systems with component libraries and developer-ready specs for US product teams.",
+    url: "https://hotbotstudios.com/ui-ux-design/visual-ui-design",
+  },
 };
 
-const serviceSchema = {
-  "@context": "https://schema.org", "@type": "Service",
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
   name: "Visual UI Design & Design Systems",
-  description: "High-fidelity visual UI design and scalable Figma design systems including atomic component libraries, design tokens, and pixel-perfect developer handoff for US businesses.",
   provider: { "@type": "Organization", name: "HotBot Studios", url: "https://hotbotstudios.com" },
+  serviceType: "Visual UI Design and Design System Development",
   areaServed: { "@type": "Country", name: "United States" },
-  serviceType: "Visual UI Design & Design Systems",
+  description: "Visual UI design and Figma design system development for US product teams — design tokens, component libraries, responsive layouts, and developer-ready specifications.",
   url: "https://hotbotstudios.com/ui-ux-design/visual-ui-design",
 };
 
-const breadcrumbSchema = {
-  "@context": "https://schema.org", "@type": "BreadcrumbList",
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
     { "@type": "ListItem", position: 2, name: "UI/UX Design", item: "https://hotbotstudios.com/ui-ux-design" },
@@ -54,142 +47,67 @@ const breadcrumbSchema = {
   ],
 };
 
-const faqSchema = {
-  "@context": "https://schema.org", "@type": "FAQPage",
-  mainEntity: [
-    { "@type": "Question", name: "What is a design system and why do we need one?", acceptedAnswer: { "@type": "Answer", text: "A design system is a shared library of reusable UI components, design tokens (colors, typography, spacing), and usage guidelines that ensure visual consistency across every screen of your product. Without a design system, every new feature introduces inconsistency, different button styles, mismatched spacing, conflicting typography, that accumulates into a product that feels fragmented and untrustworthy. A design system is the foundation that makes scaling a product team possible." } },
-    { "@type": "Question", name: "What does a Figma design system deliverable include?", acceptedAnswer: { "@type": "Answer", text: "A HotBot Studios Figma design system includes: design token library (colors, typography, spacing, shadows), component library (buttons, inputs, cards, navigation, modals, tables, icons), usage documentation for each component, light and dark mode variants, responsive breakpoint frames, and developer handoff specifications. Storybook integration is available as an add-on." } },
-    { "@type": "Question", name: "Can you build on our existing design system?", acceptedAnswer: { "@type": "Answer", text: "Yes, we frequently audit, extend, and improve existing design systems. We identify inconsistencies, missing components, accessibility gaps (color contrast, focus states), and outdated patterns. We then add what's missing, fix what's broken, and document everything to bring the system up to a professional standard without discarding existing work." } },
-    { "@type": "Question", name: "How do you ensure designs are pixel-perfectly implemented by developers?", acceptedAnswer: { "@type": "Answer", text: "We use Figma's Dev Mode to expose exact measurements, spacing values, CSS properties, and asset exports directly to developers. We also create annotated handoff specs for complex components, hold a design handoff session with the development team, and offer a QA review against the final build to flag implementation drift before launch." } },
-    { "@type": "Question", name: "Do your designs include dark mode?", acceptedAnswer: { "@type": "Answer", text: "Yes, we design light and dark mode variants as standard for all SaaS and app projects. We use Figma's variable system to manage semantic color tokens (background/surface/text/accent) that switch cleanly between modes without creating duplicate component sets. Dark mode is no longer optional for US digital products, it's an expected feature." } },
-    { "@type": "Question", name: "How long does visual UI design take for a typical project?", acceptedAnswer: { "@type": "Answer", text: "A typical SaaS dashboard or web app (10–20 key screens) takes 4–8 weeks for high-fidelity visual design. A full design system (components only, no application screens) takes 3–5 weeks. Complex enterprise products with 50+ screens run 10–16 weeks. All timelines assume wireframes are approved before visual design begins." } },
-  ],
-};
-
-const SUB_SERVICES = [
-  { icon: "🎨", title: "High-Fidelity UI Design", desc: "Beautiful, production-ready screen designs in Figma, every state, every breakpoint, every interaction, built for pixel-perfect developer implementation.", href: "/ui-ux-design/visual-ui-design" },
-  { icon: "⚛️", title: "Atomic Design System Creation", desc: "From atoms (colors, type, icons) to molecules (inputs, cards) to organisms (navbars, tables), a complete, documented Figma component library your team can scale with.", href: "/ui-ux-design/visual-ui-design" },
-  { icon: "🎨", title: "Design Token Architecture", desc: "Semantic color, typography, spacing, and shadow tokens that enable brand theming, dark mode switching, and design system maintenance at scale.", href: "/ui-ux-design/visual-ui-design" },
-  { icon: "🌙", title: "Dark & Light Mode Design", desc: "Full dark/light mode variant design using Figma variables, semantic token architecture that switches cleanly without duplicate component sets or inconsistencies.", href: "/ui-ux-design/visual-ui-design" },
-  { icon: "🔍", title: "Design System Audit & Extension", desc: "Audit your existing Figma system for inconsistencies, accessibility failures, and missing components, then extend and document it to a professional standard.", href: "/ui-ux-design/visual-ui-design" },
-  { icon: "📤", title: "Developer Handoff (Figma Dev Mode)", desc: "Figma Dev Mode setup with CSS specs, asset exports, spacing annotations, and a structured design handoff session to ensure zero translation gap with engineering.", href: "/ui-ux-design/visual-ui-design" },
+const CONTENT = [
+  {
+    heading: "Visual Design as a Business Asset, Not Just Aesthetic Preference",
+    body: "Well-executed visual UI design is not decoration — it is a measurable business asset. Studies consistently show that users judge a product's credibility and quality within the first 50 milliseconds of viewing an interface. A consistent, professionally designed UI reduces cognitive load (how hard the user has to think to navigate the product), increases perceived quality (which directly affects willingness to pay and recommendation behaviour), and reduces support ticket volume (because well-designed interfaces are self-explanatory). For consumer products, visual design quality is a direct conversion rate driver — A/B tests that improve visual hierarchy and button prominence routinely produce 15 to 40% improvements in primary action completion rates. HotBot Studios approaches visual UI design as a function of user psychology and business outcomes, not personal taste — every design decision is grounded in a principle that serves the user's goal and the product's conversion objectives.",
+    color: "#ec4899",
+  },
+  {
+    heading: "Design Systems: The Infrastructure That Makes Consistency Scalable",
+    body: "A design system is the single source of truth for every visual element in your product — the library of components (buttons, inputs, cards, modals, navigation elements), the design tokens (colour palette, typography scale, spacing system, shadow values, border radii) that define the visual language, and the documentation that specifies how and when each component should be used. Without a design system, visual consistency degrades over time as different designers and developers make slightly different decisions for similar problems — creating a product that looks like it was built by ten different people, because it was. With a design system, every new screen a designer creates and every component a developer builds shares the same visual DNA — ensuring consistency as the product grows and reducing the design-to-development handoff time by 40 to 60%. HotBot Studios builds design systems in Figma using atomic design principles: tokens defined at the foundation level, components built from those tokens, and page templates assembled from components.",
+    color: "#8b5cf6",
+  },
+  {
+    heading: "The Design Process: From Brand to Screens to Developer Specs",
+    body: "Every visual UI design engagement begins with an audit of your existing brand assets — logo, brand colours, typography, and any existing UI patterns — and a competitive visual analysis of the leading products in your category. From this foundation, HotBot Studios develops the design language: a colour system with accessible combinations for every use case (primary actions, secondary actions, status indicators, backgrounds, text), a typography scale that works across web and mobile viewports, and an iconography and illustration style that complements your brand. These decisions are then applied to a component library in Figma, with each component built in all required states (default, hover, focus, active, disabled, error) and across all required sizes. Final screen designs are delivered in Figma with Inspect mode annotations for developers covering exact spacing values, font specifications, colour hex codes, and responsive behaviour rules at every breakpoint.",
+    color: "#3b82f6",
+  },
+  {
+    heading: "Responsive Design, Dark Mode, and Multi-Brand Design Systems",
+    body: "Modern product design must work across contexts that were optional three years ago and are now expected: responsive layouts that adapt correctly from mobile (320px) through tablet to widescreen desktop (1920px+), dark mode variants for every component and screen (Apple now requires dark mode support for iOS apps; a significant and growing proportion of web users prefer it), and multi-brand or white-label design token architectures for SaaS products that need to deliver a consistent experience under different client brand identities. HotBot Studios designs all three as standard practice for appropriate products: we build Figma designs using responsive auto-layout that reflects the actual CSS behaviour of the production implementation, we create dark mode variants using Figma's variable system for efficient theme switching, and we structure design token hierarchies that support multi-brand overrides without duplicating the entire component library. Request a design consultation below and we will review your current visual design maturity and recommend the right scope for your needs.",
+    color: "#22c55e",
+  },
 ];
 
-const STATS = [
-  { value: 65, suffix: "%", label: "Avg Conversion Lift from UI Redesign", color: "#8b5cf6" },
-  { value: 40, suffix: "%", label: "Faster Dev with a Design System", color: "#8b5cf6" },
-  { value: 94, suffix: "%", label: "First Impressions Driven by Design", color: "#8b5cf6" },
-  { value: 0.05, suffix: "s", label: "Time to Form a Visual Impression", color: "#8b5cf6" },
-];
-
-const PROCESS = [
-  { n: 1, title: "Visual Direction & Moodboard", desc: "Define the visual language, typography scale, color palette, corner radius, shadow depth, illustration style, with 2–3 moodboard directions for stakeholder alignment before design begins.", icon: "🎨" },
-  { n: 2, title: "Component Library Foundation", desc: "Build the atomic foundation: color tokens, type scale, spacing system, icon set, and core components (buttons, inputs, badges) that all subsequent screens inherit from.", icon: "⚛️" },
-  { n: 3, title: "Screen Design", desc: "Apply the component library to all key screens, desktop and mobile breakpoints, empty states, error states, loading states, and every interaction variant documented in Figma.", icon: "🖥️" },
-  { n: 4, title: "Handoff & QA", desc: "Figma Dev Mode setup, handoff session with development team, post-build QA review to flag implementation drift, and iteration on any visual inconsistencies before launch.", icon: "📤" },
-];
-
-const FAQS = [
-  { q: "What is a design system and why do we need one?", a: "A design system is a shared library of reusable UI components, design tokens, and usage guidelines that ensure visual consistency across every screen of your product. Without one, every new feature introduces inconsistency that accumulates into a product that feels fragmented and untrustworthy. A design system makes scaling a product team possible." },
-  { q: "What does a Figma design system deliverable include?", a: "A HotBot Studios Figma design system includes: design token library, component library (buttons, inputs, cards, navigation, modals, tables, icons), usage documentation, light and dark mode variants, responsive breakpoint frames, and developer handoff specifications. Storybook integration is available as an add-on." },
-  { q: "Can you build on our existing design system?", a: "Yes, we frequently audit, extend, and improve existing design systems. We identify inconsistencies, missing components, accessibility gaps, and outdated patterns. We add what's missing, fix what's broken, and document everything without discarding existing work." },
-  { q: "How do you ensure designs are pixel-perfectly implemented by developers?", a: "We use Figma's Dev Mode to expose exact measurements, spacing values, CSS properties, and asset exports directly to developers. We also create annotated handoff specs for complex components, hold a design handoff session, and offer a QA review against the final build to flag implementation drift before launch." },
-  { q: "Do your designs include dark mode?", a: "Yes, we design light and dark mode variants as standard for all SaaS and app projects. We use Figma's variable system to manage semantic color tokens that switch cleanly between modes. Dark mode is an expected feature for US digital products in 2026." },
-  { q: "How long does visual UI design take for a typical project?", a: "A typical SaaS dashboard (10–20 key screens) takes 4–8 weeks for high-fidelity visual design. A full design system (components only) takes 3–5 weeks. Complex enterprise products with 50+ screens run 10–16 weeks. All timelines assume wireframes are approved before visual design begins." },
-];
-
-const RELATED = [
-  { title: "Wireframing & Information Architecture", href: "/ui-ux-design/wireframing", desc: "Structural blueprints that visual design is applied on top of.", icon: "📐" },
-  { title: "Interactive Prototyping", href: "/ui-ux-design/prototyping", desc: "Make your design system come alive for testing and demos.", icon: "⚡" },
-  { title: "Accessibility Design (WCAG 2.2 AA)", href: "/ui-ux-design/accessibility", desc: "Ensure your visual design meets ADA accessibility standards.", icon: "♿" },
-];
-
-const designSystemLayers = [
-  { layer: "Design Tokens", items: "Colors · Typography · Spacing · Shadows · Border Radius", color: "#8b5cf6" },
-  { layer: "Atoms", items: "Buttons · Inputs · Icons · Badges · Labels · Avatars", color: "#3b82f6" },
-  { layer: "Molecules", items: "Form Groups · Cards · Alerts · Dropdowns · Tooltips", color: "#06b6d4" },
-  { layer: "Organisms", items: "Navigation · Tables · Modals · Sidebars · Data Grids", color: "#22c55e" },
-  { layer: "Templates", items: "Dashboard · Auth · Settings · List Views · Detail Pages", color: "#f59e0b" },
-  { layer: "Pages", items: "Fully composed screens with real content at every breakpoint", color: "#ec4899" },
-];
-
-export default function VisualUIDesignPage() {
+export default function VisualUiDesignPage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <PageHeader
         label="Visual UI Design & Design Systems"
-        title="Beautiful, Consistent Interfaces That Scale With Your Product"
-        subtitle="A design system isn't just a style guide, it's your product's visual foundation. HotBot Studios builds atomic Figma design systems and high-fidelity UI that makes every new feature consistent, every screen trustworthy, and every developer handoff friction-free."
+        title="Beautiful, Consistent Interfaces Built on a System That Scales"
+        subtitle="Figma UI design and atomic design systems for US product teams — design tokens, component libraries, dark mode, and developer-ready specifications for pixel-perfect development handoff."
       />
 
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#8b5cf6" }}>Definition, Visual UI Design & Design Systems</p>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              <strong className="text-white">Visual UI design</strong> is the creation of high-fidelity screen interfaces, applying typography, color, spacing, and component styling to wireframe structures to produce production-ready designs. A <strong className="text-white">design system</strong> is the reusable, documented component library that ensures visual consistency across all screens, all teams, and all future features. Together, they are the difference between a product that scales and one that becomes a visual mess as it grows.
-            </p>
-          </div>
-        </Reveal>
+      <section className="relative z-10 px-6 max-w-4xl mx-auto py-10 space-y-6">
+        {CONTENT.map((block, i) => (
+          <Reveal key={i} delay={i * 0.07}>
+            <GlassCard className="p-6 md:p-8">
+              <div className="w-1 h-10 rounded-full mb-4" style={{ background: `linear-gradient(180deg, ${block.color}, ${block.color}44)` }} />
+              <h2 className="text-xl font-bold text-white mb-3">{block.heading}</h2>
+              <p className="text-slate-300 leading-relaxed text-[15px]">{block.body}</p>
+            </GlassCard>
+          </Reveal>
+        ))}
       </section>
 
-      <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
+      <section className="relative z-10 px-6 max-w-2xl mx-auto pb-24">
         <Reveal>
-          <h2 className="text-xl font-bold text-white mb-6 text-center">Atomic Design System, Layer Architecture</h2>
-          <div className="space-y-3">
-            {designSystemLayers.map((row, i) => (
-              <div key={row.layer} className="flex items-center gap-4">
-                <span className="text-slate-400 text-xs w-32 shrink-0 text-right hidden md:block font-medium">{row.layer}</span>
-                <div className="flex-1 rounded-xl p-3 flex items-center gap-3"
-                  style={{ background: `${row.color}10`, border: `1px solid ${row.color}25`, width: `${100 - i * 10}%` }}>
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }}></div>
-                  <span className="text-slate-300 text-xs">{row.items}</span>
-                </div>
-              </div>
-            ))}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Get a Free UI Design Consultation</h2>
+            <p className="text-slate-400">Share your product, your brand assets, and your design goals. We will review your current visual design and recommend the right scope and approach within 24 hours.</p>
           </div>
-          <p className="text-slate-500 text-xs text-center mt-4">Every HotBot Studios design system follows Brad Frost&apos;s Atomic Design methodology</p>
+          <LeadCaptureForm
+            sourceId="uiux-visual-ui"
+            accentColor="#ec4899"
+            title="Start Your UI Design Project"
+            subtitle="No obligation. Share your product brief and existing brand assets and we will scope the design engagement."
+          />
         </Reveal>
       </section>
-
-      <SubServices services={SUB_SERVICES} title="Visual UI Design Services" columns={3} />
-      <ServiceStats stats={STATS} title="The Business Case for Professional UI Design" />
-      <ProcessSteps steps={PROCESS} title="Our Visual UI Design Process" />
-      <FAQSection faqs={FAQS} />
-
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
-            <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
-            <ul className="space-y-2">
-              {[
-                "Users form a visual impression of your product in 0.05 seconds, first visual impact determines trust",
-                "A Figma design system reduces development time by 40% on every subsequent feature built",
-                "Atomic design methodology: tokens → atoms → molecules → organisms → templates → pages",
-                "Dark and light mode support is standard, built with Figma variables for clean token switching",
-                "Figma Dev Mode handoff gives developers exact CSS specs, spacing values, and exportable assets",
-                "Design system audit available if you have an existing Figma library that needs professionalization",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-slate-300">
-                  <span style={{ color: "#22c55e" }} className="mt-0.5 shrink-0">✓</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Reveal>
-      </section>
-
-      <RelatedServices services={RELATED} />
-      <CTASection
-        title="Build Your Product's Visual Foundation"
-        subtitle="Whether you need a complete design system from scratch or to professionalize an existing one, HotBot Studios delivers Figma-native, developer-ready visual UI design for US products."
-        formType="get-started"
-      />
     </>
   );
 }

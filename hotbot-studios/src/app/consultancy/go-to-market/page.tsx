@@ -1,195 +1,111 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { SubServices } from "@/components/sections/SubServices";
-import { ServiceStats } from "@/components/sections/ServiceStats";
-import { ProcessSteps } from "@/components/sections/ProcessSteps";
-import { FAQSection } from "@/components/sections/FAQSection";
-import { CTASection } from "@/components/sections/CTASection";
-import { RelatedServices } from "@/components/sections/RelatedServices";
-import { GlassCard } from "@/components/shared/GlassCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
 
 export const metadata: Metadata = {
-  title: "Go-To-Market Strategy & Market Entry USA | Launch Consulting | HotBot Studios",
+  title: "Go-To-Market Strategy & Market Entry Consulting USA — Product Launch & New Markets | HotBot Studios",
   description:
-    "Go-to-market strategy and US market entry consulting. Research, positioning, messaging, channel strategy, and launch support for new products, new markets, and new customer segments. HotBot Studios.",
+    "HotBot Studios develops go-to-market strategies for US product launches, new market entry, and customer segment expansion — research, positioning, messaging, channel strategy, and launch support. Free GTM consultation.",
   keywords: [
     "go-to-market strategy USA",
-    "market entry consulting USA",
-    "GTM strategy agency USA",
+    "GTM strategy consulting USA",
+    "market entry strategy USA",
     "product launch strategy USA",
+    "go-to-market consultant USA",
     "US market entry consulting",
-    "new market expansion USA",
-    "product positioning consulting",
-    "launch strategy consulting",
-    "B2B GTM strategy USA",
-    "SaaS go-to-market USA",
   ],
-  openGraph: {
-    title: "Go-To-Market Strategy & Market Entry USA | HotBot Studios",
-    description: "Research, positioning, channel strategy, and launch support for entering new US markets, launching new products, or targeting new customer segments.",
-    url: "https://hotbotstudios.com/consultancy/go-to-market",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  twitter: { card: "summary_large_image", title: "Go-To-Market Strategy USA | HotBot Studios", description: "GTM strategy and market entry consulting for US businesses." },
   alternates: { canonical: "https://hotbotstudios.com/consultancy/go-to-market" },
+  openGraph: {
+    title: "Go-To-Market Strategy & Market Entry Consulting USA | HotBot Studios",
+    description: "Go-to-market strategies for US product launches and new market entry — research, positioning, messaging, channel strategy, and launch execution support.",
+    url: "https://hotbotstudios.com/consultancy/go-to-market",
+  },
 };
 
-const serviceSchema = {
-  "@context": "https://schema.org", "@type": "Service",
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
   name: "Go-To-Market & Market Entry Strategy",
-  description: "Research, positioning, messaging, channel strategy, and launch support for entering new US markets, launching new products, or targeting new customer segments.",
   provider: { "@type": "Organization", name: "HotBot Studios", url: "https://hotbotstudios.com" },
+  serviceType: "Go-To-Market Strategy and Market Entry Consulting",
   areaServed: { "@type": "Country", name: "United States" },
-  serviceType: "Go-To-Market Strategy",
+  description: "Go-to-market strategy development for US product launches, new market entry, and customer segment expansion — including research, positioning, messaging architecture, channel strategy, and launch support.",
   url: "https://hotbotstudios.com/consultancy/go-to-market",
 };
 
-const breadcrumbSchema = {
-  "@context": "https://schema.org", "@type": "BreadcrumbList",
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Consultancy", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Go-To-Market", item: "https://hotbotstudios.com/consultancy/go-to-market" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
+    { "@type": "ListItem", position: 3, name: "Go-To-Market & Market Entry", item: "https://hotbotstudios.com/consultancy/go-to-market" },
   ],
 };
 
-const faqSchema = {
-  "@context": "https://schema.org", "@type": "FAQPage",
-  mainEntity: [
-    { "@type": "Question", name: "What is a go-to-market strategy and what does it include?", acceptedAnswer: { "@type": "Answer", text: "A go-to-market (GTM) strategy is a plan that defines how you will launch a product, enter a new market, or reach a new customer segment, with enough specificity to execute. A HotBot Studios GTM strategy includes: market sizing and ICP definition; competitive landscape analysis; positioning and messaging architecture; channel strategy with budget allocation; pricing strategy validation; launch timeline and milestone plan; and success metrics (how we know the launch worked)." } },
-    { "@type": "Question", name: "How long does it take to develop a go-to-market strategy?", acceptedAnswer: { "@type": "Answer", text: "A focused GTM strategy for a single product or market takes 4–8 weeks to develop: 2 weeks of market research and ICP interviews, 2 weeks of positioning and messaging development, 2 weeks of channel strategy and launch plan. GTM strategies for complex enterprise market entries or multi-segment launches take 8–16 weeks. We work backward from your launch date to ensure the strategy is ready when you need it." } },
-    { "@type": "Question", name: "We're entering the US market from outside the US, what do we need to know?", acceptedAnswer: { "@type": "Answer", text: "The US market has distinct regional, cultural, and competitive characteristics that differ significantly from European, Asian, or Australian markets. Key considerations: the US is 50 state-sized markets, not one, geographic segmentation matters. US buyers respond to social proof (case studies, testimonials, reviews) more than features. Pricing expectations, buying cycle lengths, and decision-maker titles differ by industry. We conduct US-specific ICP research and competitive analysis to ensure your GTM is calibrated for the US context, not just translated from your home market." } },
-    { "@type": "Question", name: "What's the difference between a GTM strategy and a marketing plan?", acceptedAnswer: { "@type": "Answer", text: "A GTM strategy is launch-specific and time-bounded, it answers: who exactly are we targeting, what are we saying to them, through which channels, in what sequence, and how will we know it worked? A marketing plan is ongoing, it describes the ongoing activity calendar. GTM strategy comes first and informs the marketing plan. You should never build a marketing plan for a new product without a validated GTM strategy underneath it." } },
-    { "@type": "Question", name: "Do you provide launch execution support, or is the GTM engagement advisory only?", acceptedAnswer: { "@type": "Answer", text: "The GTM strategy development is advisory, we produce the plan and provide guidance. However, HotBot Studios uniquely can also execute the launch: our digital marketing team can run paid acquisition, our content team can produce launch assets, our software team can build landing pages, and our AI automation team can set up lead nurture sequences. Most clients who engage us for GTM strategy also activate execution support." } },
-    { "@type": "Question", name: "How do you validate positioning and messaging before launch?", acceptedAnswer: { "@type": "Answer", text: "We validate positioning and messaging through: 5–10 ICP interviews using Jobs-to-be-Done methodology (understanding buyer language, motivations, and alternatives considered); A/B testing of value proposition variants in landing page copy; small-scale paid acquisition tests using different messaging angles; and internal stakeholder reviews with your sales team (they talk to buyers daily and know what resonates). We never launch with untested messaging if we can avoid it." } },
-  ],
-};
-
-const SUB_SERVICES = [
-  { icon: "🔭", title: "Market Research & ICP Definition", desc: "Quantitative market sizing (TAM/SAM/SOM) and qualitative ICP research, 5–10 buyer interviews using Jobs-to-be-Done methodology to understand buying triggers, language, and alternatives.", href: "/consultancy/go-to-market" },
-  { icon: "🎯", title: "Positioning & Messaging Architecture", desc: "Define your unique value proposition, competitive differentiation, and messaging hierarchy, from category definition through to taglines and objection handling frameworks.", href: "/consultancy/go-to-market" },
-  { icon: "💰", title: "Pricing Strategy Validation", desc: "Competitive pricing analysis, willingness-to-pay research, pricing model selection (subscription, usage, seats), and pricing page copy that reduces friction at the bottom of the funnel.", href: "/consultancy/go-to-market" },
-  { icon: "📣", title: "Channel Strategy & Budget Allocation", desc: "Identify the 2–3 highest-ROI customer acquisition channels for your specific ICP and market, with launch-phase budget allocation that generates early signals without burning runway.", href: "/consultancy/go-to-market" },
-  { icon: "🚀", title: "Launch Plan & Timeline", desc: "A milestone-driven launch plan with pre-launch (build, seed), launch (activate), and post-launch (optimize) phases, aligned to your team capacity and external launch commitments.", href: "/consultancy/go-to-market" },
-  { icon: "📊", title: "Launch Performance & Iteration", desc: "Define success metrics before launch, implement tracking, review early signals at 30/60/90 days, and iterate positioning, messaging, and channel mix based on real market response data.", href: "/consultancy/go-to-market" },
-];
-
-const STATS = [
-  { value: 70, suffix: "%", label: "of New Products Fail Due to Positioning Problems", color: "#22c55e" },
-  { value: 4, suffix: "wk", label: "Avg GTM Strategy Development Time", color: "#22c55e" },
-  { value: 3, suffix: "×", label: "Faster to First $1M ARR with Research-Backed GTM", color: "#22c55e" },
-  { value: 90, suffix: "d", label: "to First Performance Signals Post-Launch", color: "#22c55e" },
-];
-
-const PROCESS = [
-  { n: 1, title: "Market Research & ICP Interviews", desc: "Quantitative market sizing using industry data + 5–10 qualitative ICP interviews using Jobs-to-be-Done methodology, understanding buyer language, motivations, and current alternatives.", icon: "🔬" },
-  { n: 2, title: "Competitive Landscape Analysis", desc: "Map 5–10 competitors across positioning, pricing, messaging, channels, and customer reviews, identifying uncontested positioning angles and market gaps.", icon: "⚔️" },
-  { n: 3, title: "Positioning, Messaging & Channel Strategy", desc: "Develop positioning architecture, core messaging framework, pricing recommendation, and channel strategy, validated through small-scale tests before full launch investment.", icon: "🎯" },
-  { n: 4, title: "Launch Plan & Execution Support", desc: "Pre-launch/launch/post-launch milestone plan, team briefing, launch asset production support, and 90-day performance review with iteration recommendations.", icon: "🚀" },
-];
-
-const FAQS = [
-  { q: "What is a go-to-market strategy and what does it include?", a: "A GTM strategy defines how you will launch a product, enter a new market, or reach a new customer segment. It includes market sizing and ICP definition; competitive landscape analysis; positioning and messaging architecture; channel strategy with budget allocation; pricing strategy validation; launch timeline and milestone plan; and success metrics." },
-  { q: "How long does it take to develop a go-to-market strategy?", a: "A focused GTM strategy for a single product or market takes 4–8 weeks: 2 weeks of market research and ICP interviews, 2 weeks of positioning and messaging development, 2 weeks of channel strategy and launch plan. Complex enterprise market entries take 8–16 weeks." },
-  { q: "We're entering the US market from outside the US, what do we need to know?", a: "The US is 50 state-sized markets with distinct regional characteristics. US buyers respond strongly to social proof (case studies, reviews) over features. Pricing expectations, buying cycles, and decision-maker titles differ by industry. We conduct US-specific ICP research calibrated to the US context, not just translated from your home market." },
-  { q: "What's the difference between a GTM strategy and a marketing plan?", a: "A GTM strategy is launch-specific and time-bounded, it answers: who exactly are we targeting, what are we saying, through which channels, in what sequence, and how will we know it worked? A marketing plan is ongoing activity management. GTM strategy comes first and informs the marketing plan." },
-  { q: "Do you provide launch execution support, or is the GTM engagement advisory only?", a: "GTM strategy development is advisory, we produce the plan. However, HotBot Studios can also execute the launch: our digital marketing team runs paid acquisition, our content team produces launch assets, our software team builds landing pages, and our AI automation team sets up lead nurture sequences." },
-  { q: "How do you validate positioning and messaging before launch?", a: "Through: 5–10 ICP interviews using Jobs-to-be-Done methodology; A/B testing of value proposition variants on landing pages; small-scale paid acquisition tests using different messaging angles; and internal reviews with your sales team. We never launch with untested messaging if we can avoid it." },
-];
-
-const RELATED = [
-  { title: "Growth Strategy & Roadmap", href: "/consultancy/growth-strategy", desc: "Ongoing growth strategy after the initial market entry.", icon: "🗺️" },
-  { title: "Digital Marketing Execution", href: "/marketing-services", desc: "Execute the GTM launch plan with our full-service team.", icon: "📣" },
-  { title: "Marketing Audit & Gap Analysis", href: "/consultancy/marketing-audit", desc: "Post-launch audit to optimize performance after 90 days.", icon: "🔍" },
-];
-
-const gtmComponents = [
-  { component: "Market Sizing", output: "TAM · SAM · SOM quantification", icon: "📊" },
-  { component: "ICP Definition", output: "Buyer personas with Jobs-to-be-Done", icon: "👤" },
-  { component: "Competitive Positioning", output: "Differentiation matrix + white space map", icon: "⚔️" },
-  { component: "Messaging Architecture", output: "Value prop · Tagline · Objection handling", icon: "💬" },
-  { component: "Pricing Strategy", output: "Model selection + price point + page copy", icon: "💰" },
-  { component: "Channel Strategy", output: "2–3 priority channels + budget split", icon: "📣" },
-  { component: "Launch Timeline", output: "Pre/launch/post milestone Gantt", icon: "🚀" },
-  { component: "Success Metrics", output: "KPIs + targets + measurement plan", icon: "🎯" },
+const CONTENT = [
+  {
+    heading: "Why Most Product Launches Underperform — and How to Prevent It",
+    body: "The majority of product launches fail not because the product is bad but because the go-to-market strategy is an afterthought. The product team spends twelve months building; the marketing team gets six weeks to prepare a launch. Positioning is defined by committee and reflects the internal team's view of the product rather than the language customers use to describe their problem. The target customer segment is defined too broadly (every business with over 50 employees) rather than precisely enough to be actionable (Series A SaaS companies with a sales team of 5 to 15 in financial services). The channel mix is selected based on what the marketing team is most comfortable with rather than where the target customer's attention actually is. HotBot Studios works with the founding team, product team, and marketing team together — before the launch — to develop a go-to-market strategy that is specific, sequenced, and executable from day one, not a slide deck that gets updated in retrospect.",
+    color: "#8b5cf6",
+  },
+  {
+    heading: "Market Research, Customer Segmentation, and Competitive Landscape",
+    body: "Every GTM engagement begins with research: primary research (interviews with 10 to 20 people who match your target customer profile) to understand how they currently solve the problem your product addresses, what language they use to describe the problem, what they value in a solution, and what would make them switch from their current approach; secondary research (market sizing, competitor positioning analysis, category keyword research) to understand the landscape your product is entering and where the competitive white space is. From this research, we develop a precise customer segmentation: the specific company sizes, industry verticals, job titles, and behavioural characteristics that define your ideal customer, ranked by ease of acquisition and expected lifetime value. This segmentation drives every subsequent GTM decision — from the channels you prioritise to the messaging hierarchy that speaks to the most important customer motivations.",
+    color: "#3b82f6",
+  },
+  {
+    heading: "Positioning, Messaging Architecture, and Launch Narrative",
+    body: "Positioning is the strategic decision about which market category you compete in, which customer segment you serve, and what differentiates you from every alternative — including the alternative of doing nothing. A clear positioning statement is not a tagline; it is the internal decision that determines what you say, to whom, in what context, and why a rational customer should prefer you over every other option available to them. HotBot Studios develops your positioning through a structured workshop process, tests it against the research findings from the customer interview programme, and translates it into a messaging architecture: the hierarchy of messages from core value proposition through supporting proof points and objection responses, adapted for each channel and buying stage. The launch narrative — the coherent story about why this product exists, why now, and why you are the team to build it — is the output that drives all marketing communications at launch.",
+    color: "#22c55e",
+  },
+  {
+    heading: "Channel Strategy, Launch Plan, and Post-Launch Optimisation",
+    body: "With positioning defined and messaging developed, the GTM strategy specifies how you will reach your target customer: which acquisition channels to prioritise in the first 90 days (typically one to three channels where you can learn quickly), what the content and creative strategy looks like for each channel, how the sales motion (inbound, outbound, PLG, partnerships) interacts with the marketing programme, and what the launch sequence looks like week by week from pre-launch awareness building through announcement day through post-launch demand capture. HotBot Studios delivers a detailed 90-day launch plan with resource requirements, budget allocation, KPIs, and decision points. We also provide launch support: reviewing creative before it goes live, troubleshooting performance issues in the first few weeks, and adjusting the channel mix based on early signals. Request a free GTM consultation below and we will review your launch situation and share initial recommendations within 24 hours.",
+    color: "#ec4899",
+  },
 ];
 
 export default function GoToMarketPage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <PageHeader
-        label="Go-To-Market & Market Entry Strategy"
-        title="Launch Into New Markets With a Plan That Actually Works"
-        subtitle="70% of new products fail not because of what they do, but because of how they're positioned, priced, and launched. HotBot Studios builds research-backed go-to-market strategies, grounded in real buyer interviews, competitive data, and channel testing, that give new launches the best possible chance of gaining traction."
+        label="Go-To-Market & Market Entry"
+        title="Launch Right the First Time — Strategy Before Spend"
+        subtitle="Go-to-market strategies for US product launches, new market entry, and customer segment expansion — research, positioning, messaging architecture, channel strategy, and 90-day launch plans."
       />
 
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#22c55e" }}>Definition, Go-To-Market Strategy</p>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              A <strong className="text-white">go-to-market (GTM) strategy</strong> is the operational plan that defines exactly how a product, feature, or company will reach its target customers, specifying the who (ICP), what (positioning and messaging), where (channels), how much (pricing), and when (launch timeline). Unlike a marketing plan (which manages ongoing activity), a GTM strategy is specifically designed for the launch phase, when every positioning decision and channel dollar has outsized impact on long-term market position.
-            </p>
-          </div>
-        </Reveal>
+      <section className="relative z-10 px-6 max-w-4xl mx-auto py-10 space-y-6">
+        {CONTENT.map((block, i) => (
+          <Reveal key={i} delay={i * 0.07}>
+            <GlassCard className="p-6 md:p-8">
+              <div className="w-1 h-10 rounded-full mb-4" style={{ background: `linear-gradient(180deg, ${block.color}, ${block.color}44)` }} />
+              <h2 className="text-xl font-bold text-white mb-3">{block.heading}</h2>
+              <p className="text-slate-300 leading-relaxed text-[15px]">{block.body}</p>
+            </GlassCard>
+          </Reveal>
+        ))}
       </section>
 
-      <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
+      <section className="relative z-10 px-6 max-w-2xl mx-auto pb-24">
         <Reveal>
-          <h2 className="text-xl font-bold text-white mb-6 text-center">Complete GTM Strategy, 8 Components</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {gtmComponents.map((item, i) => (
-              <GlassCard key={item.component} className="p-4">
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <div className="text-xs font-bold text-white mb-1">{item.component}</div>
-                <div className="text-[10px] text-slate-400 leading-snug">{item.output}</div>
-                <div className="mt-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                  style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e" }}>{i + 1}</div>
-              </GlassCard>
-            ))}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Get a Free GTM Consultation</h2>
+            <p className="text-slate-400">Tell us about your product, your target customer, and your launch timeline. We will share initial positioning recommendations and a GTM framework within 24 hours.</p>
           </div>
+          <LeadCaptureForm
+            sourceId="consultancy-go-to-market"
+            accentColor="#8b5cf6"
+            title="Build Your Go-To-Market Strategy"
+            subtitle="No obligation. Share your product, market, and launch goals and we will scope the engagement."
+          />
         </Reveal>
       </section>
-
-      <SubServices services={SUB_SERVICES} title="Go-To-Market Services" columns={3} />
-      <ServiceStats stats={STATS} title="Why GTM Strategy Determines Launch Success" />
-      <ProcessSteps steps={PROCESS} title="Our GTM Strategy Process" />
-      <FAQSection faqs={FAQS} />
-
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div className="rounded-xl p-6" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
-            <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
-            <ul className="space-y-2">
-              {[
-                "70% of product launches fail due to positioning and messaging problems, not product quality",
-                "GTM strategy is time-bounded and launch-specific, it is not the same as an ongoing marketing plan",
-                "ICP interviews using Jobs-to-be-Done methodology uncover buyer language that outperforms internal assumptions",
-                "Validate messaging with small-scale paid tests before committing full launch budget",
-                "US market entry requires US-specific research, European or Australian GTM assumptions will misfire",
-                "HotBot Studios can move from GTM strategy into full launch execution, digital marketing, content, and tech all under one roof",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-slate-300">
-                  <span style={{ color: "#22c55e" }} className="mt-0.5 shrink-0">✓</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Reveal>
-      </section>
-
-      <RelatedServices services={RELATED} />
-      <CTASection
-        title="Launch Into Your New Market With Confidence"
-        subtitle="Share your product, target market, and launch timeline, we'll build the research-backed GTM strategy that gives your launch the best possible chance of gaining traction fast."
-        formType="strategy-call"
-      />
     </>
   );
 }
