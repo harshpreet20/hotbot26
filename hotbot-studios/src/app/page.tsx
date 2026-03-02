@@ -46,8 +46,8 @@ export default function HomePage() {
   return (
     <>
       <DomainWidget />
-      <HeroSection />
       <StatsSection />
+      <HeroSection />
       <ClientLogos />
       <TestimonialsSection />
       <CTASection />
