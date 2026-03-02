@@ -10,6 +10,9 @@ import { Highlight } from "@/components/shared/Highlight";
 import { ContentBlock } from "@/components/shared/ContentBlock";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { PersonalizationWidget } from "@/components/marketing/PersonalizationWidget";
+import { ABTestingWidget } from "@/components/marketing/ABTestingWidget";
+import { CollaborationWidget } from "@/components/marketing/CollaborationWidget";
 
 export const metadata: Metadata = {
   title: "Digital Marketing Services USA — SEO, PPC & Social Media | HotBot Studios",
@@ -205,6 +208,10 @@ export default function MarketingServicesPage() {
           </div>
         </Reveal>
       </section>
+
+      <PersonalizationWidget />
+      <ABTestingWidget />
+      <CollaborationWidget />
 
       <SubServices services={SUB_SERVICES} title="Digital Marketing Services We Deliver" columns={3} />
       <ServiceStats stats={STATS} title="Our Track Record for US Businesses" />
