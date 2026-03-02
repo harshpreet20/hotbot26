@@ -1,464 +1,113 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { SubServices } from "@/components/sections/SubServices";
-import { ServiceStats } from "@/components/sections/ServiceStats";
-import { ProcessSteps } from "@/components/sections/ProcessSteps";
-import { FAQSection } from "@/components/sections/FAQSection";
-import { CTASection } from "@/components/sections/CTASection";
-import { RelatedServices } from "@/components/sections/RelatedServices";
-import { GlassCard } from "@/components/shared/GlassCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
 
 export const metadata: Metadata = {
-  title: "Podcast & Influencer PR Services USA | Guest Placements & Partnerships | HotBot Studios",
+  title: "Podcast & Influencer PR Agency USA — Guest Placements & Brand Partnerships | HotBot Studios",
   description:
-    "Strategic podcast guest placements on top US shows + influencer partnership management for B2B and B2C brands. Reach engaged niche audiences through authentic endorsements. HotBot Studios.",
+    "HotBot Studios secures strategic podcast guest placements and influencer partnerships for US B2B and B2C brands. Reach engaged, targeted audiences in the format they trust most. Free podcast PR consultation.",
   keywords: [
-    "podcast PR services USA",
-    "podcast guest placement agency",
-    "influencer PR agency USA",
-    "B2B podcast marketing",
-    "podcast booking agency",
-    "influencer partnership management",
-    "podcast publicity USA",
-    "thought leadership podcast",
-    "B2C influencer PR",
-    "podcast outreach agency",
+    "podcast PR agency USA",
+    "podcast guest placement USA",
+    "influencer PR USA",
+    "B2B podcast PR USA",
+    "podcast booking agency USA",
+    "influencer partnership management USA",
+    "podcast marketing USA",
+    "brand podcast placements USA",
   ],
+  alternates: { canonical: "https://hotbotstudios.com/public-relations/podcast-pr" },
   openGraph: {
-    title: "Podcast & Influencer PR Services USA | HotBot Studios",
-    description:
-      "Strategic podcast guest placements on top US shows + influencer partnership management. Reach engaged audiences through authentic endorsements.",
+    title: "Podcast & Influencer PR Agency USA — Guest Placements & Partnerships | HotBot Studios",
+    description: "Strategic podcast guest placements and influencer partnerships for US B2B and B2C brands. Reach the audiences your customers trust most.",
     url: "https://hotbotstudios.com/public-relations/podcast-pr",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Podcast & Influencer PR Services USA | HotBot Studios",
-    description:
-      "Strategic podcast guest placements + influencer partnership management for US brands.",
-  },
-  alternates: {
-    canonical: "https://hotbotstudios.com/public-relations/podcast-pr",
   },
 };
 
-const serviceSchema = {
+const schema = {
   "@context": "https://schema.org",
   "@type": "Service",
   name: "Podcast & Influencer PR",
-  description:
-    "Strategic podcast guest placements on the top shows your target audience listens to, plus influencer partnership management for B2C and B2B brands seeking authentic endorsements.",
-  provider: {
-    "@type": "Organization",
-    name: "HotBot Studios",
-    url: "https://hotbotstudios.com",
-  },
-  areaServed: {
-    "@type": "Country",
-    name: "United States",
-  },
-  serviceType: "Podcast & Influencer PR",
+  provider: { "@type": "Organization", name: "HotBot Studios", url: "https://hotbotstudios.com" },
+  serviceType: "Podcast Guest Placement and Influencer PR",
+  areaServed: { "@type": "Country", name: "United States" },
+  description: "Strategic podcast guest placement and influencer partnership management for US B2B and B2C brands — reaching engaged, targeted audiences in the media formats they trust most.",
   url: "https://hotbotstudios.com/public-relations/podcast-pr",
 };
 
-const breadcrumbSchema = {
+const breadcrumb = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Public Relations",
-      item: "https://hotbotstudios.com/public-relations",
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: "Podcast & Influencer PR",
-      item: "https://hotbotstudios.com/public-relations/podcast-pr",
-    },
+    { "@type": "ListItem", position: 2, name: "Public Relations", item: "https://hotbotstudios.com/public-relations" },
+    { "@type": "ListItem", position: 3, name: "Podcast & Influencer PR", item: "https://hotbotstudios.com/public-relations/podcast-pr" },
   ],
 };
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "How do you select which podcasts to target for guest placements?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "We research your ideal customer profile (ICP) and identify shows where your target audience already spends time. We evaluate listener demographics, episode cadence, host engagement quality, and audience size — prioritising relevance and engagement rate over raw download numbers. A niche show with 5,000 highly targeted listeners often outperforms a general show with 50,000 passive ones.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What's the difference between podcast PR and traditional media PR?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Podcast PR targets niche, engaged audio audiences rather than mass broadcast audiences. Podcast listeners consume 60–90 minutes of uninterrupted content per episode, creating deeper brand affinity than a 3-second headline scan. Conversion rates from podcast listeners are significantly higher than traditional media readers because the medium builds trust through long-form conversation.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How do you manage influencer partnerships for B2B brands?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "B2B influencer PR focuses on industry analysts, LinkedIn creators, newsletter authors, and niche YouTubers rather than Instagram lifestyle influencers. We identify voices your target buyers already trust, structure performance-based or fixed-fee partnerships, create content briefs that preserve authentic voice, and track referral traffic, lead attribution, and brand mention lift across the campaign.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How long does it take to secure a podcast guest placement?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Most podcast booking cycles take 4–12 weeks from initial outreach to recorded episode, then an additional 2–8 weeks before the episode publishes. We run ongoing outreach to multiple shows simultaneously so placements arrive on a rolling basis rather than all at once. We typically secure the first confirmed booking within 3–5 weeks of campaign launch.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can you manage the full process from outreach to episode promotion?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes — we handle every stage: show research, personalised pitch writing, scheduling coordination, pre-interview briefing, key message preparation, episode monitoring, and post-release amplification. We also create social cut-downs, quote cards, and email newsletter snippets from each episode to maximise reach beyond the podcast audience.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What results can we expect from a podcast PR campaign?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Results vary by niche, brand authority, and campaign duration. Typical outcomes include 3–8 podcast placements per quarter, measurable referral traffic spikes post-episode, direct lead enquiries citing the podcast, and compounding domain authority lift from show notes backlinks. Brands that sustain podcast PR for 6+ months consistently report it as one of their highest-converting lead channels.",
-      },
-    },
-  ],
-};
-
-const SUB_SERVICES = [
+const CONTENT = [
   {
-    icon: "🎙️",
-    title: "Podcast Guest Placement",
-    desc: "Research, pitch, and book guest appearances on the top US shows your ideal customers listen to — from industry niche to mainstream business.",
-    href: "/public-relations/podcast-pr",
+    heading: "Why Podcasts Are the Highest-Trust Media Format Available to Brands Right Now",
+    body: "Podcast listeners are uniquely valuable from a PR perspective: they listen during commutes, workouts, and focused work time — without the constant interruption of notifications and competing content — which means they give their full attention to the conversation for 30, 45, or 60 minutes. An interview on a podcast your target audience subscribes to is the equivalent of a 45-minute sales conversation with a warm prospect who already trusts the host's recommendations. The average podcast listener subscribes to six shows and completes 80% of the episodes they start — a level of sustained attention that no other media format approaches. For B2B brands, podcast appearances on industry-specific shows directly reach decision-makers who match your ideal customer profile. For B2C brands, lifestyle and interest-based podcast placements reach highly segmented, highly engaged audiences at scale. HotBot Studios identifies the specific shows your target customers listen to and secures guest placement for your executives or spokespeople.",
+    color: "#06b6d4",
   },
   {
-    icon: "🤝",
-    title: "Influencer Partnership Management",
-    desc: "Identify, negotiate, and manage relationships with B2B or B2C influencers aligned with your brand values and buyer personas.",
-    href: "/public-relations/podcast-pr",
+    heading: "Our Podcast Placement Process: Research, Outreach, and Preparation",
+    body: "Podcast placement done well requires significantly more than emailing podcast hosts to ask if they accept guests. It requires understanding the host's content interests and audience composition, identifying the specific angle that makes your spokesperson the right guest for that show right now, and crafting a pitch that demonstrates you have listened to the show and can offer something their audience has not heard before. HotBot Studios researches your industry's podcast landscape to build a tiered target list — flagship shows with 50,000+ listeners per episode, emerging shows with highly targeted audiences, and cross-industry shows where your executive's perspective offers a fresh angle. We write personalised pitches for each show, manage the host relationship through booking confirmation, prepare your spokesperson with episode-specific talking points and story structures, and follow up post-episode with the host to build an ongoing relationship that leads to future invitations.",
+    color: "#8b5cf6",
   },
   {
-    icon: "✍️",
-    title: "Pitch & Message Strategy",
-    desc: "Craft compelling story angles, talking points, and pitch decks that get accepted — then prepare you to deliver a memorable, on-brand interview.",
-    href: "/public-relations/podcast-pr",
+    heading: "Influencer Partnerships: B2B LinkedIn Creators and B2C Brand Collaborations",
+    body: "Influencer PR for B2B brands is fundamentally different from consumer influencer marketing. B2B influencer partnerships work best with LinkedIn creators who have built credibility in your industry through genuine expertise and consistent, high-quality content — not follower counts. A LinkedIn creator with 50,000 engaged followers in your target industry will drive more pipeline-relevant awareness than a B2C influencer with a million followers in a different demographic. HotBot Studios identifies the B2B creators in your space whose audiences match your ideal customer profile, structures authentic partnership arrangements (co-created content, sponsored posts, product reviews, event appearances) that align with the creator's voice rather than interrupting it, and manages the relationship, briefing, and content approval process end-to-end. For B2C brands, we manage macro and micro influencer campaigns across Instagram, TikTok, and YouTube with full performance reporting on reach, engagement, and attributed conversions.",
+    color: "#ec4899",
   },
   {
-    icon: "📊",
-    title: "Campaign Tracking & Attribution",
-    desc: "UTM links, referral traffic monitoring, mention tracking, and lead source attribution so every placement proves its ROI.",
-    href: "/public-relations/podcast-pr",
-  },
-  {
-    icon: "🎬",
-    title: "Episode Content Repurposing",
-    desc: "Turn each podcast appearance into social clips, quote graphics, blog posts, email snippets, and LinkedIn carousels for maximum audience reach.",
-    href: "/public-relations/podcast-pr",
-  },
-  {
-    icon: "🌐",
-    title: "Creator & Newsletter Partnerships",
-    desc: "Extend beyond audio into sponsored newsletter placements and YouTube creator partnerships where niche B2B and B2C audiences are highly engaged.",
-    href: "/public-relations/podcast-pr",
+    heading: "Repurposing Podcast and Influencer Content for Maximum Reach",
+    body: "A 45-minute podcast interview is not just a podcast episode — it is a content library. HotBot Studios repurposes every podcast appearance into a suite of additional content assets: a long-form recap article published on your website (which generates SEO value from a keyword-rich, expert-authored piece), a series of short audiogram clips formatted for LinkedIn, Twitter, and Instagram (extending the reach of your best moments to audiences who do not listen to podcasts), a transcript formatted as a LinkedIn article or newsletter issue, and a series of pull-quote graphics for visual social media posts. This repurposing multiplies the return on each placement — a single 45-minute interview can generate 20 to 30 pieces of unique content distributed across multiple channels over the following four to six weeks. Request a consultation below and we will share a podcast target list and influencer shortlist for your industry within 48 hours.",
+    color: "#22c55e",
   },
 ];
 
-const STATS = [
-  { value: 504, suffix: "M+", label: "Monthly US Podcast Listeners", color: "#f59e0b" },
-  { value: 7, suffix: "×", label: "Higher Conversion vs Display Ads", color: "#f59e0b" },
-  { value: 80, suffix: "%", label: "Listeners Act on Host Recommendations", color: "#f59e0b" },
-  { value: 60, suffix: "min", label: "Average Episode Attention Span", color: "#f59e0b" },
-];
-
-const PROCESS = [
-  {
-    n: 1,
-    title: "Audience & Show Research",
-    desc: "We map your ICP to shows they actively consume — analysing listener demographics, episode quality, host credibility, and brand fit before any outreach begins.",
-    icon: "🔍",
-  },
-  {
-    n: 2,
-    title: "Personalised Pitch & Booking",
-    desc: "We craft story-first pitches tailored to each host's audience and format, then manage the entire booking calendar, contracts, and pre-interview briefing.",
-    icon: "📨",
-  },
-  {
-    n: 3,
-    title: "Recording & Key Message Delivery",
-    desc: "We brief you with key messages, story frameworks, and memorable soundbites so your episode leaves a lasting impression and drives listener action.",
-    icon: "🎙️",
-  },
-  {
-    n: 4,
-    title: "Amplification & ROI Reporting",
-    desc: "Post-publication, we repurpose content across your channels, track referral traffic and leads, and report placement impact against campaign KPIs.",
-    icon: "📈",
-  },
-];
-
-const FAQS = [
-  {
-    q: "How do you select which podcasts to target for guest placements?",
-    a: "We research your ideal customer profile (ICP) and identify shows where your target audience already spends time. We evaluate listener demographics, episode cadence, host engagement quality, and audience size — prioritising relevance and engagement rate over raw download numbers. A niche show with 5,000 highly targeted listeners often outperforms a general show with 50,000 passive ones.",
-  },
-  {
-    q: "What's the difference between podcast PR and traditional media PR?",
-    a: "Podcast PR targets niche, engaged audio audiences rather than mass broadcast audiences. Podcast listeners consume 60–90 minutes of uninterrupted content per episode, creating deeper brand affinity than a 3-second headline scan. Conversion rates from podcast listeners are significantly higher than traditional media readers because the medium builds trust through long-form conversation.",
-  },
-  {
-    q: "How do you manage influencer partnerships for B2B brands?",
-    a: "B2B influencer PR focuses on industry analysts, LinkedIn creators, newsletter authors, and niche YouTubers rather than Instagram lifestyle influencers. We identify voices your target buyers already trust, structure performance-based or fixed-fee partnerships, create content briefs that preserve authentic voice, and track referral traffic, lead attribution, and brand mention lift across the campaign.",
-  },
-  {
-    q: "How long does it take to secure a podcast guest placement?",
-    a: "Most podcast booking cycles take 4–12 weeks from initial outreach to recorded episode, then an additional 2–8 weeks before the episode publishes. We run ongoing outreach to multiple shows simultaneously so placements arrive on a rolling basis rather than all at once. We typically secure the first confirmed booking within 3–5 weeks of campaign launch.",
-  },
-  {
-    q: "Can you manage the full process from outreach to episode promotion?",
-    a: "Yes — we handle every stage: show research, personalised pitch writing, scheduling coordination, pre-interview briefing, key message preparation, episode monitoring, and post-release amplification. We also create social cut-downs, quote cards, and email newsletter snippets from each episode to maximise reach beyond the podcast audience.",
-  },
-  {
-    q: "What results can we expect from a podcast PR campaign?",
-    a: "Results vary by niche, brand authority, and campaign duration. Typical outcomes include 3–8 podcast placements per quarter, measurable referral traffic spikes post-episode, direct lead enquiries citing the podcast, and compounding domain authority lift from show notes backlinks. Brands that sustain podcast PR for 6+ months consistently report it as one of their highest-converting lead channels.",
-  },
-];
-
-const RELATED = [
-  {
-    title: "Media Relations & Press Coverage",
-    href: "/public-relations/media-relations",
-    desc: "Earned coverage in top US publications through targeted journalist relationships.",
-    icon: "📰",
-  },
-  {
-    title: "Thought Leadership",
-    href: "/public-relations/thought-leadership",
-    desc: "Executive positioning through speaking, bylines, and industry awards.",
-    icon: "🏆",
-  },
-  {
-    title: "Digital PR & SEO Link Building",
-    href: "/public-relations/digital-pr-seo",
-    desc: "DA50+ backlinks from editorial coverage that boost your Google rankings.",
-    icon: "🔗",
-  },
-];
-
-const podcastGenres = [
-  { genre: "Business & Entrepreneurship", reach: 92, color: "#f59e0b" },
-  { genre: "Technology & SaaS", reach: 85, color: "#3b82f6" },
-  { genre: "Marketing & Growth", reach: 78, color: "#8b5cf6" },
-  { genre: "Finance & Investment", reach: 71, color: "#22c55e" },
-  { genre: "Health & Wellness (B2C)", reach: 88, color: "#ec4899" },
-  { genre: "Leadership & Management", reach: 65, color: "#06b6d4" },
-];
-
-const influencerTypes = [
-  {
-    type: "LinkedIn Creators",
-    audience: "B2B Decision Makers",
-    avgEngagement: "5.8%",
-    bestFor: "SaaS, Professional Services",
-    icon: "💼",
-  },
-  {
-    type: "Industry Newsletter Authors",
-    audience: "Niche Practitioners",
-    avgEngagement: "38% open rate",
-    bestFor: "DevTools, Fintech, HR Tech",
-    icon: "📧",
-  },
-  {
-    type: "YouTube Educators",
-    audience: "Skill-Seekers & Buyers",
-    avgEngagement: "12% watch-through",
-    bestFor: "Software, Courses, Tools",
-    icon: "▶️",
-  },
-  {
-    type: "Instagram / TikTok Creators",
-    audience: "Consumer & Lifestyle",
-    avgEngagement: "4.2%",
-    bestFor: "CPG, Fashion, Health, D2C",
-    icon: "📱",
-  },
-];
-
-export default function PodcastPRPage() {
+export default function PodcastPrPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <PageHeader
         label="Podcast & Influencer PR"
-        title="Reach Niche US Audiences Through Authentic Voice"
-        subtitle="Strategic podcast guest placements on the top shows your buyers tune into — plus influencer partnership management for B2B and B2C brands. We handle booking, briefing, and amplification from start to finish."
+        title="Reach Your Audience in the Media Format They Trust Most"
+        subtitle="Strategic podcast guest placements and influencer partnerships for US B2B and B2C brands — targeted, high-trust media channels that deliver 45 minutes of focused attention from your ideal customer."
       />
 
-      {/* AEO Definition Block */}
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div
-            className="rounded-xl p-6"
-            style={{
-              background: "rgba(245,158,11,0.06)",
-              border: "1px solid rgba(245,158,11,0.2)",
-            }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#f59e0b" }}>
-              Definition — Podcast & Influencer PR
-            </p>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              <strong className="text-white">Podcast PR</strong> is the practice of securing strategic guest appearances on podcasts where a brand&apos;s ideal customers are regular listeners, using long-form conversation to build trust, demonstrate expertise, and generate referral leads.{" "}
-              <strong className="text-white">Influencer PR</strong> extends this to partnerships with content creators, newsletter authors, and social media personalities who have earned authority with specific niche audiences — enabling authentic third-party endorsement at scale.
-            </p>
-          </div>
-        </Reveal>
+      <section className="relative z-10 px-6 max-w-4xl mx-auto py-10 space-y-6">
+        {CONTENT.map((block, i) => (
+          <Reveal key={i} delay={i * 0.07}>
+            <GlassCard className="p-6 md:p-8">
+              <div className="w-1 h-10 rounded-full mb-4" style={{ background: `linear-gradient(180deg, ${block.color}, ${block.color}44)` }} />
+              <h2 className="text-xl font-bold text-white mb-3">{block.heading}</h2>
+              <p className="text-slate-300 leading-relaxed text-[15px]">{block.body}</p>
+            </GlassCard>
+          </Reveal>
+        ))}
       </section>
 
-      {/* Podcast Genre Reach Infographic */}
-      <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
+      <section className="relative z-10 px-6 max-w-2xl mx-auto pb-24">
         <Reveal>
-          <div
-            className="rounded-2xl p-8"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <h2 className="text-xl font-bold text-white mb-2">US Podcast Audience Reach by Genre</h2>
-            <p className="text-slate-400 text-sm mb-6">Audience penetration index among US adults 18–54 (source: Edison Research, Spotify trends)</p>
-            <div className="space-y-4">
-              {podcastGenres.map((row) => (
-                <div key={row.genre} className="flex items-center gap-3">
-                  <span className="text-slate-400 text-xs w-56 shrink-0 text-right hidden md:block">
-                    {row.genre}
-                  </span>
-                  <div className="flex-1 rounded-full h-5 bg-white/5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full flex items-center justify-end pr-2"
-                      style={{
-                        width: `${row.reach}%`,
-                        background: `linear-gradient(90deg, ${row.color}40, ${row.color})`,
-                      }}
-                    >
-                      <span className="text-[10px] font-bold text-white hidden md:block">
-                        {row.reach}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-slate-500 text-xs mt-4">
-              * Score out of 100 represents relative audience penetration index among US adults 18–54
-            </p>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Get a Free Podcast PR Consultation</h2>
+            <p className="text-slate-400">Tell us about your brand and target audience. We will share a curated podcast target list and influencer shortlist within 48 hours — no obligation.</p>
           </div>
+          <LeadCaptureForm
+            sourceId="pr-podcast-pr"
+            accentColor="#06b6d4"
+            title="Start Your Podcast & Influencer PR Campaign"
+            subtitle="Share your industry, audience, and goals and we will identify the best placement opportunities."
+          />
         </Reveal>
       </section>
-
-      <SubServices
-        services={SUB_SERVICES}
-        title="Podcast & Influencer PR Services"
-        columns={3}
-      />
-
-      <ServiceStats stats={STATS} title="Why Podcast & Influencer PR Delivers" />
-
-      <ProcessSteps steps={PROCESS} title="Our Podcast & Influencer PR Process" />
-
-      {/* Influencer Type Comparison */}
-      <section className="relative z-10 px-6 max-w-5xl mx-auto py-8">
-        <Reveal>
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            Influencer Type Selection Matrix
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {influencerTypes.map((item) => (
-              <GlassCard key={item.type} className="p-6">
-                <div className="text-3xl mb-3">{item.icon}</div>
-                <h3 className="text-lg font-bold text-white mb-1">{item.type}</h3>
-                <div className="space-y-2 mt-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Audience</span>
-                    <span className="text-white font-medium">{item.audience}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Avg Engagement</span>
-                    <span style={{ color: "#f59e0b" }} className="font-bold">{item.avgEngagement}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Best For</span>
-                    <span className="text-white text-right">{item.bestFor}</span>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </Reveal>
-      </section>
-
-      <FAQSection faqs={FAQS} />
-
-      {/* Key Takeaways */}
-      <section className="relative z-10 px-6 max-w-4xl mx-auto py-8">
-        <Reveal>
-          <div
-            className="rounded-xl p-6"
-            style={{
-              background: "rgba(245,158,11,0.05)",
-              border: "1px solid rgba(245,158,11,0.15)",
-            }}
-          >
-            <h2 className="text-xl font-bold text-white mb-4">Key Takeaways</h2>
-            <ul className="space-y-2">
-              {[
-                "504M+ monthly US podcast listeners — the largest captive, engaged audience in media",
-                "Podcast listeners convert at 7× higher rates than display ad audiences on average",
-                "80% of podcast listeners report acting on a host recommendation at least once",
-                "B2B influencer PR works through LinkedIn creators, newsletters, and niche YouTube — not Instagram",
-                "Full-service management: research → pitch → booking → briefing → amplification → reporting",
-                "Every episode generates repurposable content: social clips, quotes, blog posts, email snippets",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-slate-300">
-                  <span style={{ color: "#f59e0b" }} className="mt-0.5 shrink-0">✓</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Reveal>
-      </section>
-
-      <RelatedServices services={RELATED} />
-
-      <CTASection
-        title="Ready to Land Your First Podcast Placement?"
-        subtitle="Tell us about your brand and target audience — we'll identify the top 10 shows your buyers already listen to and pitch you within 30 days."
-        formType="get-started"
-      />
     </>
   );
 }
