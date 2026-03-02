@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
 
+// Newsletter signup — routes through the unified leads webhook.
+// source: "newsletter-signup" lets n8n label the row in Google Sheets correctly.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -10,13 +12,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    // n8n workflow handles:
-    // 1. Brevo/Mailchimp: Add subscriber
-    // 2. Send welcome email
-    // 3. Telegram notification
-    const data = await triggerN8n<Record<string, string>>("newsletter", {
-      email: email.trim(),
+    const data = await triggerN8n<Record<string, string>>("leads", {
       name: name?.trim() || "",
+      email: email.trim(),
+      phone: "",
+      company: "",
+      service: "",
+      budget: "",
+      message: "",
+      formType: "newsletter",
+      source: "newsletter-signup",
     });
 
     return NextResponse.json({

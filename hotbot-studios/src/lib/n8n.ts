@@ -9,16 +9,23 @@ const N8N_BASE = process.env.N8N_BASE_URL;
 
 export type N8nPipeline =
   | "chat"       // AI text chat (N8N LLM workflow)
-  | "leads"      // Unified lead capture (all forms) → Google Sheets
+  | "leads"      // ALL form submissions (get-started, strategy-call, enquiry, newsletter, contact) → Google Sheets + CRM
   | "analytics"  // Event tracking (fire-and-forget)
-  | "newsletter" // Newsletter subscriptions
+  | "newsletter" // Reserved — newsletter submissions now routed through "leads" with source:"newsletter-signup"
   | "callback";  // Request a call → triggers Sarvam voice agent outbound call
+
+// source field on "leads" payloads maps to a human-readable label in n8n:
+//   "newsletter-signup"  → "Footer Newsletter"
+//   "contact-page"       → "Contact Page"
+//   "software-web-app"   → "Software › Web App Development"
+//   pathname ("/")       → "Homepage Modal"
+//   ... etc. — n8n Switch node translates each sourceId to a label before appending to Google Sheet.
 
 const ENDPOINTS: Record<N8nPipeline, string | undefined> = {
   chat:       process.env.N8N_WEBHOOK_CHAT,
-  leads:      process.env.N8N_WEBHOOK_LEADS,       // single webhook for ALL lead capture
+  leads:      process.env.N8N_WEBHOOK_LEADS,       // single webhook for ALL lead + newsletter submissions
   analytics:  process.env.N8N_WEBHOOK_ANALYTICS,
-  newsletter: process.env.N8N_WEBHOOK_NEWSLETTER,
+  newsletter: process.env.N8N_WEBHOOK_NEWSLETTER,  // no longer used — kept for backwards compat
   callback:   process.env.N8N_WEBHOOK_CALLBACK,    // triggers Sarvam outbound call
 };
 
