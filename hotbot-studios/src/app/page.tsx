@@ -45,10 +45,10 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
-      <DomainWidget />
-      <StatsSection />
       <HeroSection />
       <ClientLogos />
+      <DomainWidget />
+      <StatsSection />
       <TestimonialsSection />
       <CTASection />
     </>
