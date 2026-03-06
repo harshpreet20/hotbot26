@@ -44,6 +44,7 @@ export function Footer() {
                 width={320}
                 height={80}
                 className="h-16 sm:h-[72px] w-auto object-contain"
+                unoptimized
               />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">
