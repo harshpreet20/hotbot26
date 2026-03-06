@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Mobile App Design Agency USA — iOS & Android UI/UX Design | HotBot Studios",
@@ -75,6 +76,8 @@ export default function MobileDesignPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "UI/UX Design", href: "/ui-ux-design" }, { label: "Mobile Design" }]} />
 
       <PageHeader
         label="Mobile App Design (iOS & Android)"

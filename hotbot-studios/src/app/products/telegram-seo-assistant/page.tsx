@@ -144,8 +144,8 @@ const FAQS = [
 
 const RELATED = [
     { title: "Website Keyword Assistant", href: "/products/website-keyword-assistant", desc: "Daily AI on-page SEO recommendations using your Google Search Console data.", icon: "🔍" },
-    { title: "SEO Services", href: "/marketing-services/seo", desc: "Full-service technical and content SEO for US B2B businesses.", icon: "🔎" },
-    { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "GA4 setup and attribution modeling to tie SEO performance to revenue.", icon: "📊" }
+    { title: "SEO Services", href: "/digital-marketing/seo-services", desc: "Full-service technical and content SEO for US B2B businesses.", icon: "🔎" },
+    { title: "Analytics and Attribution", href: "/digital-marketing/marketing-analytics", desc: "GA4 setup and attribution modeling to tie SEO performance to revenue.", icon: "📊" }
 ];
 
 export default function TelegramSeoAssistantPage() {

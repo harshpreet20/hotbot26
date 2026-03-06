@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Marketing Audit & Gap Analysis USA — 360° Marketing Review | HotBot Studios",
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
     "marketing performance review USA",
     "marketing consultant audit USA",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/marketing-audit" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/marketing-audit" },
   openGraph: {
     title: "Marketing Audit & Gap Analysis USA | HotBot Studios",
     description: "Comprehensive 360° marketing audits covering channels, spend, creative, messaging, tech stack, and attribution — delivered as a prioritised action plan.",
-    url: "https://hotbotstudios.com/consultancy/marketing-audit",
+    url: "https://hotbotstudios.com/marketing-consulting/marketing-audit",
   },
 };
 
@@ -32,7 +33,7 @@ const schema = {
   serviceType: "Marketing Audit and Gap Analysis Consulting",
   areaServed: { "@type": "Country", name: "United States" },
   description: "Comprehensive 360° marketing audit covering all channels, spend efficiency, creative performance, messaging, tech stack, and attribution — delivered as a prioritised action plan for US businesses.",
-  url: "https://hotbotstudios.com/consultancy/marketing-audit",
+  url: "https://hotbotstudios.com/marketing-consulting/marketing-audit",
 };
 
 const breadcrumb = {
@@ -40,8 +41,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Marketing Audit & Gap Analysis", item: "https://hotbotstudios.com/consultancy/marketing-audit" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "Marketing Audit & Gap Analysis", item: "https://hotbotstudios.com/marketing-consulting/marketing-audit" },
   ],
 };
 
@@ -73,6 +74,8 @@ export default function MarketingAuditPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Marketing Audit" }]} />
 
       <PageHeader
         label="Marketing Audit & Gap Analysis"

@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "PR Agency for US Businesses — Forbes, TechCrunch & Major Media Coverage | HotBot Studios",
@@ -110,8 +111,8 @@ const FAQS = [
 
 const RELATED = [
   { title: "Content Production", href: "/content-studio", desc: "Expert content to support every PR narrative.", icon: "✍️" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Amplify PR wins with paid distribution.", icon: "📣" },
-  { title: "Marketing Consulting", href: "/consultancy", desc: "Strategic brand positioning before PR launch.", icon: "💡" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Amplify PR wins with paid distribution.", icon: "📣" },
+  { title: "Marketing Consulting", href: "/marketing-consulting", desc: "Strategic brand positioning before PR launch.", icon: "💡" },
 ];
 
 export default function PublicRelationsPage() {
@@ -120,6 +121,8 @@ export default function PublicRelationsPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Public Relations", href: "/public-relations" }]} />
 
       <PageHeader
         label="PR Agency USA"

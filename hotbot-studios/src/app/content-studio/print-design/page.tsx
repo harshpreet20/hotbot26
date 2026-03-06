@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Print Design & Brand Collateral Agency USA — Brochures, Pitch Decks & Trade Show Materials | HotBot Studios",
@@ -121,6 +122,8 @@ export default function PrintDesignPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }, { label: "Print Design" }]} />
 
       <PageHeader
         label="Print Design & Brand Collateral USA"

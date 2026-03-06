@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "MarTech Stack Design & Implementation USA — HubSpot, Salesforce & Marketing Automation | HotBot Studios",
@@ -17,11 +18,11 @@ export const metadata: Metadata = {
     "CRM implementation USA",
     "HubSpot consultant USA",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/martech-stack" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/martech-stack" },
   openGraph: {
     title: "MarTech Stack Design & Implementation USA | HotBot Studios",
     description: "CRM selection, marketing automation setup, and analytics configuration for US businesses. HubSpot, Salesforce, and ActiveCampaign implementation specialists.",
-    url: "https://hotbotstudios.com/consultancy/martech-stack",
+    url: "https://hotbotstudios.com/marketing-consulting/martech-stack",
   },
 };
 
@@ -33,7 +34,7 @@ const schema = {
   serviceType: "MarTech Stack Design and CRM Implementation",
   areaServed: { "@type": "Country", name: "United States" },
   description: "MarTech stack design and implementation for US businesses — CRM selection and configuration, marketing automation setup, analytics infrastructure, and full-stack tool integration.",
-  url: "https://hotbotstudios.com/consultancy/martech-stack",
+  url: "https://hotbotstudios.com/marketing-consulting/martech-stack",
 };
 
 const breadcrumb = {
@@ -41,8 +42,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "MarTech Stack Design & Implementation", item: "https://hotbotstudios.com/consultancy/martech-stack" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "MarTech Stack Design & Implementation", item: "https://hotbotstudios.com/marketing-consulting/martech-stack" },
   ],
 };
 
@@ -74,6 +75,8 @@ export default function MartechStackPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Martech Stack" }]} />
 
       <PageHeader
         label="MarTech Stack Design & Implementation"

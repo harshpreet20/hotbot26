@@ -92,12 +92,12 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: "AI Automation", href: "/ai-automation", icon: "🤖", desc: "Custom AI agents & n8n workflows" },
-              { label: "Digital Marketing", href: "/marketing-services", icon: "📣", desc: "SEO, PPC & social media" },
+              { label: "Digital Marketing", href: "/digital-marketing", icon: "📣", desc: "SEO, PPC & social media" },
               { label: "Content Studio", href: "/content-studio", icon: "🎬", desc: "Video, copy & social content" },
               { label: "Software Dev", href: "/software-development", icon: "💻", desc: "Web apps, mobile & SaaS" },
               { label: "Public Relations", href: "/public-relations", icon: "📰", desc: "Forbes, TechCrunch & major media" },
               { label: "UI/UX Design", href: "/ui-ux-design", icon: "🎨", desc: "Figma design systems & prototypes" },
-              { label: "Consulting", href: "/consultancy", icon: "🗺️", desc: "Growth strategy & fractional CMO" },
+              { label: "Consulting", href: "/marketing-consulting", icon: "🗺️", desc: "Growth strategy & fractional CMO" },
               { label: "Contact Us", href: "/contact", icon: "🚀", desc: "Start your project today" },
             ].map((svc, i) => (
               <Reveal key={i} delay={i * 0.06}>

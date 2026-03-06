@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "AI Voice Receptionist for US Businesses, Heka by HotBot Studios",
@@ -172,6 +173,8 @@ export default function VoiceAiHekaPage() {
           <li className="text-slate-400">Voice AI, Heka</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "Voice Ai Heka" }]} />
 
       <PageHeader
         label="Voice AI"

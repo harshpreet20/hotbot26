@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Custom Software Development Agency USA — Web Apps, Mobile & SaaS | HotBot Studios",
@@ -110,7 +111,7 @@ const FAQS = [
 const RELATED = [
   { title: "AI Automation", href: "/ai-automation", desc: "Add intelligent AI capabilities to your software.", icon: "🤖" },
   { title: "UI/UX Design", href: "/ui-ux-design", desc: "User-centered design built by the same team.", icon: "🎨" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Launch your product to the right US audience.", icon: "📣" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Launch your product to the right US audience.", icon: "📣" },
 ];
 
 export default function SoftwareDevelopmentPage() {
@@ -119,6 +120,8 @@ export default function SoftwareDevelopmentPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Software Development", href: "/software-development" }]} />
 
       <PageHeader
         label="Software Development Agency USA"

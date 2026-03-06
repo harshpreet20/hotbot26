@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Instagram Reels & TikTok Video Production USA | HotBot Studios",
@@ -75,6 +76,8 @@ export default function ShortFormSocialPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }, { label: "Video Production", href: "/content-studio/video-production" }, { label: "Short Form Social" }]} />
 
       <PageHeader
         label="Short-Form Social Video (Reels & TikTok)"

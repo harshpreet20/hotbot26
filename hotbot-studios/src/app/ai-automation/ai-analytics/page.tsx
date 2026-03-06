@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "AI Analytics & Business Intelligence for US Companies, Predictive Dashboards | HotBot Studios",
@@ -143,7 +144,7 @@ const FAQS = [
 const RELATED = [
     { title: "Custom AI Agents", href: "/ai-automation/custom-ai-agents", desc: "Autonomous agents that act on your analytics insights, rebalancing budgets, flagging risks, and updating records automatically.", icon: "🤖" },
     { title: "n8n Workflow Automation", href: "/ai-automation/n8n-workflow-automation", desc: "Automate the actions that follow your analytics insights, alert routing, report distribution, and data syncing.", icon: "⚙️" },
-    { title: "SEO & Content Marketing", href: "/marketing-services/seo", desc: "Data-driven SEO strategy backed by the same analytics rigor applied to your paid channels.", icon: "🔍" }
+    { title: "SEO & Content Marketing", href: "/digital-marketing/seo-services", desc: "Data-driven SEO strategy backed by the same analytics rigor applied to your paid channels.", icon: "🔍" }
 ];
 
 export default function AiAnalyticsPage() {
@@ -172,6 +173,8 @@ export default function AiAnalyticsPage() {
           <li className="text-slate-400">AI Analytics & Business Intelligence</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "Ai Analytics" }]} />
 
       <PageHeader
         label="AI Analytics"

@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Content Production Studio USA — Video, Copy & Social Content | HotBot Studios",
@@ -108,7 +109,7 @@ const FAQS = [
 ];
 
 const RELATED = [
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Distribute your content for maximum paid and organic reach.", icon: "📣" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Distribute your content for maximum paid and organic reach.", icon: "📣" },
   { title: "UI/UX Design", href: "/ui-ux-design", desc: "Beautiful digital environments to showcase your content.", icon: "🎨" },
   { title: "Public Relations", href: "/public-relations", desc: "Get your content featured in Forbes, TechCrunch & major media.", icon: "📰" },
 ];
@@ -119,6 +120,8 @@ export default function ContentStudioPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }]} />
 
       <PageHeader
         label="Content Production Studio USA"

@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { N8nWorkflowWidget } from "@/components/sections/N8nWorkflowWidget";
 import { PRODUCTS } from "@/lib/constants";
 import { GlassCard } from "@/components/shared/GlassCard";
@@ -116,8 +117,8 @@ const FAQS = [
 
 const RELATED = [
   { title: "Software Development", href: "/software-development", desc: "Build the apps and platforms your AI systems power.", icon: "💻" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Amplify AI tools with performance marketing campaigns.", icon: "📣" },
-  { title: "Marketing Consulting", href: "/consultancy", desc: "Strategy-first: know which automations to build first.", icon: "🗺️" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Amplify AI tools with performance marketing campaigns.", icon: "📣" },
+  { title: "Marketing Consulting", href: "/marketing-consulting", desc: "Strategy-first: know which automations to build first.", icon: "🗺️" },
 ];
 
 export default function AIAutomationPage() {
@@ -126,6 +127,8 @@ export default function AIAutomationPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }]} />
 
       <PageHeader
         label="AI Automation Agency USA"

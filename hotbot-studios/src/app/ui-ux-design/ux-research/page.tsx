@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "UX Research & User Testing Agency USA — User Interviews, Heatmaps & Usability Testing | HotBot Studios",
@@ -75,6 +76,8 @@ export default function UxResearchPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "UI/UX Design", href: "/ui-ux-design" }, { label: "Ux Research" }]} />
 
       <PageHeader
         label="UX Research & User Testing"

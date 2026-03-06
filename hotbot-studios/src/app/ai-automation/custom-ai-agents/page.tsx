@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Custom AI Agents for Business Automation, GPT-4o & Claude 3 | HotBot Studios",
@@ -172,6 +173,8 @@ export default function CustomAiAgentsPage() {
           <li className="text-slate-400">Custom AI Agents</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "Custom Ai Agents" }]} />
 
       <PageHeader
         label="AI Agents"

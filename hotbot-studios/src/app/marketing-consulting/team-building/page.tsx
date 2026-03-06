@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Marketing Team Building & Training USA — Hiring, Structure & Leadership Coaching | HotBot Studios",
@@ -17,11 +18,11 @@ export const metadata: Metadata = {
     "in-house marketing team USA",
     "marketing department setup USA",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/team-building" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/team-building" },
   openGraph: {
     title: "Marketing Team Building & Training USA | HotBot Studios",
     description: "Hire, structure, and upskill your in-house marketing team — role scoping, interview frameworks, onboarding plans, and coaching for US marketing leaders.",
-    url: "https://hotbotstudios.com/consultancy/team-building",
+    url: "https://hotbotstudios.com/marketing-consulting/team-building",
   },
 };
 
@@ -33,7 +34,7 @@ const schema = {
   serviceType: "Marketing Team Consulting and Leadership Development",
   areaServed: { "@type": "Country", name: "United States" },
   description: "Marketing team building and training for US businesses — role design, hiring frameworks, onboarding plans, capability assessment, and 1:1 coaching for marketing leaders.",
-  url: "https://hotbotstudios.com/consultancy/team-building",
+  url: "https://hotbotstudios.com/marketing-consulting/team-building",
 };
 
 const breadcrumb = {
@@ -41,8 +42,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Marketing Team Building & Training", item: "https://hotbotstudios.com/consultancy/team-building" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "Marketing Team Building & Training", item: "https://hotbotstudios.com/marketing-consulting/team-building" },
   ],
 };
 
@@ -74,6 +75,8 @@ export default function TeamBuildingPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Team Building" }]} />
 
       <PageHeader
         label="Marketing Team Building & Training"

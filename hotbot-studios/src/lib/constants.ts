@@ -6,23 +6,23 @@ export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-5CNWV5X1KC";
 
 export const SERVICES = [
   { label: "AI Automation", href: "/ai-automation" },
-  { label: "Digital Marketing", href: "/marketing-services" },
+  { label: "Digital Marketing", href: "/digital-marketing" },
   { label: "Content Studio", href: "/content-studio" },
   { label: "Software Development", href: "/software-development" },
   { label: "Public Relations", href: "/public-relations" },
   { label: "UI/UX Design", href: "/ui-ux-design" },
-  { label: "Consulting", href: "/consultancy" },
+  { label: "Marketing Consulting", href: "/marketing-consulting" },
 ] as const;
 
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "AI Automation", href: "/ai-automation" },
-  { label: "Digital Marketing", href: "/marketing-services" },
+  { label: "Digital Marketing", href: "/digital-marketing" },
   { label: "Content Studio", href: "/content-studio" },
   { label: "Software Dev", href: "/software-development" },
   { label: "PR", href: "/public-relations" },
   { label: "UI/UX", href: "/ui-ux-design" },
-  { label: "Consulting", href: "/consultancy" },
+  { label: "Consulting", href: "/marketing-consulting" },
   { label: "Blog", href: "/blog" },
 ] as const;
 

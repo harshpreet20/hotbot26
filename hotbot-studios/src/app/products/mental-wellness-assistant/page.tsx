@@ -144,7 +144,7 @@ const FAQS = [
 
 const RELATED = [
     { title: "AI Automation Services", href: "/ai-automation", desc: "Full AI automation stack for US businesses including custom agents, chatbots, and workflow tools.", icon: "🤖" },
-    { title: "Marketing Consulting", href: "/consultancy", desc: "Strategic growth consulting including team building, HR operations, and organizational effectiveness.", icon: "🗺️" },
+    { title: "Marketing Consulting", href: "/marketing-consulting", desc: "Strategic growth consulting including team building, HR operations, and organizational effectiveness.", icon: "🗺️" },
     { title: "Software Development", href: "/software-development", desc: "Custom software and SaaS development for HR, operations, and employee experience platforms.", icon: "💻" }
 ];
 

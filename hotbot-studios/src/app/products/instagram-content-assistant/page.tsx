@@ -144,7 +144,7 @@ const FAQS = [
 
 const RELATED = [
     { title: "LinkedIn Post Assistant", href: "/products/linkedin-post-assistant", desc: "AI-generated B2B content for LinkedIn posts, thought leadership, and founder presence.", icon: "💼" },
-    { title: "Social Media Marketing", href: "/marketing-services/social-media", desc: "Fully managed Instagram, LinkedIn, and multi-platform social strategy and content.", icon: "📣" },
+    { title: "Social Media Marketing", href: "/digital-marketing/social-media-marketing", desc: "Fully managed Instagram, LinkedIn, and multi-platform social strategy and content.", icon: "📣" },
     { title: "Content Production Studio", href: "/content-studio", desc: "Video production, photography, and creative content for Instagram and TikTok campaigns.", icon: "🎬" }
 ];
 

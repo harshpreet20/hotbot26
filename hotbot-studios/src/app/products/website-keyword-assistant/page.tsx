@@ -144,8 +144,8 @@ const FAQS = [
 
 const RELATED = [
     { title: "Telegram SEO Assistant", href: "/products/telegram-seo-assistant", desc: "Daily SEO ranking briefings delivered directly to Telegram. No dashboards to check.", icon: "📱" },
-    { title: "SEO Services", href: "/marketing-services/seo", desc: "Full-service technical and content SEO strategy for US B2B businesses.", icon: "🔎" },
-    { title: "GA4 Analytics", href: "/marketing-services/analytics", desc: "Attribution setup and reporting to connect SEO performance to revenue outcomes.", icon: "📊" }
+    { title: "SEO Services", href: "/digital-marketing/seo-services", desc: "Full-service technical and content SEO strategy for US B2B businesses.", icon: "🔎" },
+    { title: "GA4 Analytics", href: "/digital-marketing/marketing-analytics", desc: "Attribution setup and reporting to connect SEO performance to revenue outcomes.", icon: "📊" }
 ];
 
 export default function WebsiteKeywordAssistantPage() {

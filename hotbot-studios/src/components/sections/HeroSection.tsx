@@ -16,7 +16,7 @@ const SERVICES = [
     type: "marketing",
     title: "Digital Marketing",
     desc: "Turn ad spend into predictable revenue. Data-driven SEO, PPC, and social campaigns engineered for maximum ROI.",
-    href: "/marketing-services",
+    href: "/digital-marketing",
   },
   {
     type: "software",
@@ -46,7 +46,7 @@ const SERVICES = [
     type: "consulting",
     title: "Marketing Consulting",
     desc: "Clarity without the jargon. We audit your growth strategy, uncover revenue leaks, and hand you a prioritized execution plan.",
-    href: "/consultancy",
+    href: "/marketing-consulting",
     featured: true,
   },
 ];

@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Go-To-Market Strategy & Market Entry Consulting USA — Product Launch & New Markets | HotBot Studios",
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
     "go-to-market consultant USA",
     "US market entry consulting",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/go-to-market" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/go-to-market" },
   openGraph: {
     title: "Go-To-Market Strategy & Market Entry Consulting USA | HotBot Studios",
     description: "Go-to-market strategies for US product launches and new market entry — research, positioning, messaging, channel strategy, and launch execution support.",
-    url: "https://hotbotstudios.com/consultancy/go-to-market",
+    url: "https://hotbotstudios.com/marketing-consulting/go-to-market",
   },
 };
 
@@ -32,7 +33,7 @@ const schema = {
   serviceType: "Go-To-Market Strategy and Market Entry Consulting",
   areaServed: { "@type": "Country", name: "United States" },
   description: "Go-to-market strategy development for US product launches, new market entry, and customer segment expansion — including research, positioning, messaging architecture, channel strategy, and launch support.",
-  url: "https://hotbotstudios.com/consultancy/go-to-market",
+  url: "https://hotbotstudios.com/marketing-consulting/go-to-market",
 };
 
 const breadcrumb = {
@@ -40,8 +41,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Go-To-Market & Market Entry", item: "https://hotbotstudios.com/consultancy/go-to-market" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "Go-To-Market & Market Entry", item: "https://hotbotstudios.com/marketing-consulting/go-to-market" },
   ],
 };
 
@@ -73,6 +74,8 @@ export default function GoToMarketPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Go To Market" }]} />
 
       <PageHeader
         label="Go-To-Market & Market Entry"

@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Copywriting & Long-Form Content Agency USA — SEO Blogs, Web Copy & Whitepapers | HotBot Studios",
@@ -110,7 +111,7 @@ const FAQS = [
 ];
 
 const RELATED = [
-  { title: "SEO & Digital Marketing", href: "/marketing-services/seo", desc: "Drive organic traffic to the content we create for you.", icon: "🔍" },
+  { title: "SEO & Digital Marketing", href: "/digital-marketing/seo-services", desc: "Drive organic traffic to the content we create for you.", icon: "🔍" },
   { title: "Podcast Production", href: "/content-studio/podcast-production", desc: "Turn your expertise into a branded podcast series.", icon: "🎙️" },
   { title: "Public Relations", href: "/public-relations", desc: "Get your long-form content featured in major publications.", icon: "📰" },
 ];
@@ -121,6 +122,8 @@ export default function CopywritingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }, { label: "Copywriting" }]} />
 
       <PageHeader
         label="Copywriting & Long-Form Content USA"

@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Social Media Content Agency USA — Instagram, TikTok, LinkedIn & YouTube | HotBot Studios",
@@ -111,7 +112,7 @@ const FAQS = [
 
 const RELATED = [
   { title: "Video Production", href: "/content-studio/video-production", desc: "Produce the brand videos that power your social content.", icon: "🎬" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Amplify organic content with paid social campaigns.", icon: "📣" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Amplify organic content with paid social campaigns.", icon: "📣" },
   { title: "Photography & Visual Assets", href: "/content-studio/photography", desc: "Brand photography for your social media feed and Stories.", icon: "📸" },
 ];
 
@@ -121,6 +122,8 @@ export default function SocialMediaContentPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }, { label: "Social Media Content" }]} />
 
       <PageHeader
         label="Social Media Content Agency USA"

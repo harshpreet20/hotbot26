@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Email Marketing and Automation Services USA | HotBot Studios",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Email Marketing and Automation Services USA | HotBot Studios",
     description: "HubSpot, Klaviyo, and Mailchimp email marketing setup and management for US businesses. Automated sequences, drip campaigns, and behavioral triggers that convert and retain customers.",
-    url: "https://hotbotstudios.com/marketing-services/email-marketing",
+    url: "https://hotbotstudios.com/digital-marketing/email-marketing",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "Email Marketing and Automation That Converts Leads and Retains Customers" }],
   },
   twitter: {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     title: "Email Marketing and Automation Services USA | HotBot Studios",
     description: "HubSpot, Klaviyo, and Mailchimp email marketing setup and management for US businesses. Automated sequences, drip campaigns, and behavioral triggers that convert and retain customers.",
   },
-  alternates: { canonical: "https://hotbotstudios.com/marketing-services/email-marketing" },
+  alternates: { canonical: "https://hotbotstudios.com/digital-marketing/email-marketing" },
 };
 
 const serviceSchema = {
@@ -52,7 +53,7 @@ const serviceSchema = {
     "@type": "Country",
     "name": "United States"
   },
-  "url": "https://hotbotstudios.com/marketing-services/email-marketing"
+  "url": "https://hotbotstudios.com/digital-marketing/email-marketing"
 };
 
 const breadcrumbSchema = {
@@ -69,13 +70,13 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       "position": 2,
       "name": "Digital Marketing",
-      "item": "https://hotbotstudios.com/marketing-services"
+      "item": "https://hotbotstudios.com/digital-marketing"
     },
     {
       "@type": "ListItem",
       "position": 3,
       "name": "Email Marketing and Automation",
-      "item": "https://hotbotstudios.com/marketing-services/email-marketing"
+      "item": "https://hotbotstudios.com/digital-marketing/email-marketing"
     }
   ]
 };
@@ -141,9 +142,9 @@ const FAQS = [
 ];
 
 const RELATED = [
-    { title: "SEO Services", href: "/marketing-services/seo", desc: "SEO drives the organic traffic that feeds your email list with qualified subscribers.", icon: "🔍" },
-    { title: "CRO, Conversion Rate Optimization", href: "/marketing-services/cro", desc: "Higher opt-in page conversion rates grow your list faster from the same traffic.", icon: "🎯" },
-    { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "Email revenue attribution in GA4 and CRM to measure full-funnel ROI.", icon: "📊" }
+    { title: "SEO Services", href: "/digital-marketing/seo", desc: "SEO drives the organic traffic that feeds your email list with qualified subscribers.", icon: "🔍" },
+    { title: "CRO, Conversion Rate Optimization", href: "/digital-marketing/cro", desc: "Higher opt-in page conversion rates grow your list faster from the same traffic.", icon: "🎯" },
+    { title: "Analytics and Attribution", href: "/digital-marketing/analytics", desc: "Email revenue attribution in GA4 and CRM to measure full-funnel ROI.", icon: "📊" }
 ];
 
 export default function EmailMarketingPage() {
@@ -167,11 +168,13 @@ export default function EmailMarketingPage() {
         <ol className="flex items-center gap-2 text-xs text-slate-500">
           <li><Link href="/" className="hover:text-slate-300 transition-colors">Home</Link></li>
           <li className="text-slate-700">/</li>
-          <li><Link href="/marketing-services" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
+          <li><Link href="/digital-marketing" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
           <li className="text-slate-700">/</li>
           <li className="text-slate-400">Email Marketing and Automation</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "Digital Marketing", href: "/digital-marketing" }, { label: "Email Marketing" }]} />
 
       <PageHeader
         label="Email Marketing and Automation"

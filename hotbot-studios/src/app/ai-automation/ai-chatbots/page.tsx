@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "AI Chatbots for Lead Generation & Customer Support, US Businesses | HotBot Studios",
@@ -172,6 +173,8 @@ export default function AiChatbotsPage() {
           <li className="text-slate-400">AI Chatbots</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "Ai Chatbots" }]} />
 
       <PageHeader
         label="AI Chatbots"

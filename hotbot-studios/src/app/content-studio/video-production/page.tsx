@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Video Production Agency USA — Brand Films, Reels & YouTube Content | HotBot Studios",
@@ -112,7 +113,7 @@ const FAQS = [
 const RELATED = [
   { title: "Photography & Visual Assets", href: "/content-studio/photography", desc: "Complement your video with brand photography and visual assets.", icon: "📸" },
   { title: "Social Media Content", href: "/content-studio/social-media-content", desc: "Distribute your video content for maximum organic reach.", icon: "📱" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Amplify video content with paid media campaigns.", icon: "📣" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Amplify video content with paid media campaigns.", icon: "📣" },
 ];
 
 export default function VideoProductionPage() {
@@ -121,6 +122,8 @@ export default function VideoProductionPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "Content Studio", href: "/content-studio" }, { label: "Video Production" }]} />
 
       <PageHeader
         label="Video Production Agency USA"

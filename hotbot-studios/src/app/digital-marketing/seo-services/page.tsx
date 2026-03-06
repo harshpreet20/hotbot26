@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
     description: "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
-    url: "https://hotbotstudios.com/marketing-services/seo",
+    url: "https://hotbotstudios.com/digital-marketing/seo-services",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "SEO Services That Drive Qualified Organic Traffic for US Businesses" }],
   },
   twitter: {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     title: "SEO Services for US Businesses, Organic Growth Agency | HotBot Studios",
     description: "Technical SEO, content strategy, and link acquisition for US businesses targeting high-intent organic traffic. No vanity metrics. Measurable pipeline growth.",
   },
-  alternates: { canonical: "https://hotbotstudios.com/marketing-services/seo" },
+  alternates: { canonical: "https://hotbotstudios.com/digital-marketing/seo-services" },
 };
 
 const serviceSchema = {
@@ -52,7 +53,7 @@ const serviceSchema = {
     "@type": "Country",
     "name": "United States"
   },
-  "url": "https://hotbotstudios.com/marketing-services/seo"
+  "url": "https://hotbotstudios.com/digital-marketing/seo-services"
 };
 
 const breadcrumbSchema = {
@@ -69,13 +70,13 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       "position": 2,
       "name": "Digital Marketing",
-      "item": "https://hotbotstudios.com/marketing-services"
+      "item": "https://hotbotstudios.com/digital-marketing"
     },
     {
       "@type": "ListItem",
       "position": 3,
       "name": "SEO Services",
-      "item": "https://hotbotstudios.com/marketing-services/seo"
+      "item": "https://hotbotstudios.com/digital-marketing/seo-services"
     }
   ]
 };
@@ -141,8 +142,8 @@ const FAQS = [
 ];
 
 const RELATED = [
-    { title: "PPC and Paid Search", href: "/marketing-services/ppc", desc: "Paid search complements SEO, capture demand while organic rankings build.", icon: "💰" },
-    { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "Connect organic search performance to revenue and pipeline in your CRM.", icon: "📊" },
+    { title: "PPC and Paid Search", href: "/digital-marketing/ppc", desc: "Paid search complements SEO, capture demand while organic rankings build.", icon: "💰" },
+    { title: "Analytics and Attribution", href: "/digital-marketing/analytics", desc: "Connect organic search performance to revenue and pipeline in your CRM.", icon: "📊" },
     { title: "Content Studio", href: "/content-studio", desc: "SEO content production: copywriting, video, and thought leadership at scale.", icon: "✍️" }
 ];
 
@@ -167,11 +168,13 @@ export default function SeoPage() {
         <ol className="flex items-center gap-2 text-xs text-slate-500">
           <li><Link href="/" className="hover:text-slate-300 transition-colors">Home</Link></li>
           <li className="text-slate-700">/</li>
-          <li><Link href="/marketing-services" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
+          <li><Link href="/digital-marketing" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
           <li className="text-slate-700">/</li>
           <li className="text-slate-400">SEO Services</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "Digital Marketing", href: "/digital-marketing" }, { label: "Seo Services" }]} />
 
       <PageHeader
         label="Search Engine Optimization"

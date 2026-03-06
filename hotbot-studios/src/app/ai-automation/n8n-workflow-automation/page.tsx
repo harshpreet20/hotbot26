@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "n8n Workflow Automation for US Businesses, HubSpot, Salesforce & 500+ Tools | HotBot Studios",
@@ -172,6 +173,8 @@ export default function N8nWorkflowAutomationPage() {
           <li className="text-slate-400">n8n Workflow Automation</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "N8N Workflow Automation" }]} />
 
       <PageHeader
         label="Workflow Automation"

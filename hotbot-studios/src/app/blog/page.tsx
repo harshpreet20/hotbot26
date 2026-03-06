@@ -140,7 +140,7 @@ export default function BlogPage() {
           <div className="flex flex-wrap gap-2 justify-center">
             {[
               { label: "AI & Automation", href: "/ai-automation", color: "#3b82f6" },
-              { label: "SEO & Marketing", href: "/marketing-services", color: "#22c55e" },
+              { label: "SEO & Marketing", href: "/digital-marketing", color: "#22c55e" },
               { label: "Content Production", href: "/content-studio", color: "#ec4899" },
               { label: "Software Dev", href: "/software-development", color: "#8b5cf6" },
               { label: "Public Relations", href: "/public-relations", color: "#f59e0b" },

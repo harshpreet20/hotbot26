@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Digital Transformation Consulting USA — MarTech Modernisation & Process Automation | HotBot Studios",
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
     "tech stack modernisation USA",
     "business process automation USA",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/digital-transformation" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/digital-transformation" },
   openGraph: {
     title: "Digital Transformation Consulting USA | HotBot Studios",
     description: "Modernise your marketing tech stack, automate manual processes, and upskill your team. Digital transformation for US businesses from $2M to $200M.",
-    url: "https://hotbotstudios.com/consultancy/digital-transformation",
+    url: "https://hotbotstudios.com/marketing-consulting/digital-transformation",
   },
 };
 
@@ -32,7 +33,7 @@ const schema = {
   serviceType: "Digital Transformation and MarTech Consulting",
   areaServed: { "@type": "Country", name: "United States" },
   description: "End-to-end digital transformation consulting for US businesses — MarTech stack modernisation, process automation, data infrastructure, and team capability building.",
-  url: "https://hotbotstudios.com/consultancy/digital-transformation",
+  url: "https://hotbotstudios.com/marketing-consulting/digital-transformation",
 };
 
 const breadcrumb = {
@@ -40,8 +41,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Digital Transformation", item: "https://hotbotstudios.com/consultancy/digital-transformation" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "Digital Transformation", item: "https://hotbotstudios.com/marketing-consulting/digital-transformation" },
   ],
 };
 
@@ -73,6 +74,8 @@ export default function DigitalTransformationPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Digital Transformation" }]} />
 
       <PageHeader
         label="Digital Transformation"

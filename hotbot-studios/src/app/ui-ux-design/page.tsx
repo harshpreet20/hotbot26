@@ -8,6 +8,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "UI/UX Design Agency USA — User-Centered Design That Converts | HotBot Studios",
@@ -108,7 +109,7 @@ const FAQS = [
 const RELATED = [
   { title: "Software Development", href: "/software-development", desc: "We build what we design — pixel-perfect.", icon: "💻" },
   { title: "AI Automation", href: "/ai-automation", desc: "Beautiful UI for AI-powered products.", icon: "🤖" },
-  { title: "Digital Marketing", href: "/marketing-services", desc: "Drive traffic to your newly optimized product.", icon: "📣" },
+  { title: "Digital Marketing", href: "/digital-marketing", desc: "Drive traffic to your newly optimized product.", icon: "📣" },
 ];
 
 export default function UIUXDesignPage() {
@@ -117,6 +118,8 @@ export default function UIUXDesignPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <Breadcrumb items={[{ label: "UI/UX Design", href: "/ui-ux-design" }]} />
 
       <PageHeader
         label="UI/UX Design Agency USA"

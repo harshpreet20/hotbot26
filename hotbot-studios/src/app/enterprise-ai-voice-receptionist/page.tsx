@@ -186,13 +186,13 @@ const RELATED = [
   },
   {
     title: "Analytics and Attribution",
-    href: "/marketing-services",
+    href: "/digital-marketing",
     desc: "GA4, CRM, and revenue attribution reporting for enterprise marketing teams.",
     icon: "📊",
   },
   {
     title: "Growth Strategy and Roadmap",
-    href: "/consultancy",
+    href: "/marketing-consulting",
     desc: "Enterprise digital transformation and go-to-market strategy consulting.",
     icon: "🗺️",
   },

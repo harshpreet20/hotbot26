@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Digital PR & SEO Link Building Agency USA — DA50+ Backlinks from Editorial Coverage | HotBot Studios",
@@ -75,6 +76,8 @@ export default function DigitalPrSeoPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Public Relations", href: "/public-relations" }, { label: "Digital Pr Seo" }]} />
 
       <PageHeader
         label="Digital PR & SEO Link Building"

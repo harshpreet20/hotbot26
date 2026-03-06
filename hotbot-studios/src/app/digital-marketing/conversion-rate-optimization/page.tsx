@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
     description: "A/B testing, landing page redesigns, heatmap analysis, and UX optimization for US businesses. Turn more of your existing traffic into leads and paying customers without increasing ad spend.",
-    url: "https://hotbotstudios.com/marketing-services/cro",
+    url: "https://hotbotstudios.com/digital-marketing/conversion-rate-optimization",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "CRO Services That Turn Existing Traffic Into More Leads and Revenue" }],
   },
   twitter: {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     title: "CRO, Conversion Rate Optimization Services USA | HotBot Studios",
     description: "A/B testing, landing page redesigns, heatmap analysis, and UX optimization for US businesses. Turn more of your existing traffic into leads and paying customers without increasing ad spend.",
   },
-  alternates: { canonical: "https://hotbotstudios.com/marketing-services/cro" },
+  alternates: { canonical: "https://hotbotstudios.com/digital-marketing/conversion-rate-optimization" },
 };
 
 const serviceSchema = {
@@ -52,7 +53,7 @@ const serviceSchema = {
     "@type": "Country",
     "name": "United States"
   },
-  "url": "https://hotbotstudios.com/marketing-services/cro"
+  "url": "https://hotbotstudios.com/digital-marketing/conversion-rate-optimization"
 };
 
 const breadcrumbSchema = {
@@ -69,13 +70,13 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       "position": 2,
       "name": "Digital Marketing",
-      "item": "https://hotbotstudios.com/marketing-services"
+      "item": "https://hotbotstudios.com/digital-marketing"
     },
     {
       "@type": "ListItem",
       "position": 3,
       "name": "Conversion Rate Optimization",
-      "item": "https://hotbotstudios.com/marketing-services/cro"
+      "item": "https://hotbotstudios.com/digital-marketing/conversion-rate-optimization"
     }
   ]
 };
@@ -141,8 +142,8 @@ const FAQS = [
 ];
 
 const RELATED = [
-    { title: "PPC and Paid Search", href: "/marketing-services/ppc", desc: "Higher landing page conversion directly lowers your PPC cost per acquisition.", icon: "💰" },
-    { title: "Analytics and Attribution", href: "/marketing-services/analytics", desc: "GA4 funnel analysis surfaces the exact drop-off points to test first.", icon: "📊" },
+    { title: "PPC and Paid Search", href: "/digital-marketing/ppc", desc: "Higher landing page conversion directly lowers your PPC cost per acquisition.", icon: "💰" },
+    { title: "Analytics and Attribution", href: "/digital-marketing/analytics", desc: "GA4 funnel analysis surfaces the exact drop-off points to test first.", icon: "📊" },
     { title: "UI/UX Design", href: "/ui-ux-design", desc: "UX research and design principles inform every CRO hypothesis we test.", icon: "🎨" }
 ];
 
@@ -167,11 +168,13 @@ export default function CroPage() {
         <ol className="flex items-center gap-2 text-xs text-slate-500">
           <li><Link href="/" className="hover:text-slate-300 transition-colors">Home</Link></li>
           <li className="text-slate-700">/</li>
-          <li><Link href="/marketing-services" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
+          <li><Link href="/digital-marketing" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
           <li className="text-slate-700">/</li>
           <li className="text-slate-400">Conversion Rate Optimization</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "Digital Marketing", href: "/digital-marketing" }, { label: "Conversion Rate Optimization" }]} />
 
       <PageHeader
         label="Conversion Rate Optimization"

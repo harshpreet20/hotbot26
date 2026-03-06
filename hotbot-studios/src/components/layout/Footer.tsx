@@ -80,12 +80,12 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3">
               {[
                 { label: "AI Automation", href: "/ai-automation" },
-                { label: "Digital Marketing", href: "/marketing-services" },
+                { label: "Digital Marketing", href: "/digital-marketing" },
                 { label: "Content Studio", href: "/content-studio" },
                 { label: "Software Dev", href: "/software-development" },
                 { label: "Public Relations", href: "/public-relations" },
                 { label: "UI/UX Design", href: "/ui-ux-design" },
-                { label: "Consulting", href: "/consultancy" },
+                { label: "Consulting", href: "/marketing-consulting" },
               ].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-slate-400 text-xs sm:text-sm hover:text-white transition-colors">

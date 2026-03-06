@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Social Media Marketing Services for US Businesses | HotBot Studios",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Social Media Marketing Services for US Businesses | HotBot Studios",
     description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
-    url: "https://hotbotstudios.com/marketing-services/social-media",
+    url: "https://hotbotstudios.com/digital-marketing/social-media-marketing",
     images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "Social Media Marketing That Builds Brand Authority and Drives Leads" }],
   },
   twitter: {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     title: "Social Media Marketing Services for US Businesses | HotBot Studios",
     description: "Instagram, LinkedIn, TikTok, and X social media management for US businesses. Content strategy, community management, and paid social that builds pipeline, not just followers.",
   },
-  alternates: { canonical: "https://hotbotstudios.com/marketing-services/social-media" },
+  alternates: { canonical: "https://hotbotstudios.com/digital-marketing/social-media-marketing" },
 };
 
 const serviceSchema = {
@@ -52,7 +53,7 @@ const serviceSchema = {
     "@type": "Country",
     "name": "United States"
   },
-  "url": "https://hotbotstudios.com/marketing-services/social-media"
+  "url": "https://hotbotstudios.com/digital-marketing/social-media-marketing"
 };
 
 const breadcrumbSchema = {
@@ -69,13 +70,13 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       "position": 2,
       "name": "Digital Marketing",
-      "item": "https://hotbotstudios.com/marketing-services"
+      "item": "https://hotbotstudios.com/digital-marketing"
     },
     {
       "@type": "ListItem",
       "position": 3,
       "name": "Social Media Marketing",
-      "item": "https://hotbotstudios.com/marketing-services/social-media"
+      "item": "https://hotbotstudios.com/digital-marketing/social-media-marketing"
     }
   ]
 };
@@ -141,9 +142,9 @@ const FAQS = [
 ];
 
 const RELATED = [
-    { title: "PPC and Paid Search", href: "/marketing-services/ppc", desc: "Paid social amplifies top organic content to targeted audiences at scale.", icon: "💰" },
+    { title: "PPC and Paid Search", href: "/digital-marketing/ppc", desc: "Paid social amplifies top organic content to targeted audiences at scale.", icon: "💰" },
     { title: "Content Studio", href: "/content-studio", desc: "Professional content production for social video, graphics, and copywriting.", icon: "🎬" },
-    { title: "Email Marketing", href: "/marketing-services/email-marketing", desc: "Convert social audiences into email subscribers for owned-channel nurture.", icon: "📧" }
+    { title: "Email Marketing", href: "/digital-marketing/email-marketing", desc: "Convert social audiences into email subscribers for owned-channel nurture.", icon: "📧" }
 ];
 
 export default function SocialMediaPage() {
@@ -167,11 +168,13 @@ export default function SocialMediaPage() {
         <ol className="flex items-center gap-2 text-xs text-slate-500">
           <li><Link href="/" className="hover:text-slate-300 transition-colors">Home</Link></li>
           <li className="text-slate-700">/</li>
-          <li><Link href="/marketing-services" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
+          <li><Link href="/digital-marketing" className="hover:text-slate-300 transition-colors">Digital Marketing</Link></li>
           <li className="text-slate-700">/</li>
           <li className="text-slate-400">Social Media Marketing</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "Digital Marketing", href: "/digital-marketing" }, { label: "Social Media Marketing" }]} />
 
       <PageHeader
         label="Social Media Marketing"

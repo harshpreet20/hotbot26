@@ -145,7 +145,7 @@ const FAQS = [
 const RELATED = [
     { title: "Instagram Content Assistant", href: "/products/instagram-content-assistant", desc: "AI-generated captions, hooks, and hashtag sets for Instagram Reels, Stories, and Feed posts.", icon: "📸" },
     { title: "Content Production Studio", href: "/content-studio", desc: "Full content production: video, copy, social media, and podcast production for US brands.", icon: "🎬" },
-    { title: "Social Media Marketing", href: "/marketing-services/social-media", desc: "Managed LinkedIn, Instagram, and multi-platform social media strategy and content.", icon: "📣" }
+    { title: "Social Media Marketing", href: "/digital-marketing/social-media-marketing", desc: "Managed LinkedIn, Instagram, and multi-platform social media strategy and content.", icon: "📣" }
 ];
 
 export default function LinkedinPostAssistantPage() {

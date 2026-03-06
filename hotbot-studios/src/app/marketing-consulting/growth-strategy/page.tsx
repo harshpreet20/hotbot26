@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Reveal } from "@/components/shared/Reveal";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LeadCaptureForm } from "@/components/shared/LeadCaptureForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "Growth Strategy & Marketing Roadmap Consultancy USA | HotBot Studios",
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
     "business growth strategy USA",
     "revenue growth strategy USA",
   ],
-  alternates: { canonical: "https://hotbotstudios.com/consultancy/growth-strategy" },
+  alternates: { canonical: "https://hotbotstudios.com/marketing-consulting/growth-strategy" },
   openGraph: {
     title: "Growth Strategy & Marketing Roadmap Consultancy USA | HotBot Studios",
     description: "Data-driven 90-day and 12-month growth roadmaps for US businesses — competitive positioning, channel mix, and budget allocation.",
-    url: "https://hotbotstudios.com/consultancy/growth-strategy",
+    url: "https://hotbotstudios.com/marketing-consulting/growth-strategy",
   },
 };
 
@@ -32,7 +33,7 @@ const schema = {
   serviceType: "Marketing Growth Strategy Consulting",
   areaServed: { "@type": "Country", name: "United States" },
   description: "Data-driven growth strategy and marketing roadmap development for US businesses — market analysis, competitive positioning, channel mix, and budget allocation.",
-  url: "https://hotbotstudios.com/consultancy/growth-strategy",
+  url: "https://hotbotstudios.com/marketing-consulting/growth-strategy",
 };
 
 const breadcrumb = {
@@ -40,8 +41,8 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://hotbotstudios.com" },
-    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/consultancy" },
-    { "@type": "ListItem", position: 3, name: "Growth Strategy & Roadmap", item: "https://hotbotstudios.com/consultancy/growth-strategy" },
+    { "@type": "ListItem", position: 2, name: "Marketing Consulting", item: "https://hotbotstudios.com/marketing-consulting" },
+    { "@type": "ListItem", position: 3, name: "Growth Strategy & Roadmap", item: "https://hotbotstudios.com/marketing-consulting/growth-strategy" },
   ],
 };
 
@@ -73,6 +74,8 @@ export default function GrowthStrategyPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+
+      <Breadcrumb items={[{ label: "Marketing Consulting", href: "/marketing-consulting" }, { label: "Growth Strategy" }]} />
 
       <PageHeader
         label="Growth Strategy & Roadmap"

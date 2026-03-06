@@ -7,6 +7,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import { RelatedServices } from "@/components/sections/RelatedServices";
 import { Reveal } from "@/components/shared/Reveal";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "GPT-4o & Claude 3 Integration for Business Products, LLM Development USA | HotBot Studios",
@@ -172,6 +173,8 @@ export default function LlmGptIntegrationPage() {
           <li className="text-slate-400">LLM & GPT Integration</li>
         </ol>
       </nav>
+
+      <Breadcrumb items={[{ label: "AI Automation", href: "/ai-automation" }, { label: "Llm Gpt Integration" }]} />
 
       <PageHeader
         label="LLM Integration"
