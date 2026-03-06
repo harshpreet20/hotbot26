@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { BlogPost } from "@/types/blog";
@@ -10,7 +10,7 @@ const CATEGORIES = [
 ];
 const AD_TOPICS = ["general", "ai-automation", "ai-chatbot", "voice-ai", "n8n", "seo", "ppc", "social-media", "email-marketing", "analytics", "content", "video", "pr", "software-dev", "ui-ux", "consultancy"] as const;
 
-export default function EditPostPage() {
+function EditPostContent() {
   const router = useRouter();
   const params = useSearchParams();
   const slug = params.get("slug") || "";
@@ -193,5 +193,13 @@ export default function EditPostPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function EditPostPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500">Loading…</div>}>
+      <EditPostContent />
+    </Suspense>
   );
 }
