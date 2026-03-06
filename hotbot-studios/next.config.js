@@ -2,7 +2,7 @@
 const nextConfig = {
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   images: {
-    domains: ['hotbotstudios.com', 'backdrop.hotbotstudios.com'],
+    domains: ['hotbotstudios.com'],
   },
   async redirects() {
     return [

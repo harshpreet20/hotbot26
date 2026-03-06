@@ -17,7 +17,7 @@ export default function BackdropLoginPage() {
       if (res.ok) {
         // Store secret in sessionStorage for subsequent API calls
         sessionStorage.setItem("backdrop_secret", secret);
-        router.push("/backdrop/dashboard");
+        router.push("/enter/backdrop/dashboard");
       } else {
         setError("Invalid secret. Try again.");
       }

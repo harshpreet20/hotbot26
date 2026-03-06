@@ -18,11 +18,11 @@ export default function BackdropDashboard() {
 
   const fetchPosts = useCallback(async () => {
     const secret = getSecret();
-    if (!secret) { router.replace("/backdrop"); return; }
+    if (!secret) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
     try {
       const res = await fetch(`/api/blog/publish?secret=${encodeURIComponent(secret)}`);
-      if (res.status === 401) { router.replace("/backdrop"); return; }
+      if (res.status === 401) { router.replace("/enter/backdrop"); return; }
       // publish endpoint returns { count, slugs } — load full posts via posts endpoint
       const allRes = await fetch(`/api/blog/posts?status=published&limit=500`);
       const data = await allRes.json() as { posts: BlogPost[] };
@@ -87,14 +87,14 @@ export default function BackdropDashboard() {
         <div className="flex items-center gap-3">
           <span className="text-slate-500 text-xs">{posts.length} post{posts.length !== 1 ? "s" : ""}</span>
           <Link
-            href="/backdrop/dashboard/new"
+            href="/enter/backdrop/dashboard/new"
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
             style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
             + New Post
           </Link>
           <button
-            onClick={() => { sessionStorage.removeItem("backdrop_secret"); router.push("/backdrop"); }}
+            onClick={() => { sessionStorage.removeItem("backdrop_secret"); router.push("/enter/backdrop"); }}
             className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
@@ -112,7 +112,7 @@ export default function BackdropDashboard() {
         ) : posts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-slate-500 mb-4">No published posts yet.</p>
-            <Link href="/backdrop/dashboard/new" className="text-blue-400 hover:text-blue-300 transition-colors text-sm">
+            <Link href="/enter/backdrop/dashboard/new" className="text-blue-400 hover:text-blue-300 transition-colors text-sm">
               Create your first post →
             </Link>
           </div>
@@ -151,7 +151,7 @@ export default function BackdropDashboard() {
                       View ↗
                     </a>
                     <Link
-                      href={`/backdrop/dashboard/edit?slug=${post.slug}`}
+                      href={`/enter/backdrop/dashboard/edit?slug=${post.slug}`}
                       className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition-colors"
                       style={{ background: "rgba(255,255,255,0.04)" }}
                     >
