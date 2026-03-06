@@ -3,10 +3,11 @@ import fs from "fs";
 import path from "path";
 import type { BlogPost } from "@/types/blog";
 
-const BASE = "https://hotbotstudios.com";
+// Force dynamic so Google always gets a fresh sitemap the instant a new post is published.
+// N8N → /api/blog/publish writes posts.json → Next.js revalidates /blog → sitemap is live.
+export const dynamic = "force-dynamic";
 
-// Regenerate at most once per day — blog posts trigger incremental ISR via /api/blog/publish
-export const revalidate = 86400;
+const BASE = "https://hotbotstudios.com";
 
 function loadBlogPosts(): BlogPost[] {
   try {
@@ -98,7 +99,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority,
   }));
 
-  // Dynamically include every published blog post
+  // Dynamically include every published blog post — fresh on every request
   const blogPosts = loadBlogPosts();
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: `${BASE}/blog/${post.slug}`,

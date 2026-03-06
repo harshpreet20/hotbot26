@@ -45,7 +45,7 @@ const SERVICES = [
   {
     type: "consulting",
     title: "Marketing Consulting",
-    desc: "Clarity without the jargon. We audit your growth strategy, uncover revenue leaks, and hand you a prioritized execution plan that actually moves the needle — backed by data, not guesswork.",
+    desc: "Clarity without the jargon. We audit your growth strategy, uncover revenue leaks, and hand you a prioritized execution plan.",
     href: "/consultancy",
     featured: true,
   },
@@ -61,7 +61,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16">
+    <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-24 pb-16">
       {/* Badge */}
       <div
         style={{
@@ -70,17 +70,18 @@ export function HeroSection() {
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s",
         }}
       >
-        <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl mb-8">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-slate-400 text-[13px] font-medium">
-            #1 AI Automation & Digital Marketing Agency — Trusted by 42+ US Businesses
+        <div className="inline-flex items-center gap-2 sm:gap-2.5 px-3 sm:px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl mb-6 sm:mb-8 max-w-[90vw] text-center">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+          <span className="text-slate-400 text-[11px] sm:text-[13px] font-medium leading-snug">
+            <span className="hidden sm:inline">#1 AI Automation & Digital Marketing Agency — Trusted by 42+ US Businesses</span>
+            <span className="sm:hidden">Trusted by 42+ US Businesses</span>
           </span>
         </div>
       </div>
 
       {/* Heading */}
       <h1
-        className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center leading-[1.1] tracking-tight mb-5"
+        className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center leading-[1.1] tracking-tight mb-4 sm:mb-5"
         style={{
           opacity: loaded ? 1 : 0,
           transform: loaded ? "translateY(0)" : "translateY(30px)",
@@ -96,7 +97,7 @@ export function HeroSection() {
 
       {/* Subtitle */}
       <p
-        className="text-slate-300 text-lg md:text-xl text-center mb-14 max-w-2xl mx-auto"
+        className="text-slate-300 text-base sm:text-lg md:text-xl text-center mb-10 sm:mb-14 max-w-2xl mx-auto leading-relaxed px-2"
         style={{
           opacity: loaded ? 1 : 0,
           transform: loaded ? "translateY(0)" : "translateY(25px)",
@@ -123,7 +124,7 @@ export function HeroSection() {
 
       {/* CTA row */}
       <div
-        className="flex flex-col sm:flex-row gap-4 mt-14"
+        className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-10 sm:mt-14 w-full sm:w-auto px-4 sm:px-0"
         style={{
           opacity: loaded ? 1 : 0,
           transition: "all 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s",
@@ -131,7 +132,7 @@ export function HeroSection() {
       >
         <button
           onClick={() => openForm("get-started", "home")}
-          className="px-8 py-3.5 rounded-2xl font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/25"
+          className="px-8 py-3.5 rounded-2xl font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/25 text-center"
           style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
         >
           Start Your Project

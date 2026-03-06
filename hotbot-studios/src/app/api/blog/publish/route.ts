@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
 import type { BlogPost, BlogPostsStore } from "@/types/blog";
@@ -40,6 +41,9 @@ export async function POST(req: NextRequest) {
     if (action === "delete") {
       store.posts = store.posts.filter((p) => p.slug !== post.slug);
       writePosts(store);
+      // Revalidate blog list and the deleted post's page
+      revalidatePath("/blog");
+      revalidatePath(`/blog/${post.slug}`);
       return NextResponse.json({ success: true, action: "deleted", slug: post.slug });
     }
 
@@ -65,11 +69,17 @@ export async function POST(req: NextRequest) {
 
     writePosts(store);
 
+    // On-demand revalidation — blog list + this specific post + all dynamic blog slugs
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${finalPost.slug}`);
+    // Revalidate the entire /blog/[slug] layout so Next.js picks up new slugs too
+    revalidatePath("/blog/[slug]", "page");
+
     return NextResponse.json({
       success: true,
       action: existingIndex >= 0 ? "updated" : "created",
       slug: finalPost.slug,
-      url: `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${finalPost.slug}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://hotbotstudios.com"}/blog/${finalPost.slug}`,
     });
   } catch (error) {
     console.error("Blog publish error:", error);

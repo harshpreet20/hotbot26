@@ -14,6 +14,12 @@ html {
   font-size: 110%;
 }
 
+@media (max-width: 640px) {
+  html {
+    font-size: 100%;
+  }
+}
+
 body {
   font-family: "Plus Jakarta Sans", "DM Sans", system-ui, -apple-system, sans-serif;
   background: #0a0e1a;
@@ -51,15 +57,22 @@ body {
   gap: 20px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .services-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  /* Featured cards collapse to single column on tablet */
+  .services-grid > a[style*="span 2"] {
+    grid-column: span 1 !important;
   }
 }
 
 @media (max-width: 640px) {
   .services-grid {
     grid-template-columns: 1fr;
+  }
+  .services-grid > a[style*="span 2"] {
+    grid-column: span 1 !important;
   }
 }
 

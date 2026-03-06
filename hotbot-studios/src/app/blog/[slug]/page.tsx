@@ -11,6 +11,13 @@ interface PageProps {
   params: { slug: string };
 }
 
+const SITE_URL = "https://hotbotstudios.com";
+
+// Allow new slugs published via N8N to be rendered on-demand without a rebuild.
+// revalidatePath('/blog/[slug]') called from /api/blog/publish handles cache refresh.
+export const dynamicParams = true;
+export const revalidate = 60; // fallback ISR for edge cases
+
 const CATEGORY_COLORS: Record<string, string> = {
   "AI Automation": "#3b82f6",
   "Digital Marketing": "#22c55e",
@@ -51,57 +58,86 @@ export async function generateStaticParams() {
 export function generateMetadata({ params }: PageProps): Metadata {
   const post = loadPost(params.slug);
   if (!post) {
-    return { title: "Post Not Found | HotBot Studios Blog" };
+    return {
+      title: "Post Not Found | HotBot Studios Blog",
+      robots: { index: false, follow: false },
+    };
   }
+
+  const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
+  // Derive primary keyword from first tag or category
+  const primaryKw = post.tags?.[0] || post.category;
+  const allKeywords = [
+    post.title,
+    post.category,
+    ...(post.tags || []),
+    `${primaryKw} USA`,
+    "HotBot Studios",
+    "AI automation agency",
+    "digital marketing agency USA",
+  ];
+
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${post.title} | HotBot Studios Blog`,
     description: post.excerpt,
-    keywords: post.tags,
+    keywords: allKeywords,
+    authors: [{ name: post.author || "HotBot Studios", url: SITE_URL }],
+    creator: post.author || "HotBot Studios",
+    publisher: "HotBot Studios",
+    category: post.category,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+        "max-video-preview": -1,
+      },
+    },
     openGraph: {
+      type: "article",
+      locale: "en_US",
+      siteName: "HotBot Studios",
       title: post.title,
       description: post.excerpt,
-      url: `https://hotbotstudios.com/blog/${post.slug}`,
-      type: "article",
+      url: canonicalUrl,
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
-      authors: [post.author],
-      images: [{ url: "/og-image.svg", width: 1200, height: 630 }],
+      authors: [post.author || "HotBot Studios"],
+      section: post.category,
+      tags: post.tags || [],
+      images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
+      images: ["/og-image.svg"],
+      creator: "@hotbotstudios",
+      site: "@hotbotstudios",
     },
-    alternates: { canonical: `https://hotbotstudios.com/blog/${post.slug}` },
+    alternates: { canonical: canonicalUrl },
   };
 }
 
-// Split HTML content into paragraphs/sections so we can inject ads between them.
-// Returns an array of HTML strings, each representing a content chunk.
+// Split HTML content into chunks to inject ads between them.
 function splitContentChunks(html: string): string[] {
-  // Split on </p>, </h2>, </h3>, </ul>, </ol> boundaries
   const chunks: string[] = [];
   let remaining = html;
-
   const closingTags = ["</p>", "</h2>", "</h3>", "</ul>", "</ol>", "</blockquote>"];
 
   while (remaining.length > 0) {
     let splitAt = -1;
-    let splitTagLen = 4;
-
     for (const tag of closingTags) {
       const idx = remaining.indexOf(tag);
       if (idx !== -1 && (splitAt === -1 || idx < splitAt)) {
         splitAt = idx + tag.length;
-        splitTagLen = tag.length;
       }
     }
-
-    if (splitAt === -1) {
-      chunks.push(remaining);
-      break;
-    }
-
+    if (splitAt === -1) { chunks.push(remaining); break; }
     chunks.push(remaining.slice(0, splitAt));
     remaining = remaining.slice(splitAt);
   }
@@ -111,52 +147,97 @@ function splitContentChunks(html: string): string[] {
 
 export default function BlogPostPage({ params }: PageProps) {
   const post = loadPost(params.slug);
-
-  if (!post) {
-    notFound();
-  }
+  if (!post) notFound();
 
   const allPosts = loadAllPosts();
   const related = allPosts
     .filter((p) => p.slug !== post.slug && (p.category === post.category || p.adTopic === post.adTopic))
     .slice(0, 3);
 
-  // Build article schema
-  const articleSchema = {
+  const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
+
+  // WordCount for schema
+  const wordCount = (post.content || "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+
+  // Full BlogPosting schema (Google News + E-E-A-T)
+  const blogPostingSchema = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
+    "@id": canonicalUrl,
     headline: post.title,
     description: post.excerpt,
-    author: { "@type": "Organization", name: post.author, url: "https://hotbotstudios.com" },
+    articleSection: post.category,
+    keywords: (post.tags || []).join(", "),
+    wordCount,
+    datePublished: post.publishedAt,
+    dateModified: post.updatedAt,
+    url: canonicalUrl,
+    image: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/og-image.svg`,
+      width: 1200,
+      height: 630,
+    },
+    author: {
+      "@type": "Organization",
+      name: post.author || "HotBot Studios",
+      url: SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/logos/hotbot-logo.svg`,
+      },
+    },
     publisher: {
       "@type": "Organization",
       name: "HotBot Studios",
-      logo: { "@type": "ImageObject", url: "https://hotbotstudios.com/logos/hotbot-logo.svg" },
+      url: SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/logos/hotbot-logo.svg`,
+        width: 160,
+        height: 40,
+      },
     },
-    datePublished: post.publishedAt,
-    dateModified: post.updatedAt,
-    url: `https://hotbotstudios.com/blog/${post.slug}`,
-    keywords: post.tags?.join(", "),
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
+    inLanguage: "en-US",
+    isPartOf: {
+      "@type": "Blog",
+      name: "HotBot Studios Blog",
+      url: `${SITE_URL}/blog`,
+    },
   };
 
-  // Split content and inject ads every ~3 content chunks
-  const chunks = splitContentChunks(post.content || "");
-  const AD_INTERVAL = 3; // insert ad every N chunks
+  // BreadcrumbList
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: canonicalUrl },
+    ],
+  };
 
+  const chunks = splitContentChunks(post.content || "");
+  const AD_INTERVAL = 3;
   const accentColor = CATEGORY_COLORS[post.category] || "#3b82f6";
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
       {/* ── Article Header ── */}
-      <section className="relative z-10 pt-32 pb-8 px-6 max-w-3xl mx-auto">
-        <Link href="/blog" className="inline-flex items-center gap-2 text-slate-400 text-sm hover:text-white transition-colors mb-8">
+      <section className="relative z-10 pt-28 sm:pt-32 pb-8 px-4 sm:px-6 max-w-3xl mx-auto">
+        <Link href="/blog" className="inline-flex items-center gap-2 text-slate-400 text-sm hover:text-white transition-colors mb-6 sm:mb-8">
           ← Back to Blog
         </Link>
 
         {/* Category + read time */}
-        <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="flex flex-wrap items-center gap-3 mb-4 sm:mb-5">
           <span
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
             style={{
@@ -171,30 +252,26 @@ export default function BlogPostPage({ params }: PageProps) {
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight mb-5">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight mb-4 sm:mb-5">
           {post.title}
         </h1>
 
-        {/* Excerpt / subtitle */}
-        <p className="text-slate-400 text-lg leading-relaxed mb-7">{post.excerpt}</p>
+        {/* Excerpt */}
+        <p className="text-slate-400 text-base sm:text-lg leading-relaxed mb-6 sm:mb-7">{post.excerpt}</p>
 
         {/* Meta bar */}
-        <div className="flex flex-wrap items-center gap-4 pb-7 border-b border-white/[0.08] text-sm text-slate-500">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 pb-6 sm:pb-7 border-b border-white/[0.08] text-sm text-slate-500">
           <span className="font-medium text-slate-400">{post.author}</span>
           <span>·</span>
           <span>
-            {new Date(post.publishedAt).toLocaleDateString("en-US", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+            {new Date(post.publishedAt).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })}
           </span>
           <span>·</span>
           <span>{post.readTime}</span>
           {post.tags?.length > 0 && (
             <>
-              <span>·</span>
-              <div className="flex flex-wrap gap-1.5">
+              <span className="hidden sm:inline">·</span>
+              <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
@@ -210,14 +287,13 @@ export default function BlogPostPage({ params }: PageProps) {
       </section>
 
       {/* ── Article Content with Inline Ads ── */}
-      <section className="relative z-10 px-6 max-w-3xl mx-auto pb-12">
-        {/* First ad — after intro (before main content starts) */}
+      <section className="relative z-10 px-4 sm:px-6 max-w-3xl mx-auto pb-12">
         <InlineAdBanner topic={post.adTopic} variant="compact" />
 
         <div className="prose prose-invert prose-lg max-w-none
           prose-headings:font-black prose-headings:text-white
-          prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
-          prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
+          prose-h2:text-xl prose-h2:sm:text-2xl prose-h2:mt-10 prose-h2:mb-4
+          prose-h3:text-lg prose-h3:sm:text-xl prose-h3:mt-8 prose-h3:mb-3
           prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-5
           prose-li:text-slate-300 prose-li:leading-relaxed
           prose-strong:text-white
@@ -228,7 +304,6 @@ export default function BlogPostPage({ params }: PageProps) {
           {chunks.map((chunk, i) => (
             <div key={i}>
               <div dangerouslySetInnerHTML={{ __html: chunk }} />
-              {/* Inject ad after every AD_INTERVAL chunks, but not after the last */}
               {(i + 1) % AD_INTERVAL === 0 && i < chunks.length - 1 && (
                 <InlineAdBanner topic={post.adTopic} />
               )}
@@ -236,7 +311,6 @@ export default function BlogPostPage({ params }: PageProps) {
           ))}
         </div>
 
-        {/* Final ad — after content ends */}
         <InlineAdBanner topic={post.adTopic} />
 
         {/* Tags footer */}
@@ -259,14 +333,14 @@ export default function BlogPostPage({ params }: PageProps) {
 
       {/* ── Related Posts ── */}
       {related.length > 0 && (
-        <section className="relative z-10 px-6 max-w-5xl mx-auto pb-16">
+        <section className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto pb-16">
           <h2 className="text-xl font-black text-white mb-6">Related Articles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
             {related.map((rp) => (
               <Link
                 key={rp.slug}
                 href={`/blog/${rp.slug}`}
-                className="group block p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] hover:-translate-y-0.5 transition-all duration-300"
+                className="group block p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] hover:-translate-y-0.5 transition-all duration-300"
               >
                 <span
                   className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
