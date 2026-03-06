@@ -41,9 +41,9 @@ export function Footer() {
               <Image
                 src="/logos/hotbot-logo.svg"
                 alt="HotBot Studios — AI Automation & Digital Marketing Agency"
-                width={160}
-                height={40}
-                className="h-8 sm:h-9 w-auto object-contain"
+                width={320}
+                height={80}
+                className="h-16 sm:h-[72px] w-auto object-contain"
               />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">

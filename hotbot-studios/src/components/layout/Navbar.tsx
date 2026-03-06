@@ -47,9 +47,9 @@ export function Navbar() {
           <Image
             src="/logos/hotbot-logo.svg"
             alt="HotBot Studios — AI Automation & Digital Marketing Agency"
-            width={160}
-            height={40}
-            className="h-9 w-auto object-contain"
+            width={320}
+            height={80}
+            className="h-[72px] w-auto object-contain"
             priority
           />
         </Link>
