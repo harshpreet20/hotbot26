@@ -130,6 +130,7 @@ export function Footer() {
               {[
                 { label: "Privacy Policy", href: "/privacy" },
                 { label: "Terms of Service", href: "/terms" },
+                { label: "Refund Policy", href: "/refund" },
               ].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-slate-400 text-sm hover:text-white transition-colors">
@@ -144,7 +145,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} HotBot Studios Inc. All rights reserved. Incorporated in Delaware, USA.
+            © 2026 HotBot Studios LLP. All rights reserved. Incorporated in New Delhi, India.
           </p>
           <div className="flex items-center gap-4">
             <a
