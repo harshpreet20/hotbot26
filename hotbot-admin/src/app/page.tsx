@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-const N8N_BASE = process.env.NEXT_PUBLIC_N8N_BASE_URL || "";
-const N8N_AUTH_PATH = process.env.NEXT_PUBLIC_N8N_WEBHOOK_BLOG_AUTH || "/webhook/hotbotstudios-blog-auth";
+const N8N_BASE = (process.env.NEXT_PUBLIC_N8N_BASE_URL || "").replace(/\/$/, "");
+const N8N_AUTH_PATH = (process.env.NEXT_PUBLIC_N8N_WEBHOOK_BLOG_AUTH || "hotbotstudios-blog-auth").replace(/^\//, "");
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch(`${N8N_BASE}${N8N_AUTH_PATH}`, {
+      const res = await fetch(`${N8N_BASE}/${N8N_AUTH_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), password }),

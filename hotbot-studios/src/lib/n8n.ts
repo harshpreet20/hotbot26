@@ -48,7 +48,8 @@ export async function triggerN8n<T = unknown>(
     throw new N8nConfigError(pipeline);
   }
 
-  const url = `${base}${endpoint}`;
+  // Support both "base + /path" and "base/ + path" formats cleanly
+  const url = base.replace(/\/$/, "") + "/" + endpoint.replace(/^\//, "");
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),

@@ -3,8 +3,8 @@
 import { AdminLayout } from "@/components/AdminLayout";
 import { useState } from "react";
 
-const N8N_BASE = process.env.NEXT_PUBLIC_N8N_BASE_URL || "";
-const N8N_CREATE_PATH = process.env.NEXT_PUBLIC_N8N_WEBHOOK_BLOG_CREATE || "/webhook/hotbotstudios-blog-create";
+const N8N_BASE = (process.env.NEXT_PUBLIC_N8N_BASE_URL || "").replace(/\/$/, "");
+const N8N_CREATE_PATH = (process.env.NEXT_PUBLIC_N8N_WEBHOOK_BLOG_CREATE || "hotbotstudios-blog-create").replace(/^\//, "");
 const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://hotbotstudios.com";
 
 type AdTopic =
@@ -129,7 +129,7 @@ export default function NewPostPage() {
     };
 
     try {
-      const res = await fetch(`${N8N_BASE}${N8N_CREATE_PATH}`, {
+      const res = await fetch(`${N8N_BASE}/${N8N_CREATE_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
