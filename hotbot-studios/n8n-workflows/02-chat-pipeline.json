@@ -10,7 +10,7 @@
       "position": [240, 300],
       "parameters": {
         "httpMethod": "POST",
-        "path": "hotbotstudios.com",
+        "path": "hotbotstudios-chat",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"

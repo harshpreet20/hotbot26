@@ -1,0 +1,323 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567809",
+  "name": "HotBot — 09 Blog Create & Publish",
+  "nodes": [
+    {
+      "id": "node-webhook-blog",
+      "name": "Webhook — Blog Create",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-blog-create",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+
+    {
+      "id": "node-validate-token",
+      "name": "Validate Token & Extract Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400],
+      "parameters": {
+        "jsCode": "// ─── CONFIGURE ────────────────────────────────────────────────\n// Set ADMIN_TOKEN in n8n environment vars (same value as in 08-blog-auth)\n// Set BLOG_PUBLISH_SECRET (same value as in main site .env.local)\n// Set MAIN_SITE_URL  →  https://hotbotstudios.com\n// ──────────────────────────────────────────────────────────────\nconst ADMIN_TOKEN         = $env.ADMIN_TOKEN         || 'hotbot-admin-token-2026';\nconst BLOG_PUBLISH_SECRET = $env.BLOG_PUBLISH_SECRET || 'hotbot-blog-secret-2026';\nconst MAIN_SITE_URL       = $env.MAIN_SITE_URL       || 'https://hotbotstudios.com';\n\nconst body = $input.first().json.body || $input.first().json;\nconst token              = (body.token || '').trim();\nconst post               = body.post  || {};\nconst writingInstructions = (body.writingInstructions || '').trim();\n\nif (token !== ADMIN_TOKEN) {\n  return [{ json: { valid: false, error: 'Invalid or expired session token. Please log in again.' } }];\n}\n\nif (!post.title || !post.slug) {\n  return [{ json: { valid: false, error: 'Post must have a title and slug.' } }];\n}\n\n// Build the Claude prompt\nconst hasContent = (post.content || '').trim().length > 100;\nconst claudePrompt = hasContent\n  ? `You are a professional content editor and SEO expert for HotBot Studios, a US-based AI automation and digital marketing agency.\n\nYour job is to enhance the following blog post for publication. Improve:\n1. Writing quality, clarity, and flow\n2. SEO — naturally integrate the post's keywords, improve headings (H2/H3), ensure keyword density is appropriate\n3. Structure — ensure proper HTML heading hierarchy (h2, h3), paragraph breaks, and bullet lists where appropriate\n4. Add a compelling intro paragraph if it feels weak\n5. Ensure the tone is authoritative, expert, and engaging for a US business audience\n6. Keep all the existing key facts and information\n7. Ensure the conclusion encourages the reader to engage with HotBot Studios\n\nPost title: ${post.title}\nPost category: ${post.category || 'General'}\nPost tags: ${(post.tags || []).join(', ')}\n\nReturn ONLY the enhanced HTML content (no markdown, no code blocks, just the HTML body content). Start directly with the first <p> or <h2> tag.\n\nOriginal content:\n${post.content}`\n  : `You are a professional blog writer and SEO expert for HotBot Studios, a US-based AI automation and digital marketing agency.\n\nWrite a high-quality, SEO-optimized blog post in HTML format with the following specifications:\n\nTitle: ${post.title}\nCategory: ${post.category || 'General'}\nTags/Keywords: ${(post.tags || []).join(', ')}\nExcerpt (topic summary): ${post.excerpt || post.title}\n\nWriting instructions from the editor:\n${writingInstructions || 'Write an expert, engaging post of 1000-1500 words targeting US business owners and marketers. Include real insights, specific tips, and practical advice. Position HotBot Studios as the expert solution provider throughout.'}\n\nSEO requirements:\n- Use the post title keywords naturally throughout\n- Include 2-4 H2 subheadings with relevant keywords\n- Use bullet/numbered lists where appropriate\n- Write a strong intro paragraph that hooks the reader\n- End with a clear call-to-action encouraging readers to work with HotBot Studios\n- Target US business owners as the primary audience\n- Professional, authoritative tone\n\nReturn ONLY the HTML content (no markdown, no code blocks, no <!DOCTYPE>). Use only: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em> tags. Start directly with the first <p> tag.`;\n\nreturn [{\n  json: {\n    valid: true,\n    post,\n    claudePrompt,\n    hasContent,\n    publishSecret: BLOG_PUBLISH_SECRET,\n    publishUrl: MAIN_SITE_URL + '/api/blog/publish',\n    siteUrl: MAIN_SITE_URL\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "node-if-valid",
+      "name": "IF — Token Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 400],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+
+    {
+      "id": "node-respond-unauth",
+      "name": "Respond — Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [960, 600],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json.error }) }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "node-claude-api",
+      "name": "Claude API — Generate / Enhance Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 260],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "claude-sonnet-4-6",
+          "max_tokens": 4096,
+          "messages": [
+            {
+              "role": "user",
+              "content": "={{ $json.claudePrompt }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_ANTHROPIC_CRED_ID",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+
+    {
+      "id": "node-extract-content",
+      "name": "Extract & Build Final Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 260],
+      "parameters": {
+        "jsCode": "const claudeResponse = $input.first().json;\nconst previousData    = $('IF — Token Valid?').first().json;\n\n// Extract text from Claude's response structure\nlet generatedContent = '';\nif (claudeResponse.content && Array.isArray(claudeResponse.content)) {\n  generatedContent = claudeResponse.content\n    .filter((block) => block.type === 'text')\n    .map((block) => block.text)\n    .join('')\n    .trim();\n} else if (typeof claudeResponse.content === 'string') {\n  generatedContent = claudeResponse.content.trim();\n}\n\nif (!generatedContent) {\n  throw new Error('Claude returned empty content. Check the API key and prompt.');\n}\n\nconst post = previousData.post;\n\n// Calculate read time (avg 200 words/min)\nconst wordCount = generatedContent.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;\nconst readMinutes = Math.max(3, Math.round(wordCount / 200));\n\nconst now = new Date().toISOString();\n\nconst finalPost = {\n  id:          post.id || String(Date.now()),\n  slug:        post.slug,\n  title:       post.title,\n  excerpt:     post.excerpt || generatedContent.replace(/<[^>]+>/g, ' ').slice(0, 200).trim() + '...',\n  content:     generatedContent,\n  category:    post.category || 'General',\n  adTopic:     post.adTopic || 'general',\n  tags:        Array.isArray(post.tags) ? post.tags : [],\n  author:      post.author || 'HotBot Studios',\n  publishedAt: post.publishedAt || now,\n  updatedAt:   now,\n  status:      post.status || 'published',\n  readTime:    readMinutes + ' min read',\n};\n\nreturn [{\n  json: {\n    finalPost,\n    publishSecret: previousData.publishSecret,\n    publishUrl:    previousData.publishUrl,\n    siteUrl:       previousData.siteUrl,\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "node-publish-to-site",
+      "name": "HTTP — Publish to HotBot Site",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 260],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.publishUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "secret": "={{ $json.publishSecret }}",
+          "action": "publish",
+          "post": "={{ $json.finalPost }}"
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+
+    {
+      "id": "node-check-publish",
+      "name": "IF — Published Successfully?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 260],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-pub",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+
+    {
+      "id": "node-telegram-notify",
+      "name": "Telegram — Notify on Publish",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1920, 180],
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=✅ *New blog post published!*\n\n*{{ $('Extract & Build Final Post').first().json.finalPost.title }}*\n\n🔗 {{ $('Extract & Build Final Post').first().json.siteUrl }}/blog/{{ $('Extract & Build Final Post').first().json.finalPost.slug }}\n\n📂 Category: {{ $('Extract & Build Final Post').first().json.finalPost.category }}\n⏱ {{ $('Extract & Build Final Post').first().json.finalPost.readTime }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CRED_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+
+    {
+      "id": "node-respond-success",
+      "name": "Respond — Published",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2160, 180],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Post published successfully!', url: $('Extract & Build Final Post').first().json.siteUrl + '/blog/' + $('Extract & Build Final Post').first().json.finalPost.slug, slug: $('Extract & Build Final Post').first().json.finalPost.slug, title: $('Extract & Build Final Post').first().json.finalPost.title }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "node-respond-pub-error",
+      "name": "Respond — Publish Failed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1920, 380],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Claude generated content but publishing to the site failed. Check the BLOG_PUBLISH_SECRET and site availability.' }) }}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    }
+  ],
+
+  "connections": {
+    "Webhook — Blog Create": {
+      "main": [
+        [{ "node": "Validate Token & Extract Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Token & Extract Data": {
+      "main": [
+        [{ "node": "IF — Token Valid?", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF — Token Valid?": {
+      "main": [
+        [{ "node": "Claude API — Generate / Enhance Content", "type": "main", "index": 0 }],
+        [{ "node": "Respond — Unauthorized",                 "type": "main", "index": 0 }]
+      ]
+    },
+    "Claude API — Generate / Enhance Content": {
+      "main": [
+        [{ "node": "Extract & Build Final Post", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract & Build Final Post": {
+      "main": [
+        [{ "node": "HTTP — Publish to HotBot Site", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP — Publish to HotBot Site": {
+      "main": [
+        [{ "node": "IF — Published Successfully?", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF — Published Successfully?": {
+      "main": [
+        [{ "node": "Telegram — Notify on Publish", "type": "main", "index": 0 }],
+        [{ "node": "Respond — Publish Failed",     "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram — Notify on Publish": {
+      "main": [
+        [{ "node": "Respond — Published", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+
+  "meta": {
+    "description": "Receives blog post data from admin.hotbotstudios.com → validates session token → sends to Claude API (claude-sonnet-4-6) to generate or enhance content → publishes to hotbotstudios.com/api/blog/publish → notifies Telegram.",
+    "tags": ["blog", "claude", "publish", "admin"],
+    "setup": {
+      "n8n_env_vars": {
+        "ADMIN_TOKEN": "Same value as in 08-blog-auth workflow. Long random string.",
+        "BLOG_PUBLISH_SECRET": "Same value as BLOG_PUBLISH_SECRET in hotbot-studios .env.local",
+        "MAIN_SITE_URL": "https://hotbotstudios.com",
+        "TELEGRAM_CHAT_ID": "Your Telegram chat ID for publish notifications"
+      },
+      "credentials_needed": [
+        "Anthropic API Key (httpHeaderAuth) — set header: x-api-key: sk-ant-...",
+        "Telegram Bot (telegramApi) — for publish notifications"
+      ]
+    }
+  }
+}

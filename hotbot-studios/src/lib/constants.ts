@@ -23,6 +23,7 @@ export const NAV_LINKS = [
   { label: "PR", href: "/public-relations" },
   { label: "UI/UX", href: "/ui-ux-design" },
   { label: "Consulting", href: "/consultancy" },
+  { label: "Blog", href: "/blog" },
 ] as const;
 
 export const FORM_TYPES = {

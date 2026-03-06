@@ -1,18 +1,31 @@
 import { MetadataRoute } from "next";
+import fs from "fs";
+import path from "path";
+import type { BlogPost } from "@/types/blog";
 
 const BASE = "https://hotbotstudios.com";
 
-// Regenerate at most once per day on deployment
+// Regenerate at most once per day — blog posts trigger incremental ISR via /api/blog/publish
 export const revalidate = 86400;
+
+function loadBlogPosts(): BlogPost[] {
+  try {
+    const postsFile = path.join(process.cwd(), "public", "data", "posts.json");
+    const raw = fs.readFileSync(postsFile, "utf-8");
+    const store = JSON.parse(raw) as { posts: BlogPost[] };
+    return store.posts.filter((p) => p.status === "published");
+  } catch {
+    return [];
+  }
+}
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  const pages: Array<{
+  const staticPages: Array<{
     path: string;
     priority: number;
     changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
-    lastModified?: Date;
   }> = [
     { path: "",                    priority: 1.0, changeFrequency: "weekly"  },
     { path: "/about",              priority: 0.8, changeFrequency: "monthly" },
@@ -72,16 +85,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/consultancy/team-building",           priority: 0.8, changeFrequency: "monthly" },
     { path: "/consultancy/go-to-market",            priority: 0.8, changeFrequency: "monthly" },
     { path: "/products",           priority: 0.7, changeFrequency: "monthly" },
-    { path: "/blog",               priority: 0.7, changeFrequency: "weekly"  },
+    { path: "/blog",               priority: 0.9, changeFrequency: "daily"   },
     { path: "/contact",            priority: 0.7, changeFrequency: "monthly" },
     { path: "/privacy",            priority: 0.3, changeFrequency: "yearly"  },
     { path: "/terms",              priority: 0.3, changeFrequency: "yearly"  },
   ];
 
-  return pages.map(({ path, priority, changeFrequency }) => ({
+  const staticEntries: MetadataRoute.Sitemap = staticPages.map(({ path, priority, changeFrequency }) => ({
     url: `${BASE}${path}`,
     lastModified: now,
     changeFrequency,
     priority,
   }));
+
+  // Dynamically include every published blog post
+  const blogPosts = loadBlogPosts();
+  const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: `${BASE}/blog/${post.slug}`,
+    lastModified: new Date(post.updatedAt),
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
+  return [...staticEntries, ...blogEntries];
 }
