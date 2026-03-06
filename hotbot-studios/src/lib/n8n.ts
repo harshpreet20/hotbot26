@@ -1,32 +1,29 @@
 // src/lib/n8n.ts
-// Every operational task in the app goes through this file.
-// Components never hit n8n directly — always via API routes → this client.
+// Three production pipelines — all main-website traffic routes through one of these.
 //
-// Architecture:
-//   Frontend (Next.js) → /api/n8n/* routes → triggerN8n() → n8n webhook → Google Sheets + notifications
+// Flow 1 — CHAT   → hotbotstudios-chat   AI text chat + human handoff
+// Flow 2 — VOICE  → hotbotstudios-voice  Sarvam AI outbound call (callback request)
+// Flow 3 — FORMS  → hotbotstudios-forms  All forms, newsletter, contact page, analytics events
+//
+// Blog admin webhooks (blog-auth, blog-create-publish, blog-sheets-backup) are
+// called directly in /api/blog/* routes — not through this client.
+//
+// API Routes → triggerN8n() → N8N webhook:
+//   /api/n8n/chat      → chat  pipeline
+//   /api/n8n/callback  → voice pipeline
+//   /api/n8n/form      → forms pipeline  (type: "lead")
+//   /api/n8n/newsletter→ forms pipeline  (type: "newsletter")
+//   /api/n8n/contact   → forms pipeline  (type: "contact")
+//   /api/n8n/analytics → forms pipeline  (type: "analytics")
 
 const N8N_BASE = process.env.N8N_BASE_URL;
 
-export type N8nPipeline =
-  | "chat"       // AI text chat (N8N LLM workflow)
-  | "leads"      // ALL form submissions (get-started, strategy-call, enquiry, newsletter, contact) → Google Sheets + CRM
-  | "analytics"  // Event tracking (fire-and-forget)
-  | "newsletter" // Reserved — newsletter submissions now routed through "leads" with source:"newsletter-signup"
-  | "callback";  // Request a call → triggers Sarvam voice agent outbound call
-
-// source field on "leads" payloads maps to a human-readable label in n8n:
-//   "newsletter-signup"  → "Footer Newsletter"
-//   "contact-page"       → "Contact Page"
-//   "software-web-app"   → "Software › Web App Development"
-//   pathname ("/")       → "Homepage Modal"
-//   ... etc. — n8n Switch node translates each sourceId to a label before appending to Google Sheet.
+export type N8nPipeline = "chat" | "voice" | "forms";
 
 const ENDPOINTS: Record<N8nPipeline, string | undefined> = {
-  chat:       process.env.N8N_WEBHOOK_CHAT,
-  leads:      process.env.N8N_WEBHOOK_LEADS,       // single webhook for ALL lead + newsletter submissions
-  analytics:  process.env.N8N_WEBHOOK_ANALYTICS,
-  newsletter: process.env.N8N_WEBHOOK_NEWSLETTER,  // no longer used — kept for backwards compat
-  callback:   process.env.N8N_WEBHOOK_CALLBACK,    // triggers Sarvam outbound call
+  chat:  process.env.N8N_WEBHOOK_CHAT,   // hotbotstudios-chat
+  voice: process.env.N8N_WEBHOOK_VOICE,  // hotbotstudios-voice
+  forms: process.env.N8N_WEBHOOK_FORMS,  // hotbotstudios-forms
 };
 
 export class N8nConfigError extends Error {
@@ -39,44 +36,36 @@ export class N8nConfigError extends Error {
 export async function triggerN8n<T = unknown>(
   pipeline: N8nPipeline,
   payload: Record<string, unknown>,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<T> {
-  const base = N8N_BASE;
+  const base     = N8N_BASE;
   const endpoint = ENDPOINTS[pipeline];
 
-  if (!base || !endpoint) {
-    throw new N8nConfigError(pipeline);
-  }
+  if (!base || !endpoint) throw new N8nConfigError(pipeline);
 
-  // Support both "base + /path" and "base/ + path" formats cleanly
   const url = base.replace(/\/$/, "") + "/" + endpoint.replace(/^\//, "");
+
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    options?.timeout || 30000
-  );
+  const timer = setTimeout(() => controller.abort(), options?.timeout ?? 30_000);
 
   try {
     const res = await fetch(url, {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...payload,
         _meta: {
           timestamp: new Date().toISOString(),
-          source: "hotbot-website",
+          source:    "hotbot-website",
           pipeline,
         },
       }),
       signal: controller.signal,
     });
 
-    if (!res.ok) {
-      throw new Error(`n8n ${pipeline} failed: ${res.status}`);
-    }
-
-    return await res.json();
+    if (!res.ok) throw new Error(`n8n ${pipeline} webhook responded ${res.status}`);
+    return await res.json() as T;
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timer);
   }
 }

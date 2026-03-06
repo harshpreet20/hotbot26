@@ -1,0 +1,190 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234560003",
+  "name": "HotBot — 03 Voice Agent (Sarvam AI Outbound Call)",
+  "nodes": [
+
+    {
+      "id": "webhook-voice",
+      "name": "Webhook — Voice Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-voice",
+        "responseMode": "lastNode",
+        "options": { "allowedOrigins": "*" }
+      }
+    },
+
+    {
+      "id": "validate-voice",
+      "name": "Validate & Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nconst name        = (body.name        || '').trim();\nconst phone       = (body.phone       || '').trim();\nconst requestedAt = body.requestedAt  || new Date().toISOString();\nconst source      = body.source       || 'website';\n\nif (!name || !phone) {\n  return [{ json: { valid: false, error: 'Name and phone are required.' } }];\n}\n\n// Basic phone sanity check — must have at least 7 digits\nconst digits = phone.replace(/\\D/g, '');\nif (digits.length < 7) {\n  return [{ json: { valid: false, error: 'Invalid phone number.' } }];\n}\n\nconst SARVAM_KEY     = $env.SARVAM_API_KEY     || '';\nconst SARVAM_AGENT   = $env.SARVAM_AGENT_ID    || '';\nconst SARVAM_BASE    = $env.SARVAM_BASE_URL     || 'https://api.sarvam.ai';\n\nreturn [{ json: {\n  valid:       true,\n  name,\n  phone,\n  digits,\n  requestedAt,\n  source,\n  sarvamKey:   SARVAM_KEY,\n  sarvamAgent: SARVAM_AGENT,\n  sarvamBase:  SARVAM_BASE\n}}];"
+      }
+    },
+
+    {
+      "id": "if-valid",
+      "name": "IF — Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json.valid }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }
+      }
+    },
+
+    {
+      "id": "sarvam-call",
+      "name": "Sarvam AI — Trigger Outbound Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [960, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.sarvamBase }}/v1/calls/outbound",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "api-subscription-key", "value": "={{ $json.sarvamKey }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "phone_number",    "value": "={{ $json.phone }}" },
+            { "name": "agent_id",        "value": "={{ $json.sarvamAgent }}" },
+            {
+              "name": "custom_data",
+              "value": "={{ JSON.stringify({ caller_name: $json.name, requested_at: $json.requestedAt, source: $json.source }) }}"
+            }
+          ]
+        },
+        "options": { "timeout": 15000 }
+      }
+    },
+
+    {
+      "id": "sheets-callback",
+      "name": "Sheets — Log Callback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [960, 380],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "Callbacks", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "requestedAt": "={{ $('Validate & Prepare').first().json.requestedAt }}",
+            "name":        "={{ $('Validate & Prepare').first().json.name }}",
+            "phone":       "={{ $('Validate & Prepare').first().json.phone }}",
+            "source":      "={{ $('Validate & Prepare').first().json.source }}",
+            "status":      "call_triggered"
+          }
+        },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets Account" } }
+    },
+
+    {
+      "id": "telegram-voice",
+      "name": "Telegram — Callback Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [960, 520],
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":   "={{ '📞 Voice Callback Triggered\\n\\nName: ' + $('Validate & Prepare').first().json.name + '\\nPhone: ' + $('Validate & Prepare').first().json.phone + '\\nSource: ' + $('Validate & Prepare').first().json.source + '\\nTime: ' + $('Validate & Prepare').first().json.requestedAt }}",
+        "additionalFields": { "parse_mode": "HTML" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Account" } }
+    },
+
+    {
+      "id": "respond-ok",
+      "name": "Respond — OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"success\": true, \"message\": \"Confirmed! Our AI assistant will call you within 2 minutes.\" }"
+      }
+    },
+
+    {
+      "id": "respond-error",
+      "name": "Respond — Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [960, 420],
+      "parameters": {
+        "respondWith": "json",
+        "options": { "responseCode": 400 },
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json.error }) }}"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Webhook — Voice Callback": {
+      "main": [[{ "node": "Validate & Prepare", "type": "main", "index": 0 }]]
+    },
+    "Validate & Prepare": {
+      "main": [[{ "node": "IF — Valid?", "type": "main", "index": 0 }]]
+    },
+    "IF — Valid?": {
+      "main": [
+        [
+          { "node": "Sarvam AI — Trigger Outbound Call", "type": "main", "index": 0 },
+          { "node": "Sheets — Log Callback",             "type": "main", "index": 0 },
+          { "node": "Telegram — Callback Alert",         "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Respond — Validation Error", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Sarvam AI — Trigger Outbound Call": {
+      "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "settings": { "executionOrder": "v1" },
+
+  "meta": {
+    "templateId": "hotbot-03-voice-unified",
+    "templateCreatedBy": "HotBot Studios"
+  },
+
+  "__setup_notes__": {
+    "replaces": ["03-voice-pipeline.json"],
+    "webhook_path": "hotbotstudios-voice",
+    "env_var": "N8N_WEBHOOK_VOICE=hotbotstudios-voice",
+    "sarvam": {
+      "SARVAM_API_KEY":   "Your Sarvam AI API subscription key",
+      "SARVAM_AGENT_ID":  "The agent/bot ID configured in your Sarvam AI dashboard",
+      "SARVAM_BASE_URL":  "https://api.sarvam.ai (default — change if self-hosted)"
+    },
+    "google_sheets": "Requires a 'Callbacks' tab in the same SHEETS_DOC_ID spreadsheet. Columns: requestedAt | name | phone | source | status",
+    "telegram": "Set TELEGRAM_CHAT_ID in n8n env. Every callback triggers an alert.",
+    "credentials": "Replace 'google-sheets-cred' and 'telegram-cred' IDs with your actual n8n credential IDs.",
+    "phone_format": "Sarvam accepts E.164 format (+1XXXXXXXXXX for US). Ensure your frontend normalises numbers before sending."
+  }
+}

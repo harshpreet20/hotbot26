@@ -1,0 +1,274 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234560001",
+  "name": "HotBot — 01 Forms (Leads · Newsletter · Contact · Analytics)",
+  "nodes": [
+
+    {
+      "id": "webhook-forms",
+      "name": "Webhook — Forms Gateway",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-forms",
+        "responseMode": "lastNode",
+        "options": { "allowedOrigins": "*" }
+      }
+    },
+
+    {
+      "id": "extract-body",
+      "name": "Extract & Normalise Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400],
+      "parameters": {
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\n// Normalise to a flat object with safe defaults\nreturn [{ json: {\n  type:      (body.type || 'lead').toLowerCase().trim(),\n  // Lead / Contact fields\n  name:      (body.name      || '').trim(),\n  email:     (body.email     || '').trim().toLowerCase(),\n  phone:     (body.phone     || '').trim(),\n  company:   (body.company   || '').trim(),\n  service:   (body.service   || '').trim(),\n  budget:    (body.budget    || '').trim(),\n  message:   (body.message   || '').trim(),\n  subject:   (body.subject   || '').trim(),\n  formType:  (body.formType  || body.type || 'general').trim(),\n  source:    (body.source    || 'website').trim(),\n  ip:        (body.ip        || 'unknown').trim(),\n  // Analytics fields\n  event:      body.event      || '',\n  properties: body.properties || {},\n  page:       body.page       || '',\n  sessionId:  body.sessionId  || '',\n  referrer:   body.referrer   || '',\n  // Timestamp\n  receivedAt: new Date().toISOString()\n}}];"
+      }
+    },
+
+    {
+      "id": "switch-type",
+      "name": "Switch — Form Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [720, 400],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.type }}", "rightValue": "newsletter", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "newsletter"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.type }}", "rightValue": "contact", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "contact"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.type }}", "rightValue": "analytics", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "analytics"
+            }
+          ]
+        },
+        "fallbackOutput": "extra"
+      }
+    },
+
+    {
+      "id": "sheets-leads",
+      "name": "Sheets — Append Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [980, 100],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "Leads", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "receivedAt": "={{ $json.receivedAt }}",
+            "name":       "={{ $json.name }}",
+            "email":      "={{ $json.email }}",
+            "phone":      "={{ $json.phone }}",
+            "company":    "={{ $json.company }}",
+            "service":    "={{ $json.service }}",
+            "budget":     "={{ $json.budget }}",
+            "message":    "={{ $json.message }}",
+            "formType":   "={{ $json.formType }}",
+            "source":     "={{ $json.source }}",
+            "ip":         "={{ $json.ip }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets Account" } }
+    },
+
+    {
+      "id": "telegram-lead",
+      "name": "Telegram — New Lead Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [980, 240],
+      "parameters": {
+        "chatId":  "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":    "={{ '🔥 New Lead\\n\\nName: ' + $json.name + '\\nEmail: ' + $json.email + '\\nPhone: ' + ($json.phone || 'n/a') + '\\nCompany: ' + ($json.company || 'n/a') + '\\nService: ' + ($json.service || 'n/a') + '\\nBudget: ' + ($json.budget || 'n/a') + '\\nSource: ' + $json.source + '\\nForm: ' + $json.formType + '\\nTime: ' + $json.receivedAt }}",
+        "additionalFields": { "parse_mode": "HTML" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Account" } }
+    },
+
+    {
+      "id": "sheets-newsletter",
+      "name": "Sheets — Append Newsletter",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [980, 380],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "Newsletter", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "subscribedAt": "={{ $json.receivedAt }}",
+            "name":         "={{ $json.name }}",
+            "email":        "={{ $json.email }}",
+            "source":       "={{ $json.source }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets Account" } }
+    },
+
+    {
+      "id": "sheets-contact",
+      "name": "Sheets — Append Contact",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [980, 520],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "Contact", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "receivedAt": "={{ $json.receivedAt }}",
+            "name":       "={{ $json.name }}",
+            "email":      "={{ $json.email }}",
+            "phone":      "={{ $json.phone }}",
+            "subject":    "={{ $json.subject }}",
+            "message":    "={{ $json.message }}",
+            "source":     "={{ $json.source }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets Account" } }
+    },
+
+    {
+      "id": "telegram-contact",
+      "name": "Telegram — Contact Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [980, 660],
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":   "={{ '📩 Contact Page Message\\n\\nFrom: ' + $json.name + ' &lt;' + $json.email + '&gt;\\nSubject: ' + ($json.subject || 'n/a') + '\\n\\n' + $json.message }}",
+        "additionalFields": { "parse_mode": "HTML" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Account" } }
+    },
+
+    {
+      "id": "sheets-analytics",
+      "name": "Sheets — Append Analytics Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [980, 800],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "Analytics", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "timestamp":  "={{ $json.receivedAt }}",
+            "event":      "={{ $json.event }}",
+            "page":       "={{ $json.page }}",
+            "sessionId":  "={{ $json.sessionId }}",
+            "referrer":   "={{ $json.referrer }}",
+            "properties": "={{ JSON.stringify($json.properties) }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets Account" } }
+    },
+
+    {
+      "id": "respond-ok",
+      "name": "Respond — OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1240, 400],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"success\": true, \"message\": \"Received\" }"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Webhook — Forms Gateway": {
+      "main": [[{ "node": "Extract & Normalise Body", "type": "main", "index": 0 }]]
+    },
+    "Extract & Normalise Body": {
+      "main": [[{ "node": "Switch — Form Type", "type": "main", "index": 0 }]]
+    },
+    "Switch — Form Type": {
+      "main": [
+        [
+          { "node": "Sheets — Append Lead",   "type": "main", "index": 0 },
+          { "node": "Telegram — New Lead Alert", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Sheets — Append Newsletter", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Sheets — Append Contact",    "type": "main", "index": 0 },
+          { "node": "Telegram — Contact Alert",   "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Sheets — Append Analytics Event", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Sheets — Append Lead":         { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Newsletter":   { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Contact":      { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Analytics Event": { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] }
+  },
+
+  "settings": { "executionOrder": "v1" },
+
+  "meta": {
+    "templateId": "hotbot-01-forms-unified",
+    "templateCreatedBy": "HotBot Studios"
+  },
+
+  "__setup_notes__": {
+    "replaces": ["01-form-pipeline.json", "04-leads-pipeline.json", "05-analytics-pipeline.json", "06-contact-pipeline.json", "07-newsletter-pipeline.json"],
+    "webhook_path": "hotbotstudios-forms",
+    "env_var": "N8N_WEBHOOK_FORMS=hotbotstudios-forms",
+    "type_field": "The 'type' field in the POST body controls routing: 'lead' | 'newsletter' | 'contact' | 'analytics'. Anything else also routes as lead (fallback).",
+    "google_sheets": "One spreadsheet (SHEETS_DOC_ID) with 4 tabs: Leads | Newsletter | Contact | Analytics",
+    "sheets_columns": {
+      "Leads":      "receivedAt | name | email | phone | company | service | budget | message | formType | source | ip",
+      "Newsletter": "subscribedAt | name | email | source",
+      "Contact":    "receivedAt | name | email | phone | subject | message | source",
+      "Analytics":  "timestamp | event | page | sessionId | referrer | properties"
+    },
+    "telegram": "Set TELEGRAM_CHAT_ID in n8n env vars. Leads and Contact messages trigger alerts; newsletter/analytics do not.",
+    "credentials": "Replace 'google-sheets-cred' and 'telegram-cred' IDs with your actual n8n credential IDs."
+  }
+}
