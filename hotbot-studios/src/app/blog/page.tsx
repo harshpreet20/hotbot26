@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const posts = loadPosts();
   const count = posts.length;
   const latestTitles = posts.slice(0, 3).map((p) => p.title);
-  const latestCategories = [...new Set(posts.slice(0, 6).map((p) => p.category))];
+  const latestCategories = Array.from(new Set(posts.slice(0, 6).map((p) => p.category)));
 
   const description =
     count > 0
