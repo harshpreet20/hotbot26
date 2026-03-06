@@ -39,7 +39,7 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="inline-flex mb-4">
               <Image
-                src="/logos/hotbot-logo.png"
+                src="/logos/hotbot-logo.svg"
                 alt="HotBot Studios — AI Automation & Digital Marketing Agency"
                 width={160}
                 height={40}
