@@ -94,7 +94,11 @@ export default function BackdropDashboard() {
             + New Post
           </Link>
           <button
-            onClick={() => { sessionStorage.removeItem("backdrop_secret"); router.push("/enter/backdrop"); }}
+            onClick={async () => {
+              sessionStorage.removeItem("backdrop_secret");
+              await fetch("/api/blog/auth", { method: "DELETE" }).catch(() => {});
+              router.push("/enter/backdrop");
+            }}
             className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
