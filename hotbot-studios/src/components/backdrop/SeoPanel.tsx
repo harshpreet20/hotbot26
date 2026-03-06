@@ -31,9 +31,10 @@ const TAB_META: Record<AnalysisTab, { label: string; desc: string; color: string
   aeo: { label: "AEO", desc: "AI answer engines", color: "#8b5cf6" },
   geo: { label: "GEO", desc: "GenAI citations", color: "#06b6d4" },
   local: { label: "Local", desc: "Maps & local pack", color: "#22c55e" },
+  readability: { label: "Read", desc: "Readability & style", color: "#f97316" },
 };
 
-const TABS: AnalysisTab[] = ["seo", "aeo", "geo", "local"];
+const TABS: AnalysisTab[] = ["seo", "aeo", "geo", "local", "readability"];
 
 function ScoreRing({ score, grade, size = 56 }: { score: number; grade: string; size?: number }) {
   const r = (size - 8) / 2;
@@ -247,13 +248,13 @@ export function SeoPanel({
           {analysis && <ScoreRing score={analysis.overall.score} grade={analysis.overall.grade} />}
           <div>
             <p className="text-white font-semibold text-sm">Content Score</p>
-            <p className="text-xs text-slate-500">SEO · AEO · GEO · Local</p>
+            <p className="text-xs text-slate-500">SEO · AEO · GEO · Local · Readability</p>
           </div>
         </div>
 
         {/* 4 mini rings */}
         {analysis && (
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {TABS.map((tab) => {
               const meta = TAB_META[tab];
               const a = analysis[tab];
@@ -261,14 +262,14 @@ export function SeoPanel({
                 <button
                   key={tab}
                   onClick={() => { setActiveTab(tab); setOpenSection("checks"); }}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  className="flex flex-col items-center gap-1 p-1.5 rounded-xl transition-colors hover:bg-white/[0.04]"
                   style={{
                     background: activeTab === tab ? `${meta.color}18` : "transparent",
                     border: activeTab === tab ? `1px solid ${meta.color}40` : "1px solid transparent",
                   }}
                 >
-                  <ScoreRing score={a.score} grade={a.grade} size={40} />
-                  <span className="text-xs font-medium" style={{ color: meta.color }}>{meta.label}</span>
+                  <ScoreRing score={a.score} grade={a.grade} size={38} />
+                  <span className="text-[10px] font-medium" style={{ color: meta.color }}>{meta.label}</span>
                 </button>
               );
             })}
@@ -347,14 +348,14 @@ export function SeoPanel({
       {/* Checklist section */}
       {section("checks", "Analysis Checklist", <>
         {/* Tab selector */}
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {TABS.map((tab) => {
             const meta = TAB_META[tab];
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="py-1.5 rounded-lg text-xs font-semibold transition-all"
+                className="py-1.5 rounded-lg text-[11px] font-semibold transition-all"
                 style={{
                   background: activeTab === tab ? `${meta.color}20` : "rgba(255,255,255,0.03)",
                   color: activeTab === tab ? meta.color : "#64748b",

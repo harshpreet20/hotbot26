@@ -346,6 +346,129 @@ export function analyzeLocal(p: AnalyzerInput): SeoCheck[] {
   return checks;
 }
 
+// ─── Readability Analysis ─────────────────────────────────────────────────────
+// Based on Flesch-Kincaid Reading Ease, Yoast SEO readability checks,
+// Grammarly style signals, and RankMath content analysis best practices.
+
+function countSyllables(word: string): number {
+  word = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (!word) return 0;
+  if (word.length <= 3) return 1;
+  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "");
+  word = word.replace(/^y/, "");
+  const m = word.match(/[aeiouy]{1,2}/g);
+  return m ? Math.max(1, m.length) : 1;
+}
+
+function getSentences(text: string): string[] {
+  return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.split(/\s+/).length > 3);
+}
+
+export function analyzeReadability(p: AnalyzerInput): SeoCheck[] {
+  const plain = stripHtml(p.content);
+  const allWords = plain.trim().split(/\s+/).filter(Boolean);
+  const wc = allWords.length;
+  const sentences = getSentences(plain);
+  const sentCount = Math.max(sentences.length, 1);
+  const checks: SeoCheck[] = [];
+
+  if (wc < 50) {
+    checks.push(check("read-length", "Minimum content for readability", "error",
+      "Write at least 50 words to enable readability analysis."));
+    return checks;
+  }
+
+  // 1. Flesch-Kincaid Reading Ease
+  const syllables = allWords.reduce((s, w) => s + countSyllables(w), 0);
+  const avgSentLen = wc / sentCount;
+  const avgSyllPerWord = syllables / wc;
+  const fre = Math.max(0, Math.min(100, Math.round(206.835 - 1.015 * avgSentLen - 84.6 * avgSyllPerWord)));
+  checks.push(check("read-fre", "Flesch-Kincaid Reading Ease",
+    fre >= 60 ? "good" : fre >= 40 ? "improvement" : "error",
+    fre >= 80 ? `Score ${fre}/100 — Easy to read. Great for web audiences.`
+      : fre >= 60 ? `Score ${fre}/100 — Standard readability. Suitable for most readers.`
+      : fre >= 40 ? `Score ${fre}/100 — Fairly difficult. Shorten sentences and simplify vocabulary.`
+      : `Score ${fre}/100 — Very difficult. Use shorter sentences and everyday words.`));
+
+  // 2. Average sentence length
+  checks.push(check("read-sentence-len", "Average sentence length",
+    avgSentLen <= 20 ? "good" : avgSentLen <= 25 ? "improvement" : "error",
+    avgSentLen <= 20 ? `${avgSentLen.toFixed(1)} words/sentence — ideal (≤20).`
+      : avgSentLen <= 25 ? `${avgSentLen.toFixed(1)} words/sentence — slightly long. Aim for ≤20 words per sentence.`
+      : `${avgSentLen.toFixed(1)} words/sentence — too long. Split long sentences in two.`));
+
+  // 3. Passive voice
+  const passiveMatches = plain.match(/\b(am|is|are|was|were|be|been|being)\s+\w+(ed|en)\b/gi) || [];
+  const passivePct = (passiveMatches.length / sentCount) * 100;
+  checks.push(check("read-passive", "Passive voice usage",
+    passivePct <= 10 ? "good" : passivePct <= 20 ? "improvement" : "error",
+    passivePct <= 10 ? "Low passive voice — active writing is clearer and more persuasive."
+      : passivePct <= 20 ? `${passivePct.toFixed(0)}% passive sentences — reduce for sharper copy.`
+      : `${passivePct.toFixed(0)}% passive voice — high. Prefer active voice ('We built X' over 'X was built').`));
+
+  // 4. Transition words (Yoast-style)
+  const transitions = [
+    "first", "second", "third", "finally", "additionally", "furthermore", "moreover",
+    "however", "therefore", "consequently", "in addition", "in contrast", "on the other hand",
+    "as a result", "for example", "for instance", "in conclusion", "in summary",
+    "meanwhile", "nevertheless", "nonetheless", "otherwise", "similarly", "subsequently",
+    "thus", "yet", "also", "besides", "hence", "indeed", "instead", "likewise",
+    "next", "then", "above all", "after all", "as well", "in fact", "in other words",
+    "to illustrate", "to summarize", "to conclude", "by contrast", "on the contrary",
+  ];
+  const withTransitions = sentences.filter((s) => {
+    const sl = s.toLowerCase();
+    return transitions.some((t) => sl.includes(t));
+  }).length;
+  const transitionPct = (withTransitions / sentCount) * 100;
+  checks.push(check("read-transitions", "Transition words",
+    transitionPct >= 30 ? "good" : transitionPct >= 15 ? "improvement" : "error",
+    transitionPct >= 30 ? `${transitionPct.toFixed(0)}% of sentences use transitions — excellent logical flow.`
+      : transitionPct >= 15 ? `${transitionPct.toFixed(0)}% transition usage — add words like 'Furthermore', 'However', 'Therefore'.`
+      : `${transitionPct.toFixed(0)}% — very low. Transition words guide readers through your argument.`));
+
+  // 5. Paragraph length — split content into <p> blocks
+  const paraBlocks = p.content.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+  const longParas = paraBlocks.filter((pg) => wordCount(stripHtml(pg)) > 120).length;
+  checks.push(check("read-paragraphs", "Paragraph length",
+    longParas === 0 ? "good" : longParas === 1 ? "improvement" : "error",
+    longParas === 0 ? "All paragraphs are a good length (≤120 words). Easy to scan on mobile."
+      : longParas === 1 ? "1 paragraph exceeds 120 words. Break it into smaller chunks."
+      : `${longParas} paragraphs exceed 120 words. Long text blocks reduce mobile readability.`));
+
+  // 6. Subheading distribution — no section should exceed 300 words
+  const contentSections = p.content.split(/<h[2-3][^>]*>[\s\S]*?<\/h[2-3]>/i);
+  const longSections = contentSections.filter((s) => wordCount(stripHtml(s)) > 300).length;
+  checks.push(check("read-subheadings", "Subheading distribution",
+    longSections === 0 ? "good" : longSections === 1 ? "improvement" : "error",
+    longSections === 0 ? "Good subheading rhythm — readers can scan sections easily."
+      : longSections === 1 ? "One section runs over 300 words without a subheading. Add an H2 to break it up."
+      : `${longSections} sections exceed 300 words without a subheading. Add H2/H3 every ~300 words.`));
+
+  // 7. Consecutive sentences starting with the same word
+  const starts = sentences.map((s) => s.trim().split(/\s+/)[0]?.toLowerCase() ?? "");
+  let maxConsec = 0;
+  let cur = 0;
+  for (let i = 1; i < starts.length; i++) {
+    if (starts[i] === starts[i - 1] && starts[i].length > 2) { cur++; maxConsec = Math.max(maxConsec, cur); }
+    else cur = 0;
+  }
+  checks.push(check("read-variety", "Sentence variety",
+    maxConsec === 0 ? "good" : maxConsec === 1 ? "improvement" : "error",
+    maxConsec === 0 ? "Good sentence variety — openings are well-varied."
+      : maxConsec === 1 ? "A couple of sentences start identically. Vary your sentence openings."
+      : `${maxConsec + 1} consecutive sentences start with the same word. Vary sentence structure.`));
+
+  // 8. Word complexity (avg syllables/word — proxy for vocabulary difficulty)
+  checks.push(check("read-complexity", "Vocabulary complexity",
+    avgSyllPerWord <= 1.6 ? "good" : avgSyllPerWord <= 2.0 ? "improvement" : "error",
+    avgSyllPerWord <= 1.6 ? `Avg ${avgSyllPerWord.toFixed(2)} syllables/word — accessible vocabulary.`
+      : avgSyllPerWord <= 2.0 ? `Avg ${avgSyllPerWord.toFixed(2)} syllables/word — moderately complex. Use simpler words where possible.`
+      : `Avg ${avgSyllPerWord.toFixed(2)} syllables/word — complex. Swap jargon for everyday language.`));
+
+  return checks;
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export interface AnalyzerInput {
@@ -359,7 +482,7 @@ export interface AnalyzerInput {
   featuredImageAlt: string;
 }
 
-export type AnalysisTab = "seo" | "aeo" | "geo" | "local";
+export type AnalysisTab = "seo" | "aeo" | "geo" | "local" | "readability";
 
 export interface FullAnalysis {
   overall: { score: number; grade: "good" | "ok" | "poor" };
@@ -367,6 +490,7 @@ export interface FullAnalysis {
   aeo: SeoAnalysis;
   geo: SeoAnalysis;
   local: SeoAnalysis;
+  readability: SeoAnalysis;
 }
 
 export function analyzeAll(input: AnalyzerInput): FullAnalysis {
@@ -374,8 +498,9 @@ export function analyzeAll(input: AnalyzerInput): FullAnalysis {
   const aeoChecks = analyzeAeo(input);
   const geoChecks = analyzeGeo(input);
   const localChecks = analyzeLocal(input);
+  const readabilityChecks = analyzeReadability(input);
 
-  const allChecks = [...seoChecks, ...aeoChecks, ...geoChecks, ...localChecks];
+  const allChecks = [...seoChecks, ...aeoChecks, ...geoChecks, ...localChecks, ...readabilityChecks];
   const { score: overallScore, grade: overallGrade } = scoreChecks(allChecks);
 
   function toAnalysis(checks: SeoCheck[]): SeoAnalysis {
@@ -389,5 +514,6 @@ export function analyzeAll(input: AnalyzerInput): FullAnalysis {
     aeo: toAnalysis(aeoChecks),
     geo: toAnalysis(geoChecks),
     local: toAnalysis(localChecks),
+    readability: toAnalysis(readabilityChecks),
   };
 }
