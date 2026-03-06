@@ -30,9 +30,31 @@ export interface BlogPost {
   status: "published" | "draft";
   readTime: string;
   featuredImage?: string;
+  featuredImageAlt?: string;
   adTopic: BlogAdTopic;
+  // SEO fields
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeyword?: string;
+  seoScore?: number;
 }
 
 export interface BlogPostsStore {
   posts: BlogPost[];
+}
+
+export type SeoCheckStatus = "good" | "improvement" | "error";
+
+export interface SeoCheck {
+  id: string;
+  label: string;
+  status: SeoCheckStatus;
+  message: string;
+}
+
+export interface SeoAnalysis {
+  score: number;
+  grade: "good" | "ok" | "poor";
+  checks: SeoCheck[];
+  aiSuggestions?: string[];
 }
