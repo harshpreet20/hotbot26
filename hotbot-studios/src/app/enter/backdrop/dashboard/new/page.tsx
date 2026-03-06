@@ -4,13 +4,23 @@ import { useRouter } from "next/navigation";
 import type { BlogAdTopic } from "@/types/blog";
 import Link from "next/link";
 import { SeoPanel } from "@/components/backdrop/SeoPanel";
+import dynamic from "next/dynamic";
+
+// Load the rich editor client-side only (Tiptap is browser-only)
+const RichEditor = dynamic(
+  () => import("@/components/backdrop/RichEditor").then((m) => m.RichEditor),
+  { ssr: false, loading: () => <div className="h-64 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} /> },
+);
 
 const CATEGORIES = [
   "AI Automation", "Digital Marketing", "AI Products",
   "Content Strategy", "Public Relations", "SEO", "Social Media", "n8n",
 ];
-
-const AD_TOPICS = ["general", "ai-automation", "ai-chatbot", "voice-ai", "n8n", "seo", "ppc", "social-media", "email-marketing", "analytics", "content", "video", "pr", "software-dev", "ui-ux", "consultancy"] as const;
+const AD_TOPICS = [
+  "general", "ai-automation", "ai-chatbot", "voice-ai", "n8n", "seo", "ppc",
+  "social-media", "email-marketing", "analytics", "content", "video", "pr",
+  "software-dev", "ui-ux", "consultancy",
+] as const;
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -20,7 +30,7 @@ export default function NewPostPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [preview, setPreview] = useState(false);
+  const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
 
   const [form, setForm] = useState({
     title: "",
@@ -33,7 +43,6 @@ export default function NewPostPage() {
     adTopic: "general" as BlogAdTopic,
     featuredImage: "",
     readTime: "",
-    // SEO
     metaTitle: "",
     metaDescription: "",
     focusKeyword: "",
@@ -54,34 +63,30 @@ export default function NewPostPage() {
 
   async function handleSubmit(status: "published" | "draft") {
     setError("");
-    const secret = sessionStorage.getItem("backdrop_secret");
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    const s = sessionStorage.getItem("backdrop_secret");
+    if (!s) { router.replace("/enter/backdrop"); return; }
     if (!form.title || !form.slug || !form.content) {
       setError("Title, slug, and content are required."); return;
     }
     setSaving(true);
     try {
-      const post = {
-        title: form.title,
-        slug: form.slug,
-        category: form.category,
-        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        author: form.author || "HotBot Studios",
-        excerpt: form.excerpt,
-        content: form.content,
-        adTopic: form.adTopic,
-        featuredImage: form.featuredImage || undefined,
-        featuredImageAlt: form.featuredImageAlt || undefined,
-        readTime: form.readTime || undefined,
-        status,
-        metaTitle: form.metaTitle || form.title,
-        metaDescription: form.metaDescription || form.excerpt,
-        focusKeyword: form.focusKeyword,
-      };
       const res = await fetch("/api/blog/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret, post }),
+        body: JSON.stringify({
+          secret: s,
+          post: {
+            ...form,
+            tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+            author: form.author || "HotBot Studios",
+            featuredImage: form.featuredImage || undefined,
+            featuredImageAlt: form.featuredImageAlt || undefined,
+            readTime: form.readTime || undefined,
+            status,
+            metaTitle: form.metaTitle || form.title,
+            metaDescription: form.metaDescription || form.excerpt,
+          },
+        }),
       });
       if (!res.ok) { const d = await res.json() as { error?: string }; throw new Error(d.error || "Failed"); }
       router.push("/enter/backdrop/dashboard");
@@ -94,7 +99,7 @@ export default function NewPostPage() {
 
   const inputClass = "w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-colors";
   const inputStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" };
-  const wordCount = form.content.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+  const words = form.content.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -109,27 +114,14 @@ export default function NewPostPage() {
           <span className="text-slate-300 text-sm font-medium">New Post</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPreview((p) => !p)}
-            className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            {preview ? "Edit" : "Preview"}
-          </button>
-          <button
-            onClick={() => handleSubmit("draft")}
-            disabled={saving}
+          <button onClick={() => handleSubmit("draft")} disabled={saving}
             className="px-4 py-2 rounded-xl text-sm text-slate-300 transition-colors hover:text-white disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-          >
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
             Save Draft
           </button>
-          <button
-            onClick={() => handleSubmit("published")}
-            disabled={saving}
+          <button onClick={() => handleSubmit("published")} disabled={saving}
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
-          >
+            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}>
             {saving ? "Publishing…" : "Publish"}
           </button>
         </div>
@@ -158,7 +150,7 @@ export default function NewPostPage() {
             </div>
             <div>
               <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Ad Topic</label>
-              <select className={inputClass} style={inputStyle} value={form.adTopic} onChange={(e) => set("adTopic", e.target.value)}>
+              <select className={inputClass} style={inputStyle} value={form.adTopic} onChange={(e) => set("adTopic", e.target.value as BlogAdTopic)}>
                 {AD_TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -175,49 +167,35 @@ export default function NewPostPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Tags (comma-separated)</label>
-            <input className={inputClass} style={inputStyle} placeholder="AI, automation, n8n" value={form.tags} onChange={(e) => set("tags", e.target.value)} />
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Cover Image URL</label>
-            <input className={inputClass} style={inputStyle} placeholder="https://…" value={form.featuredImage} onChange={(e) => set("featuredImage", e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Tags (comma-separated)</label>
+              <input className={inputClass} style={inputStyle} placeholder="AI, automation, n8n" value={form.tags} onChange={(e) => set("tags", e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Cover Image URL</label>
+              <input className={inputClass} style={inputStyle} placeholder="https://… or use uploader →" value={form.featuredImage} onChange={(e) => set("featuredImage", e.target.value)} />
+            </div>
           </div>
 
           <div>
             <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Excerpt</label>
-            <textarea
-              rows={2}
-              className={inputClass}
-              style={{ ...inputStyle, resize: "vertical" }}
-              placeholder="Short summary for listing pages"
-              value={form.excerpt}
-              onChange={(e) => set("excerpt", e.target.value)}
-            />
+            <textarea rows={2} className={inputClass} style={{ ...inputStyle, resize: "vertical" }}
+              placeholder="Short summary for listing pages and meta description"
+              value={form.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs text-slate-500 uppercase tracking-wider">Content *</label>
-              <span className="text-xs text-slate-600">{wordCount} words</span>
+              <span className="text-xs text-slate-600">{words} words</span>
             </div>
-            {preview ? (
-              <div
-                className="prose prose-invert prose-sm max-w-none px-5 py-5 rounded-xl min-h-[400px]"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                dangerouslySetInnerHTML={{ __html: form.content }}
-              />
-            ) : (
-              <textarea
-                rows={24}
-                className={inputClass}
-                style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: "13px", lineHeight: "1.7" }}
-                placeholder={"Write your content here…\n\nUse HTML:\n<h2>Section title</h2>\n<p>Paragraph</p>\n<ul><li>Item</li></ul>\n<strong>Bold</strong>  <em>Italic</em>"}
-                value={form.content}
-                onChange={(e) => set("content", e.target.value)}
-              />
-            )}
+            <RichEditor
+              value={form.content}
+              onChange={(html) => set("content", html)}
+              secret={secret}
+              placeholder="Write your post here — use the toolbar to format text, insert images, tables, code blocks and more…"
+            />
           </div>
         </main>
 
@@ -240,6 +218,7 @@ export default function NewPostPage() {
             onFocusKeyword={(v) => set("focusKeyword", v)}
             onFeaturedImageAlt={(v) => set("featuredImageAlt", v)}
             onSlug={(v) => set("slug", v)}
+            onFeaturedImage={(url) => set("featuredImage", url)}
           />
         </aside>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { SeoAnalysis, SeoCheck, SeoCheckStatus } from "@/types/blog";
+import type { SeoCheck, SeoCheckStatus } from "@/types/blog";
+import type { FullAnalysis, AnalysisTab } from "@/lib/seo-analyzer";
 
 interface SeoPanelProps {
   title: string;
@@ -16,6 +17,7 @@ interface SeoPanelProps {
   onFocusKeyword: (v: string) => void;
   onFeaturedImageAlt: (v: string) => void;
   onSlug: (v: string) => void;
+  onFeaturedImage: (url: string) => void;
 }
 
 const STATUS_COLOR: Record<SeoCheckStatus, string> = {
@@ -24,307 +26,358 @@ const STATUS_COLOR: Record<SeoCheckStatus, string> = {
   error: "#ef4444",
 };
 
-const STATUS_ICON: Record<SeoCheckStatus, string> = {
-  good: "●",
-  improvement: "●",
-  error: "●",
+const TAB_META: Record<AnalysisTab, { label: string; desc: string; color: string }> = {
+  seo: { label: "SEO", desc: "Google search ranking", color: "#3b82f6" },
+  aeo: { label: "AEO", desc: "AI answer engines", color: "#8b5cf6" },
+  geo: { label: "GEO", desc: "GenAI citations", color: "#06b6d4" },
+  local: { label: "Local", desc: "Maps & local pack", color: "#22c55e" },
 };
 
-function ScoreCircle({ score, grade }: { score: number; grade: string }) {
-  const color = grade === "good" ? "#22c55e" : grade === "ok" ? "#f59e0b" : "#ef4444";
-  const label = grade === "good" ? "Good" : grade === "ok" ? "Needs Work" : "Poor";
-  const r = 28;
+const TABS: AnalysisTab[] = ["seo", "aeo", "geo", "local"];
+
+function ScoreRing({ score, grade, size = 56 }: { score: number; grade: string; size?: number }) {
+  const r = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-
+  const color = grade === "good" ? "#22c55e" : grade === "ok" ? "#f59e0b" : "#ef4444";
+  const cx = size / 2;
   return (
-    <div className="flex items-center gap-3">
-      <svg width="72" height="72" className="shrink-0">
-        <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-        <circle
-          cx="36" cy="36" r={r} fill="none"
-          stroke={color} strokeWidth="6"
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          transform="rotate(-90 36 36)"
-          style={{ transition: "stroke-dasharray 0.6s ease" }}
-        />
-        <text x="36" y="36" textAnchor="middle" dominantBaseline="middle"
-          fill="white" fontSize="14" fontWeight="700">{score}</text>
-      </svg>
-      <div>
-        <p className="text-white font-semibold text-sm">SEO Score</p>
-        <p className="text-xs" style={{ color }}>{label}</p>
-      </div>
-    </div>
+    <svg width={size} height={size}>
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth="6"
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+        transform={`rotate(-90 ${cx} ${cx})`}
+        style={{ transition: "stroke-dasharray 0.5s ease" }} />
+      <text x={cx} y={cx} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize={size < 48 ? "11" : "13"} fontWeight="700">{score}</text>
+    </svg>
   );
 }
 
 function CheckItem({ check }: { check: SeoCheck }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-start gap-2 py-1.5">
-      <span className="mt-0.5 text-xs shrink-0" style={{ color: STATUS_COLOR[check.status] }}>
-        {STATUS_ICON[check.status]}
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-300">{check.label}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{check.message}</p>
+    <button
+      className="w-full text-left flex items-start gap-2 py-1.5 hover:bg-white/[0.02] rounded-lg px-1 transition-colors"
+      onClick={() => setOpen((p) => !p)}
+    >
+      <span className="mt-0.5 text-xs shrink-0 leading-none" style={{ color: STATUS_COLOR[check.status] }}>●</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-300 leading-snug">{check.label}</p>
+        {open && <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{check.message}</p>}
       </div>
-    </div>
+      <span className="text-slate-600 text-xs shrink-0">{open ? "▲" : "▼"}</span>
+    </button>
   );
 }
 
-function CharCounter({ value, min, max }: { value: string; min: number; max: number }) {
+function CharBar({ value, min, max }: { value: string; min: number; max: number }) {
   const len = value.length;
-  const color = len === 0 ? "#64748b" : len >= min && len <= max ? "#22c55e" : len < min ? "#f59e0b" : "#ef4444";
+  const pct = Math.min((len / max) * 100, 100);
+  const color = len === 0 ? "#334155" : len >= min && len <= max ? "#22c55e" : len < min ? "#f59e0b" : "#ef4444";
   return (
-    <span className="text-xs ml-1" style={{ color }}>
-      {len}/{max}
-    </span>
+    <div className="mt-1">
+      <div className="flex justify-between text-xs mb-0.5" style={{ color }}>
+        <span>{len} chars</span>
+        <span>{min}–{max}</span>
+      </div>
+      <div className="h-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
   );
 }
 
 const inputStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" };
 const inputClass = "w-full px-3 py-2 rounded-lg text-sm text-white outline-none transition-colors";
 
+function ImageUploader({ onUploaded, secret }: { onUploaded: (url: string, alt: string) => void; secret: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<{ url: string; originalSizeKb: number; optimizedSizeKb: number; savedPercent: number } | null>(null);
+  const [altDraft, setAltDraft] = useState("");
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    setError("");
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("image", file);
+    try {
+      const res = await fetch("/api/blog/upload-image", {
+        method: "POST",
+        headers: { "x-backdrop-secret": secret },
+        body: fd,
+      });
+      const data = await res.json() as typeof result & { error?: string };
+      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      setResult(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+
+  return (
+    <div className="space-y-2">
+      {!result ? (
+        <div
+          className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors hover:border-blue-500/50"
+          style={{ borderColor: "rgba(255,255,255,0.1)" }}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => inputRef.current?.click()}
+        >
+          <input ref={inputRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+          {uploading ? (
+            <p className="text-xs text-slate-400">Optimizing image…</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-400">Drop image or click to upload</p>
+              <p className="text-xs text-slate-600 mt-0.5">Auto-converts to WebP · Max 1200px · Compressed</p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          <img src={result.url} alt="Uploaded" className="w-full h-28 object-cover" />
+          <div className="p-2 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>{result.originalSizeKb}KB → {result.optimizedSizeKb}KB</span>
+              <span className="text-green-400">−{result.savedPercent}% saved</span>
+            </div>
+            <input
+              className={inputClass} style={inputStyle}
+              placeholder="Alt text for this image…"
+              value={altDraft}
+              onChange={(e) => setAltDraft(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => onUploaded(result.url, altDraft)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+              >
+                Use as Featured Image
+              </button>
+              <button
+                onClick={() => { setResult(null); setAltDraft(""); }}
+                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition-colors"
+                style={{ background: "rgba(255,255,255,0.04)" }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  );
+}
+
 export function SeoPanel({
   title, slug, content, excerpt, featuredImageAlt,
   metaTitle, metaDescription, focusKeyword,
-  onMetaTitle, onMetaDescription, onFocusKeyword, onFeaturedImageAlt, onSlug,
+  onMetaTitle, onMetaDescription, onFocusKeyword, onFeaturedImageAlt, onSlug, onFeaturedImage,
 }: SeoPanelProps) {
-  const [analysis, setAnalysis] = useState<SeoAnalysis | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [open, setOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"seo" | "readability">("seo");
+  const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
+  const [activeTab, setActiveTab] = useState<AnalysisTab>("seo");
+  const [openSection, setOpenSection] = useState<"seo-fields" | "image" | "checks" | null>("seo-fields");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
 
-  const runLocalAnalysis = useCallback(() => {
+  const runAnalysis = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch("/api/seo/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title, metaTitle, metaDescription, focusKeyword,
-            slug, content, excerpt, featuredImageAlt, aiAnalysis: false,
-          }),
+          body: JSON.stringify({ title, metaTitle, metaDescription, focusKeyword, slug, content, excerpt, featuredImageAlt }),
         });
-        const data = await res.json() as SeoAnalysis;
-        setAnalysis((prev) => ({ ...data, aiSuggestions: prev?.aiSuggestions }));
+        const data = await res.json() as FullAnalysis;
+        setAnalysis(data);
       } catch { /* silent */ }
-    }, 600);
+    }, 500);
   }, [title, metaTitle, metaDescription, focusKeyword, slug, content, excerpt, featuredImageAlt]);
 
-  useEffect(() => { runLocalAnalysis(); }, [runLocalAnalysis]);
+  useEffect(() => { runAnalysis(); }, [runAnalysis]);
 
-  async function runAiAnalysis() {
-    setAiLoading(true);
-    try {
-      const res = await fetch("/api/seo/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title, metaTitle, metaDescription, focusKeyword,
-          slug, content, excerpt, featuredImageAlt, aiAnalysis: true,
-        }),
-      });
-      const data = await res.json() as SeoAnalysis;
-      setAnalysis(data);
-    } catch { /* silent */ } finally {
-      setAiLoading(false);
-    }
+  function slugify(t: string) {
+    return t.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
   }
 
-  function slugify(text: string) {
-    return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
+  function section(id: typeof openSection, label: string, children: React.ReactNode) {
+    return (
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 text-left text-xs font-semibold text-slate-300 hover:bg-white/[0.02] transition-colors uppercase tracking-wider"
+          onClick={() => setOpenSection((p) => p === id ? null : id)}
+        >
+          {label}
+          <span className="text-slate-600 font-normal">{openSection === id ? "▲" : "▼"}</span>
+        </button>
+        {openSection === id && <div className="px-3 pb-3 space-y-3">{children}</div>}
+      </div>
+    );
   }
 
-  const seoChecks = analysis?.checks ?? [];
-  const readabilityChecks = seoChecks.filter((c) =>
-    ["content-length", "subheadings", "links"].includes(c.id)
-  );
-  const seoOnlyChecks = seoChecks.filter((c) =>
-    !["content-length", "subheadings", "links"].includes(c.id)
-  );
+  const currentChecks = analysis ? analysis[activeTab].checks : [];
+  const good = currentChecks.filter((c) => c.status === "good").length;
+  const improvement = currentChecks.filter((c) => c.status === "improvement").length;
+  const error = currentChecks.filter((c) => c.status === "error").length;
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-    >
-      {/* Header */}
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
+    <div className="space-y-3">
+      {/* Overall score bar */}
+      <div
+        className="rounded-2xl p-3"
+        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">SEO Analysis</span>
-          {analysis && (
-            <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
-              style={{
-                background: analysis.grade === "good" ? "rgba(34,197,94,0.15)" : analysis.grade === "ok" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)",
-                color: analysis.grade === "good" ? "#22c55e" : analysis.grade === "ok" ? "#f59e0b" : "#ef4444",
-              }}
-            >
-              {analysis.score}/100
-            </span>
-          )}
+        <div className="flex items-center gap-3 mb-3">
+          {analysis && <ScoreRing score={analysis.overall.score} grade={analysis.overall.grade} />}
+          <div>
+            <p className="text-white font-semibold text-sm">Content Score</p>
+            <p className="text-xs text-slate-500">SEO · AEO · GEO · Local</p>
+          </div>
         </div>
-        <span className="text-slate-500 text-xs">{open ? "▲" : "▼"}</span>
-      </button>
 
-      {open && (
-        <div className="px-4 pb-4 space-y-5">
-          {/* Score circle */}
-          {analysis && (
-            <ScoreCircle score={analysis.score} grade={analysis.grade} />
-          )}
-
-          {/* Focus keyword */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
-              Focus Keyword
-            </label>
-            <input
-              className={inputClass}
-              style={inputStyle}
-              placeholder="e.g. ai automation agency"
-              value={focusKeyword}
-              onChange={(e) => onFocusKeyword(e.target.value)}
-            />
+        {/* 4 mini rings */}
+        {analysis && (
+          <div className="grid grid-cols-4 gap-1">
+            {TABS.map((tab) => {
+              const meta = TAB_META[tab];
+              const a = analysis[tab];
+              return (
+                <button
+                  key={tab}
+                  onClick={() => { setActiveTab(tab); setOpenSection("checks"); }}
+                  className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  style={{
+                    background: activeTab === tab ? `${meta.color}18` : "transparent",
+                    border: activeTab === tab ? `1px solid ${meta.color}40` : "1px solid transparent",
+                  }}
+                >
+                  <ScoreRing score={a.score} grade={a.grade} size={40} />
+                  <span className="text-xs font-medium" style={{ color: meta.color }}>{meta.label}</span>
+                </button>
+              );
+            })}
           </div>
+        )}
+      </div>
 
-          {/* Slug */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
-              URL Slug
-            </label>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500 text-xs shrink-0">/blog/</span>
-              <input
-                className={`${inputClass} flex-1`}
-                style={inputStyle}
-                value={slug}
-                onChange={(e) => onSlug(slugify(e.target.value))}
-                placeholder="my-post-slug"
-              />
-            </div>
+      {/* Focus keyword */}
+      <div>
+        <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">Focus Keyword</label>
+        <input className={inputClass} style={inputStyle} placeholder="e.g. ai automation agency usa"
+          value={focusKeyword} onChange={(e) => onFocusKeyword(e.target.value)} />
+      </div>
+
+      {/* SEO fields section */}
+      {section("seo-fields", "SEO Fields", <>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1 font-medium">URL Slug</label>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-600 text-xs shrink-0">/blog/</span>
+            <input className={`${inputClass} flex-1`} style={inputStyle} value={slug}
+              onChange={(e) => onSlug(slugify(e.target.value))} />
           </div>
+        </div>
 
-          {/* Meta title */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
-              Meta Title
-              <CharCounter value={metaTitle} min={50} max={60} />
-            </label>
-            <input
-              className={inputClass}
-              style={inputStyle}
-              placeholder={title || "SEO page title (50–60 chars)"}
-              value={metaTitle}
-              onChange={(e) => onMetaTitle(e.target.value)}
-              maxLength={80}
-            />
-            {/* Google SERP preview */}
-            {(metaTitle || title) && (
-              <div className="mt-2 p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
-                <p className="text-xs text-slate-500 mb-1">Search preview</p>
-                <p className="text-blue-400 text-xs font-medium truncate">{metaTitle || title}</p>
-                <p className="text-green-600 text-xs">hotbotstudios.com/blog/{slug || "your-slug"}</p>
-                {(metaDescription || excerpt) && (
-                  <p className="text-slate-400 text-xs mt-1 line-clamp-2">{metaDescription || excerpt}</p>
-                )}
-              </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1 font-medium">
+            Meta Title
+          </label>
+          <input className={inputClass} style={inputStyle} maxLength={80}
+            placeholder={title || "SEO title (50–60 chars)"}
+            value={metaTitle} onChange={(e) => onMetaTitle(e.target.value)} />
+          <CharBar value={metaTitle} min={50} max={60} />
+        </div>
+
+        <div>
+          <label className="block text-xs text-slate-400 mb-1 font-medium">Meta Description</label>
+          <textarea rows={3} className={inputClass} style={{ ...inputStyle, resize: "vertical" }} maxLength={200}
+            placeholder={excerpt || "Meta description (120–160 chars)"}
+            value={metaDescription} onChange={(e) => onMetaDescription(e.target.value)} />
+          <CharBar value={metaDescription} min={120} max={160} />
+        </div>
+
+        {/* SERP preview */}
+        {(metaTitle || title) && (
+          <div className="p-2.5 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <p className="text-xs text-slate-500 mb-1.5 font-medium">SERP Preview</p>
+            <p className="text-blue-400 text-sm font-medium leading-snug truncate">{metaTitle || title}</p>
+            <p className="text-green-700 text-xs mt-0.5">hotbotstudios.com/blog/{slug || "your-slug"}</p>
+            {(metaDescription || excerpt) && (
+              <p className="text-slate-400 text-xs mt-1 leading-relaxed line-clamp-2">{metaDescription || excerpt}</p>
             )}
           </div>
+        )}
 
-          {/* Meta description */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
-              Meta Description
-              <CharCounter value={metaDescription} min={120} max={160} />
-            </label>
-            <textarea
-              rows={3}
-              className={inputClass}
-              style={{ ...inputStyle, resize: "vertical" }}
-              placeholder={excerpt || "SEO meta description (120–160 chars)"}
-              value={metaDescription}
-              onChange={(e) => onMetaDescription(e.target.value)}
-              maxLength={200}
-            />
-          </div>
-
-          {/* Featured image alt */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
-              Featured Image Alt Text
-            </label>
-            <input
-              className={inputClass}
-              style={inputStyle}
-              placeholder="Describe the image for accessibility & SEO"
-              value={featuredImageAlt}
-              onChange={(e) => onFeaturedImageAlt(e.target.value)}
-            />
-          </div>
-
-          {/* Checklist tabs */}
-          {analysis && (
-            <div>
-              <div className="flex gap-1 mb-3">
-                {(["seo", "readability"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                    style={{
-                      background: activeTab === tab ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
-                      color: activeTab === tab ? "#60a5fa" : "#94a3b8",
-                      border: activeTab === tab ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    {tab === "seo" ? "SEO" : "Readability"}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-0.5">
-                {(activeTab === "seo" ? seoOnlyChecks : readabilityChecks).map((check) => (
-                  <CheckItem key={check.id} check={check} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI suggestions */}
-          {analysis?.aiSuggestions && analysis.aiSuggestions.length > 0 && (
-            <div className="rounded-xl p-3" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}>
-              <p className="text-xs font-medium text-purple-400 mb-2">AI Suggestions</p>
-              <ul className="space-y-1.5">
-                {analysis.aiSuggestions.map((s, i) => (
-                  <li key={i} className="text-xs text-slate-300 flex items-start gap-1.5">
-                    <span className="text-purple-400 shrink-0">→</span>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* AI analyze button */}
-          <button
-            onClick={runAiAnalysis}
-            disabled={aiLoading}
-            className="w-full py-2 rounded-xl text-xs font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
-          >
-            {aiLoading ? "Analyzing with AI…" : "✦ AI Deep Analysis"}
-          </button>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1 font-medium">Featured Image Alt Text</label>
+          <input className={inputClass} style={inputStyle}
+            placeholder="Descriptive alt text for accessibility & SEO"
+            value={featuredImageAlt} onChange={(e) => onFeaturedImageAlt(e.target.value)} />
         </div>
-      )}
+      </>)}
+
+      {/* Image upload section */}
+      {section("image", "Upload & Optimize Image", <>
+        <p className="text-xs text-slate-500">Auto-converts to WebP, resizes to max 1200px, compresses. Use the URL in your content or as featured image.</p>
+        <ImageUploader
+          secret={secret}
+          onUploaded={(url, alt) => {
+            onFeaturedImage(url);
+            if (alt) onFeaturedImageAlt(alt);
+          }}
+        />
+      </>)}
+
+      {/* Checklist section */}
+      {section("checks", "Analysis Checklist", <>
+        {/* Tab selector */}
+        <div className="grid grid-cols-4 gap-1">
+          {TABS.map((tab) => {
+            const meta = TAB_META[tab];
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className="py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: activeTab === tab ? `${meta.color}20` : "rgba(255,255,255,0.03)",
+                  color: activeTab === tab ? meta.color : "#64748b",
+                  border: activeTab === tab ? `1px solid ${meta.color}40` : "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                {meta.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab description */}
+        <p className="text-xs text-slate-500">{TAB_META[activeTab].desc} — {good} good · {improvement} to improve · {error} issues</p>
+
+        {/* Checks */}
+        <div className="space-y-0.5">
+          {currentChecks.map((c) => <CheckItem key={c.id} check={c} />)}
+          {!currentChecks.length && (
+            <p className="text-xs text-slate-600 py-2 text-center">Start writing to see analysis…</p>
+          )}
+        </div>
+      </>)}
     </div>
   );
 }
