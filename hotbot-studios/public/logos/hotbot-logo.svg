@@ -1,17 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 44" fill="none" role="img" aria-label="HotBot Studios logo">
-  <title>HotBot Studios</title>
-  <!-- Robot head icon — white solid for use on dark backgrounds -->
-  <rect x="2" y="9" width="28" height="24" rx="4" fill="white"/>
-  <rect x="8" y="4" width="16" height="7" rx="2" fill="white"/>
-  <circle cx="12" cy="21" r="3.2" fill="#0a0e1a"/>
-  <circle cx="22" cy="21" r="3.2" fill="#0a0e1a"/>
-  <circle cx="12" cy="21" r="1.4" fill="white" opacity="0.45"/>
-  <circle cx="22" cy="21" r="1.4" fill="white" opacity="0.45"/>
-  <path d="M11 29 Q16 32.5 21 29" stroke="#0a0e1a" stroke-width="1.6" stroke-linecap="round"/>
-  <rect x="0" y="18" width="3" height="6" rx="1.5" fill="white"/>
-  <rect x="29" y="18" width="3" height="6" rx="1.5" fill="white"/>
-  <circle cx="16" cy="3" r="2" fill="white" opacity="0.7"/>
-  <!-- Wordmark -->
-  <text x="42" y="29" font-family="'Inter','SF Pro Display',-apple-system,sans-serif" font-size="17" font-weight="800" letter-spacing="-0.5" fill="white">HotBot</text>
-  <text x="113" y="29" font-family="'Inter','SF Pro Display',-apple-system,sans-serif" font-size="17" font-weight="400" letter-spacing="0.2" fill="rgba(255,255,255,0.72)">Studios</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 78" width="300" height="78">
+  <defs>
+    <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFC233"/>
+      <stop offset="100%" stop-color="#F57F20"/>
+    </linearGradient>
+  </defs>
+  <!-- Hexagon badge -->
+  <polygon points="40,6 68,22 68,54 40,70 12,54 12,22" fill="url(#hexGrad)"/>
+  <!-- H letter -->
+  <text x="40" y="46" text-anchor="middle" dominant-baseline="middle"
+    font-family="'Arial Black', Arial, sans-serif" font-weight="900"
+    font-size="30" fill="white">H</text>
+  <!-- HOTBOT STUDIOS® -->
+  <text font-family="'Arial Black', Arial, sans-serif" font-weight="900"
+    font-size="21" fill="#1a1a2e" letter-spacing="0.8">
+    <tspan x="88" y="36">HOTBOT STUDIOS</tspan>
+    <tspan font-size="10" dy="-9" dx="1">®</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="89" y="55" font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="10" fill="#999999" letter-spacing="1.8">
+    Pioneering Digital Outreach
+  </text>
 </svg>
