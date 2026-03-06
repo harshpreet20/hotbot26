@@ -12,6 +12,7 @@ const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: "🏠" },
   { label: "All Posts", href: "/dashboard/posts", icon: "📋" },
   { label: "New Post", href: "/dashboard/new-post", icon: "✏️" },
+  { label: "Settings", href: "/dashboard/settings", icon: "⚙️" },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

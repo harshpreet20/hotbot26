@@ -143,6 +143,12 @@ export default function PostsPage() {
                     <span className="hidden sm:inline px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">
                       {post.status}
                     </span>
+                    <Link
+                      href={`/dashboard/posts/${post.slug}/edit`}
+                      className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-500/15 text-blue-400/70 hover:text-blue-300 hover:border-blue-500/30 hover:bg-blue-500/[0.06] transition-colors"
+                    >
+                      Edit
+                    </Link>
                     <a
                       href={`${MAIN_SITE}/blog/${post.slug}`}
                       target="_blank"
