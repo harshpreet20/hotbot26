@@ -70,6 +70,8 @@ export default function BackdropLoginPage() {
       }
 
       sessionStorage.setItem("backdrop_secret", data.token);
+      if (data.role)     sessionStorage.setItem("backdrop_role", data.role);
+      if (data.username) sessionStorage.setItem("backdrop_username", data.username);
       router.replace("/enter/backdrop/dashboard");
     } catch {
       setError("Connection error. Check your network and try again.");

@@ -1,3 +1,32 @@
+// ── Role-based access control ─────────────────────────────────────────────────
+export type Role = "admin" | "manager" | "agent";
+
+/** Public user info (safe to send to clients) */
+export interface User {
+  id: string;
+  username: string;
+  role: Role;
+  createdAt: string;
+}
+
+/** Internal user record (includes password hash — never send to client) */
+export interface UserRecord extends User {
+  passwordHash: string;
+}
+
+/** The complete admin store written to data/admin.json */
+export interface AdminStore {
+  publishSecret: string;
+  users: UserRecord[];
+}
+
+/** Session info returned from session lookups */
+export interface SessionInfo {
+  userId: string;
+  username: string;
+  role: Role;
+}
+
 // ── Inbound data types persisted to data/*.json ──────────────────────────────
 
 export interface Lead {

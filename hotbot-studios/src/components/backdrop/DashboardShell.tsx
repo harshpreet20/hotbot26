@@ -1,12 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { Role } from "@/types/dashboard";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
   exact?: boolean;
+  roles?: Role[]; // undefined = all roles
 }
 
 const NAV: NavItem[] = [
@@ -14,6 +17,7 @@ const NAV: NavItem[] = [
     href: "/enter/backdrop/dashboard",
     label: "Overview",
     exact: true,
+    roles: ["admin", "manager"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -24,6 +28,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/blog",
     label: "Blog",
+    roles: ["admin"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -32,8 +37,9 @@ const NAV: NavItem[] = [
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/leads",
-    label: "Leads",
+    href: "/enter/backdrop/dashboard/users",
+    label: "Users",
+    roles: ["admin"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -42,8 +48,20 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/leads",
+    label: "Leads",
+    roles: ["admin", "manager"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 7h-9" /><path d="M14 17H5" />
+        <circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/contacts",
     label: "Contacts",
+    roles: ["admin", "manager"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -63,6 +81,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/callbacks",
     label: "Callbacks",
+    roles: ["admin", "manager"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
@@ -72,6 +91,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/newsletter",
     label: "Newsletter",
+    roles: ["admin", "manager"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -81,20 +101,45 @@ const NAV: NavItem[] = [
   },
 ];
 
+const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
+  admin:   { label: "Admin",   color: "#818cf8" },
+  manager: { label: "Manager", color: "#34d399" },
+  agent:   { label: "Agent",   color: "#f59e0b" },
+};
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const [role, setRole]         = useState<Role | null>(null);
+  const [username, setUsername] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole((sessionStorage.getItem("backdrop_role") as Role | null) ?? null);
+      setUsername(sessionStorage.getItem("backdrop_username") ?? "");
+    }
+  }, []);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
     return pathname.startsWith(item.href);
   }
 
+  function canSee(item: NavItem) {
+    if (!item.roles) return true; // no restriction = all roles
+    if (!role) return true;       // role not loaded yet — show all (auth gate handles actual access)
+    return item.roles.includes(role);
+  }
+
   async function signOut() {
     sessionStorage.removeItem("backdrop_secret");
+    sessionStorage.removeItem("backdrop_role");
+    sessionStorage.removeItem("backdrop_username");
     await fetch("/api/blog/auth", { method: "DELETE" }).catch(() => {});
     router.push("/enter/backdrop");
   }
+
+  const badge = role ? ROLE_BADGE[role] : null;
 
   return (
     <div className="flex min-h-screen" style={{ background: "#0a0e1a" }}>
@@ -119,7 +164,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-0.5">
-          {NAV.map((item) => {
+          {NAV.filter(canSee).map((item) => {
             const active = isActive(item);
             return (
               <Link
@@ -139,8 +184,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Sign out */}
-        <div className="p-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        {/* User info + Sign out */}
+        <div className="p-3 border-t space-y-2" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+          {username && (
+            <div className="px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <p className="text-slate-400 text-xs font-medium truncate">{username}</p>
+              {badge && (
+                <span className="text-[10px] font-semibold mt-0.5 inline-block" style={{ color: badge.color }}>
+                  {badge.label}
+                </span>
+              )}
+            </div>
+          )}
           <button
             onClick={signOut}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-300 transition-colors"

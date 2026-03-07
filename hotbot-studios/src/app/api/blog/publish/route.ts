@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
+import { getPublishSecret } from "@/lib/adminStore";
+import { getSession } from "@/lib/sessions";
 import type { BlogPost, BlogPostsStore } from "@/types/blog";
 
-const POSTS_FILE    = path.join(process.cwd(), "public", "data", "posts.json");
-const PUBLISH_SECRET = process.env.BLOG_PUBLISH_SECRET || "hotbot-blog-secret-2026";
+const POSTS_FILE = path.join(process.cwd(), "public", "data", "posts.json");
+
+function isPublishAuthorized(secret: string | null | undefined): boolean {
+  if (!secret) return false;
+  // Accept admin session token
+  const session = getSession(secret);
+  if (session?.role === "admin") return true;
+  // Accept static publish secret
+  const ps = getPublishSecret();
+  return !!ps && secret === ps;
+}
 
 function readPosts(): BlogPostsStore {
   try {
@@ -26,7 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { secret: string; action?: string; post: BlogPost };
 
-    if (body.secret !== PUBLISH_SECRET) {
+    if (!isPublishAuthorized(body.secret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -58,7 +69,6 @@ export async function POST(req: NextRequest) {
       adTopic: post.adTopic || "general",
       tags: post.tags || [],
       author: post.author || "HotBot Studios",
-      // SEO fields — preserve or carry forward
       metaTitle: post.metaTitle || post.title,
       metaDescription: post.metaDescription || post.excerpt || "",
       focusKeyword: post.focusKeyword || "",
@@ -90,13 +100,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Allow N8N and the Backdrop admin to check if a slug already exists
+// Check if a slug exists — accepts session token or publish secret
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get("secret");
-  const slug = searchParams.get("slug");
+  const slug   = searchParams.get("slug");
 
-  if (secret !== PUBLISH_SECRET) {
+  if (!isPublishAuthorized(secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

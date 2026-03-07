@@ -42,3 +42,4 @@ next-env.d.ts
 /data/newsletter.json
 /data/callbacks.json
 /data/chats.json
+/data/sessions.json

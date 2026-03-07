@@ -1,61 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
+import { readAdminStore, writeAdminStore, isSetupNeeded, getEnvFallbackUser } from "@/lib/adminStore";
+import { createSession, deleteSession } from "@/lib/sessions";
+import type { AdminStore, UserRecord, Role } from "@/types/dashboard";
 
-// ── Credentials file (NOT in public/ — never HTTP-accessible) ────────────────
-const CREDS_FILE = path.join(process.cwd(), "data", "admin.json");
-
-interface AdminCreds {
-  username: string;
-  passwordHash: string;
-  publishSecret: string;
-  createdAt: string;
-}
-
-function readCreds(): AdminCreds | null {
-  try {
-    const raw = fs.readFileSync(CREDS_FILE, "utf-8");
-    return JSON.parse(raw) as AdminCreds;
-  } catch {
-    return null;
-  }
-}
-
-function writeCreds(creds: AdminCreds): void {
-  const dir = path.dirname(CREDS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(CREDS_FILE, JSON.stringify(creds, null, 2), { encoding: "utf-8", mode: 0o600 });
-}
-
-// ── Resolve active credentials (file takes precedence over env vars) ─────────
-function getActiveCreds(): AdminCreds | null {
-  const fileCreds = readCreds();
-  if (fileCreds) return fileCreds;
-
-  // Fall back to env vars (legacy / manual configuration)
-  const passwordHash = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
-  const publishSecret = process.env.BLOG_PUBLISH_SECRET || "";
-  if (passwordHash && publishSecret) {
-    return {
-      username: process.env.BLOG_ADMIN_USERNAME || "admin",
-      passwordHash,
-      publishSecret,
-      createdAt: "",
-    };
-  }
-
-  return null; // no credentials at all → setup required
-}
-
-function isSetupNeeded(): boolean {
-  return getActiveCreds() === null;
-}
-
-// ── Cookie helpers ────────────────────────────────────────────────────────────
+// ── Cookie ────────────────────────────────────────────────────────────────────
 const COOKIE_NAME  = "backdrop_auth";
-const COOKIE_MAX_S = 60 * 60 * 24 * 30; // 30 days
+const COOKIE_MAX_S = 60 * 60 * 24 * 30;
 
 function setAuthCookie(res: NextResponse, token: string) {
   res.cookies.set(COOKIE_NAME, token, {
@@ -67,25 +19,20 @@ function setAuthCookie(res: NextResponse, token: string) {
   });
 }
 
-// ── In-memory rate limiter (per-IP, resets every 60 s) ───────────────────────
+// ── Rate limiter (per-IP, 10 attempts / 60 s) ─────────────────────────────────
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const record = attempts.get(ip);
-  if (!record || now > record.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (record.count >= 10) return false;
-  record.count++;
+  const rec = attempts.get(ip);
+  if (!rec || now > rec.resetAt) { attempts.set(ip, { count: 1, resetAt: now + 60_000 }); return true; }
+  if (rec.count >= 10) return false;
+  rec.count++;
   return true;
 }
 
-// Constant-time string comparison to prevent timing attacks
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
-    // still run a loop to keep timing consistent
     let _d = 0;
     for (let i = 0; i < Math.max(a.length, b.length); i++) _d += (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
     return false;
@@ -95,12 +42,12 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-// ── GET /api/blog/auth  — check whether first-run setup is needed ─────────────
+// ── GET — check if first-run setup is needed ──────────────────────────────────
 export async function GET() {
   return NextResponse.json({ needsSetup: isSetupNeeded() });
 }
 
-// ── POST /api/blog/auth  — login OR first-run setup ──────────────────────────
+// ── POST — login or first-run setup ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
@@ -108,92 +55,76 @@ export async function POST(req: NextRequest) {
     "unknown";
 
   if (!checkRateLimit(ip)) {
-    return NextResponse.json(
-      { success: false, error: "Too many attempts. Please wait a minute and try again." },
-      { status: 429 },
-    );
+    return NextResponse.json({ success: false, error: "Too many attempts. Please wait a minute." }, { status: 429 });
   }
 
   let body: { username?: string; password?: string; confirmPassword?: string; setup?: boolean };
-  try {
-    body = await req.json() as typeof body;
-  } catch {
-    return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 });
-  }
+  try { body = await req.json() as typeof body; }
+  catch { return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 }); }
 
   const username = (body.username || "").trim();
   const password = (body.password || "").trim();
-
   if (!username || !password) {
     return NextResponse.json({ success: false, error: "Username and password are required." }, { status: 400 });
   }
 
-  // ── First-run setup ──────────────────────────────────────────────────────
+  // ── First-run setup ────────────────────────────────────────────────────────
   if (body.setup === true) {
     if (!isSetupNeeded()) {
-      return NextResponse.json(
-        { success: false, error: "Admin account already exists. Please log in normally." },
-        { status: 409 },
-      );
+      return NextResponse.json({ success: false, error: "Admin account already exists. Log in normally." }, { status: 409 });
     }
-
-    const confirmPassword = (body.confirmPassword || "").trim();
-    if (password !== confirmPassword) {
-      return NextResponse.json({ success: false, error: "Passwords do not match." }, { status: 400 });
-    }
-    if (password.length < 8) {
-      return NextResponse.json({ success: false, error: "Password must be at least 8 characters." }, { status: 400 });
-    }
-    if (username.length < 3) {
-      return NextResponse.json({ success: false, error: "Username must be at least 3 characters." }, { status: 400 });
-    }
+    const confirm = (body.confirmPassword || "").trim();
+    if (password !== confirm)      return NextResponse.json({ success: false, error: "Passwords do not match." }, { status: 400 });
+    if (password.length < 8)       return NextResponse.json({ success: false, error: "Password must be at least 8 characters." }, { status: 400 });
+    if (username.length < 3)       return NextResponse.json({ success: false, error: "Username must be at least 3 characters." }, { status: 400 });
 
     const passwordHash  = await bcrypt.hash(password, 12);
-    // Reuse env-var secret if already configured, otherwise generate one
-    const publishSecret =
-      process.env.BLOG_PUBLISH_SECRET ||
-      crypto.randomBytes(32).toString("hex");
+    const publishSecret = process.env.BLOG_PUBLISH_SECRET || crypto.randomBytes(32).toString("hex");
+    const userId        = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 
-    const creds: AdminCreds = {
-      username,
-      passwordHash,
+    const store: AdminStore = {
       publishSecret,
-      createdAt: new Date().toISOString(),
+      users: [{ id: userId, username, passwordHash, role: "admin", createdAt: new Date().toISOString() }],
     };
-    writeCreds(creds);
+    writeAdminStore(store);
 
-    const res = NextResponse.json({ success: true, token: publishSecret });
-    setAuthCookie(res, publishSecret);
+    const sessionToken = createSession(userId, username, "admin");
+    const res = NextResponse.json({ success: true, token: sessionToken, role: "admin", username });
+    setAuthCookie(res, sessionToken);
     return res;
   }
 
-  // ── Normal login ─────────────────────────────────────────────────────────
-  const creds = getActiveCreds();
-  if (!creds) {
-    // Credentials not configured and setup flag not sent
-    return NextResponse.json(
-      { success: false, error: "No admin account found. Please complete first-time setup.", needsSetup: true },
-      { status: 409 },
-    );
+  // ── Normal login ───────────────────────────────────────────────────────────
+  const store    = readAdminStore();
+  const allUsers: UserRecord[] = store?.users ?? [];
+
+  // Include env-var fallback user if no file-based users exist
+  if (allUsers.length === 0) {
+    const envUser = getEnvFallbackUser();
+    if (envUser) allUsers.push(envUser);
   }
 
-  const usernameOk = safeEqual(username, creds.username);
-  const passwordOk = await bcrypt.compare(password, creds.passwordHash);
+  if (allUsers.length === 0) {
+    return NextResponse.json({ success: false, error: "No admin account found. Complete first-time setup.", needsSetup: true }, { status: 409 });
+  }
 
-  if (usernameOk && passwordOk) {
-    const res = NextResponse.json({ success: true, token: creds.publishSecret });
-    setAuthCookie(res, creds.publishSecret);
+  const matchedUser = allUsers.find((u) => safeEqual(u.username, username));
+  const passwordOk  = matchedUser ? await bcrypt.compare(password, matchedUser.passwordHash) : false;
+
+  if (matchedUser && passwordOk) {
+    const sessionToken = createSession(matchedUser.id, matchedUser.username, matchedUser.role);
+    const res = NextResponse.json({ success: true, token: sessionToken, role: matchedUser.role, username: matchedUser.username });
+    setAuthCookie(res, sessionToken);
     return res;
   }
 
-  return NextResponse.json(
-    { success: false, error: "Invalid username or password." },
-    { status: 401 },
-  );
+  return NextResponse.json({ success: false, error: "Invalid username or password." }, { status: 401 });
 }
 
-// ── DELETE /api/blog/auth  (logout) ──────────────────────────────────────────
-export async function DELETE() {
+// ── DELETE — logout ───────────────────────────────────────────────────────────
+export async function DELETE(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  if (token) deleteSession(token);
   const res = NextResponse.json({ success: true });
   res.cookies.set(COOKIE_NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;
