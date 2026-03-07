@@ -118,43 +118,42 @@ export default function BackdropLoginPage() {
       <div className="w-full max-w-sm relative z-10">
 
         {/* Logo / brand */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-5">
           <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 shadow-xl"
+            className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3 shadow-xl"
             style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
-            <span className="text-white text-2xl font-bold select-none">✦</span>
+            <span className="text-white text-xl font-bold select-none">✦</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Backdrop</h1>
-          <p className="text-slate-500 text-sm mt-1">HotBot Studios · Blog Admin</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">Backdrop</h1>
+          <p className="text-slate-500 text-xs mt-0.5">HotBot Studios · Blog Admin</p>
         </div>
-
-        {/* First-run setup banner */}
-        {isSetup && (
-          <div
-            className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm text-blue-300 mb-5"
-            style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)" }}
-          >
-            <span className="shrink-0 text-base mt-0.5">🛡</span>
-            <div>
-              <p className="font-semibold text-blue-200 mb-0.5">First-time setup</p>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                No admin account exists yet. Create your credentials below — they will be stored securely and used for all future logins.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Card */}
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="rounded-2xl p-7 space-y-5"
+          className="rounded-2xl p-6 space-y-4"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}
         >
+          {/* First-run setup banner — inside card */}
+          {isSetup && (
+            <div
+              className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm text-blue-300 -mt-1 mb-1"
+              style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.18)" }}
+            >
+              <span className="shrink-0 text-sm mt-0.5">🛡</span>
+              <div>
+                <p className="font-semibold text-blue-200 text-xs mb-0.5">First-time setup</p>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  No admin account exists yet. Create your credentials below — they will be stored securely and used for all future logins.
+                </p>
+              </div>
+            </div>
+          )}
           {/* Username */}
           <div>
-            <label htmlFor="username" className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+            <label htmlFor="username" className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
               Username
             </label>
             <input
@@ -165,7 +164,7 @@ export default function BackdropLoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
+              className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
               style={inputStyle}
               placeholder="admin"
               onFocus={(e) => Object.assign(e.target.style, focusStyle)}
@@ -175,7 +174,7 @@ export default function BackdropLoginPage() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+            <label htmlFor="password" className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
               Password
             </label>
             <input
@@ -185,7 +184,7 @@ export default function BackdropLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
+              className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
               style={inputStyle}
               placeholder="••••••••"
               onFocus={(e) => Object.assign(e.target.style, focusStyle)}
@@ -199,7 +198,7 @@ export default function BackdropLoginPage() {
           {/* Confirm Password — setup mode only */}
           {isSetup && (
             <div>
-              <label htmlFor="confirmPassword" className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+              <label htmlFor="confirmPassword" className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
                 Confirm Password
               </label>
               <input
@@ -233,7 +232,7 @@ export default function BackdropLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 hover:-translate-y-0.5 active:translate-y-0"
             style={{
               background: loading ? "#4f46e5" : "linear-gradient(135deg, #3b82f6, #8b5cf6)",
               boxShadow: "0 4px 24px rgba(99,102,241,0.3)",
@@ -251,7 +250,7 @@ export default function BackdropLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-slate-700 text-xs mt-6">
+        <p className="text-center text-slate-700 text-xs mt-4">
           Private access only · Not indexed by search engines
         </p>
       </div>
