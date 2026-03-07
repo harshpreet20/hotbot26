@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
-const ADMIN_USERNAME    = process.env.BLOG_ADMIN_USERNAME    || "admin";
-const ADMIN_PASSWORD    = process.env.BLOG_ADMIN_PASSWORD    || "";
-const BLOG_SECRET       = process.env.BLOG_PUBLISH_SECRET    || "hotbot-blog-secret-2026";
-const N8N_BASE          = process.env.N8N_BASE_URL            || "";
-const N8N_AUTH_ENDPOINT = process.env.N8N_WEBHOOK_BLOG_AUTH  || "";
+const ADMIN_USERNAME     = process.env.BLOG_ADMIN_USERNAME      || "admin";
+const ADMIN_PASSWORD_HASH = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
+const BLOG_SECRET        = process.env.BLOG_PUBLISH_SECRET      || "";
 
-const COOKIE_NAME   = "backdrop_auth";
-const COOKIE_MAX_S  = 60 * 60 * 24 * 30; // 30 days
+const COOKIE_NAME  = "backdrop_auth";
+const COOKIE_MAX_S = 60 * 60 * 24 * 30; // 30 days
 
-// ── simple in-memory rate limiter (per-IP, resets every 60s) ────────────────
+// ── in-memory rate limiter (per-IP, resets every 60s) ───────────────────────
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string): boolean {
@@ -24,7 +23,7 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// constant-time string compare to prevent timing attacks
+// constant-time username comparison to prevent timing attacks
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
     let _d = 0;
@@ -74,40 +73,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Username and password are required." }, { status: 400 });
   }
 
-  // ── Option A: proxy to N8N (if fully configured) ───────────────────────────
-  if (N8N_BASE && N8N_AUTH_ENDPOINT) {
-    const url = N8N_BASE.replace(/\/$/, "") + "/" + N8N_AUTH_ENDPOINT.replace(/^\//, "");
-    console.log("[blog/auth] Calling N8N:", url);
-    try {
-      const n8nRes = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-        signal: AbortSignal.timeout(8000),
-      });
-      console.log("[blog/auth] N8N responded:", n8nRes.status);
-      if (n8nRes.ok) {
-        const data = await n8nRes.json() as { success?: boolean; token?: string; error?: string };
-        if (data.success && data.token) {
-          const res = NextResponse.json({ success: true, token: data.token });
-          setAuthCookie(res, data.token);
-          return res;
-        }
-        return NextResponse.json(
-          { success: false, error: data.error || "Invalid credentials." },
-          { status: 401 },
-        );
-      }
-      console.warn("[blog/auth] N8N non-OK status, falling back to local validation");
-    } catch (err) {
-      console.error("[blog/auth] N8N unreachable:", (err as Error).message, "— falling back to local validation");
-    }
-  } else {
-    console.warn("[blog/auth] N8N not configured (N8N_BASE_URL or N8N_WEBHOOK_BLOG_AUTH missing), using local auth");
+  if (!ADMIN_PASSWORD_HASH || !BLOG_SECRET) {
+    console.error("[blog/auth] BLOG_ADMIN_PASSWORD_HASH or BLOG_PUBLISH_SECRET is not set.");
+    return NextResponse.json({ success: false, error: "Server misconfiguration." }, { status: 500 });
   }
 
-  // ── Option B: validate locally against env vars ─────────────────────────────
-  if (safeEqual(username, ADMIN_USERNAME) && safeEqual(password, ADMIN_PASSWORD)) {
+  // Validate username (constant-time) then bcrypt-verify password
+  const usernameOk = safeEqual(username, ADMIN_USERNAME);
+  const passwordOk = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+
+  if (usernameOk && passwordOk) {
     const res = NextResponse.json({ success: true, token: BLOG_SECRET });
     setAuthCookie(res, BLOG_SECRET);
     return res;
