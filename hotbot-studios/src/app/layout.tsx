@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: "HotBot Studios",
     images: [
       {
-        url: "/og-image.svg",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "HotBot Studios — AI Automation & Digital Marketing Agency",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
     description:
       "Full-service growth infrastructure for US businesses — AI, marketing, content, software, PR, and design in one team.",
-    images: ["/og-image.svg"],
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
