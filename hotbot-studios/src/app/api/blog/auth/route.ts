@@ -86,9 +86,13 @@ export async function POST(req: NextRequest) {
       publishSecret,
       users: [{ id: userId, username, passwordHash, role: "admin", createdAt: new Date().toISOString() }],
     };
-    writeAdminStore(store);
+    try { writeAdminStore(store); }
+    catch { return NextResponse.json({ success: false, error: "Could not save credentials — file system error. Set BLOG_ADMIN_PASSWORD_HASH and BLOG_PUBLISH_SECRET env vars instead." }, { status: 500 }); }
 
-    const sessionToken = createSession(userId, username, "admin");
+    let sessionToken: string;
+    try { sessionToken = createSession(userId, username, "admin"); }
+    catch { return NextResponse.json({ success: false, error: "Account created but session could not be saved. Please log in." }, { status: 500 }); }
+
     const res = NextResponse.json({ success: true, token: sessionToken, role: "admin", username });
     setAuthCookie(res, sessionToken);
     return res;
@@ -112,7 +116,9 @@ export async function POST(req: NextRequest) {
   const passwordOk  = matchedUser ? await bcrypt.compare(password, matchedUser.passwordHash) : false;
 
   if (matchedUser && passwordOk) {
-    const sessionToken = createSession(matchedUser.id, matchedUser.username, matchedUser.role);
+    let sessionToken: string;
+    try { sessionToken = createSession(matchedUser.id, matchedUser.username, matchedUser.role); }
+    catch { return NextResponse.json({ success: false, error: "Session could not be created — storage error." }, { status: 500 }); }
     const res = NextResponse.json({ success: true, token: sessionToken, role: matchedUser.role, username: matchedUser.username });
     setAuthCookie(res, sessionToken);
     return res;

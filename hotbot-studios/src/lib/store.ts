@@ -6,7 +6,10 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// Vercel's project root (/var/task) is read-only; use /tmp for writable storage
+const DATA_DIR = process.env.VERCEL
+  ? "/tmp/hotbot-data"
+  : path.join(process.cwd(), "data");
 
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });

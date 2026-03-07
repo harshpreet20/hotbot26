@@ -58,7 +58,15 @@ export default function BackdropLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json() as { success: boolean; token?: string; role?: string; username?: string; error?: string; needsSetup?: boolean };
+      let data: { success: boolean; token?: string; role?: string; username?: string; error?: string; needsSetup?: boolean };
+      try {
+        data = await res.json() as typeof data;
+      } catch {
+        setError(`Server error (${res.status}). Please try again.`);
+        setPassword("");
+        setConfirm("");
+        return;
+      }
 
       if (!res.ok || !data.success || !data.token) {
         // Server told us setup is still needed (e.g. first visit with old env vars cleared)

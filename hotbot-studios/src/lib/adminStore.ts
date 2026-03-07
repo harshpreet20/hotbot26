@@ -7,7 +7,10 @@ import path from "path";
 import crypto from "crypto";
 import type { AdminStore, UserRecord, Role } from "@/types/dashboard";
 
-const ADMIN_FILE = path.join(process.cwd(), "data", "admin.json");
+// Vercel's project root (/var/task) is read-only; use /tmp for writable storage
+const ADMIN_FILE = process.env.VERCEL
+  ? "/tmp/hotbot-data/admin.json"
+  : path.join(process.cwd(), "data", "admin.json");
 
 function ensureDir() {
   const dir = path.dirname(ADMIN_FILE);
