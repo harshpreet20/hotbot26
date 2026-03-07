@@ -4,10 +4,8 @@ import fs from "fs";
 import path from "path";
 import type { BlogPost, BlogPostsStore } from "@/types/blog";
 
-const POSTS_FILE = path.join(process.cwd(), "public", "data", "posts.json");
+const POSTS_FILE    = path.join(process.cwd(), "public", "data", "posts.json");
 const PUBLISH_SECRET = process.env.BLOG_PUBLISH_SECRET || "hotbot-blog-secret-2026";
-const N8N_BASE = process.env.N8N_BASE_URL || "http://localhost:5678/webhook/";
-const N8N_BLOG_SHEETS = process.env.N8N_WEBHOOK_BLOG_SHEETS;
 
 function readPosts(): BlogPostsStore {
   try {
@@ -22,43 +20,7 @@ function writePosts(store: BlogPostsStore): void {
   fs.writeFileSync(POSTS_FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
-/** Fire-and-forget: sends post to N8N → Google Sheets backup */
-async function syncToSheets(post: BlogPost): Promise<void> {
-  if (!N8N_BLOG_SHEETS) return;
-  try {
-    await fetch(`${N8N_BASE}${N8N_BLOG_SHEETS}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: post.id,
-        slug: post.slug,
-        title: post.title,
-        status: post.status,
-        category: post.category,
-        author: post.author,
-        publishedAt: post.publishedAt,
-        updatedAt: post.updatedAt,
-        excerpt: post.excerpt,
-        tags: post.tags.join(", "),
-        readTime: post.readTime,
-        featuredImage: post.featuredImage || "",
-        featuredImageAlt: post.featuredImageAlt || "",
-        adTopic: post.adTopic,
-        // SEO fields
-        metaTitle: post.metaTitle || "",
-        metaDescription: post.metaDescription || "",
-        focusKeyword: post.focusKeyword || "",
-        seoScore: post.seoScore ?? 0,
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://hotbotstudios.com"}/blog/${post.slug}`,
-      }),
-    });
-  } catch (err) {
-    console.warn("N8N Sheets sync failed (non-blocking):", err);
-  }
-}
-
-// Called by N8N after processing/enhancing content with Claude.
-// Also called by the Backdrop admin at /enter/backdrop.
+// Called by the Backdrop admin at /enter/backdrop/dashboard/blog.
 // Payload: { secret, action, post: BlogPost }
 export async function POST(req: NextRequest) {
   try {
@@ -115,9 +77,6 @@ export async function POST(req: NextRequest) {
     revalidatePath("/blog");
     revalidatePath(`/blog/${finalPost.slug}`);
     revalidatePath("/blog/[slug]", "page");
-
-    // Sync to Google Sheets via N8N (non-blocking)
-    void syncToSheets(finalPost);
 
     return NextResponse.json({
       success: true,

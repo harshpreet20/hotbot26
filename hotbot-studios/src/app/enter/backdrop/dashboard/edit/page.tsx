@@ -123,7 +123,7 @@ function EditPostContent() {
         style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(10,10,20,0.95)", backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center gap-3">
-          <Link href="/enter/backdrop/dashboard" className="text-slate-400 hover:text-white transition-colors text-sm">← Dashboard</Link>
+          <Link href="/enter/backdrop/dashboard/blog" className="text-slate-400 hover:text-white transition-colors text-sm">← Blog</Link>
           <span className="text-slate-500">/</span>
           <span className="text-slate-300 text-sm font-medium truncate max-w-xs">{post?.title || "Edit Post"}</span>
         </div>

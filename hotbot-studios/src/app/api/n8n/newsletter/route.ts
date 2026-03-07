@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { triggerN8n } from "@/lib/n8n";
+import { prepend, newId, readAll } from "@/lib/store";
+import type { NewsletterSubscriber } from "@/types/dashboard";
 
-// Newsletter signup — routes to the unified FORMS pipeline with type:"newsletter"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { email?: string; name?: string };
@@ -14,19 +14,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
-    const data = await triggerN8n<Record<string, string>>("forms", {
-      type:   "newsletter",
-      name:   name?.trim() || "",
-      email:  email.trim(),
-      source: "newsletter-signup",
-    });
+    // Deduplicate by email
+    const existing = readAll<NewsletterSubscriber>("newsletter");
+    if (existing.some((s) => s.email.toLowerCase() === email.trim().toLowerCase())) {
+      return NextResponse.json({ success: true, message: "You're already subscribed!" });
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: data?.message || "You're subscribed! Check your inbox for a welcome email.",
-    });
+    const subscriber: NewsletterSubscriber = {
+      id:        newId(),
+      name:      name?.trim() || "",
+      email:     email.trim(),
+      source:    "newsletter-signup",
+      createdAt: new Date().toISOString(),
+    };
+    prepend<NewsletterSubscriber>("newsletter", subscriber);
+
+    return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
-    console.error("Forms (newsletter) pipeline error:", error);
+    console.error("Newsletter error:", error);
     return NextResponse.json({ success: true, message: "Thanks for subscribing!" });
   }
 }

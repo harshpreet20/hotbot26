@@ -35,5 +35,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Admin credentials (runtime-generated, never commit)
+# Runtime data — credentials and user submissions (never commit)
 /data/admin.json
+/data/leads.json
+/data/contacts.json
+/data/newsletter.json
+/data/callbacks.json
+/data/chats.json

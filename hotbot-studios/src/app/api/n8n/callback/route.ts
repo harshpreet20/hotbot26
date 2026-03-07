@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { triggerN8n } from "@/lib/n8n";
+import { prepend, newId } from "@/lib/store";
+import type { CallbackRequest } from "@/types/dashboard";
 
-// Voice callback request — triggers N8N → Sarvam AI outbound call.
-// Routes to the VOICE pipeline.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { name?: string; phone?: string };
@@ -12,19 +11,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and phone number required" }, { status: 400 });
     }
 
-    const data = await triggerN8n<Record<string, string>>("voice", {
-      name:        name.trim(),
-      phone:       phone.trim(),
-      requestedAt: new Date().toISOString(),
-      source:      "chatbot-call-tab",
-    });
+    const callback: CallbackRequest = {
+      id:        newId(),
+      name:      name.trim(),
+      phone:     phone.trim(),
+      source:    "chatbot-call-tab",
+      status:    "pending",
+      createdAt: new Date().toISOString(),
+    };
+    prepend<CallbackRequest>("callbacks", callback);
 
-    return NextResponse.json({
-      success: true,
-      message: data?.message || "Confirmed! Our AI assistant will call you within 2 minutes.",
-    });
+    return NextResponse.json({ success: true, message: "Confirmed! We'll call you back shortly." });
   } catch (error) {
-    console.error("Voice pipeline error:", error);
+    console.error("Callback error:", error);
     return NextResponse.json({ success: true, message: "Request received. We'll call you back shortly." });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { triggerN8n } from "@/lib/n8n";
+import { prepend, newId } from "@/lib/store";
+import type { Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN    = 0.4;
@@ -21,7 +22,6 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
 }
 
 // Handles all lead-capture forms: get-started · strategy-call · consultation · enquiry
-// Routes to the unified FORMS pipeline with type:"lead"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as Record<string, string>;
@@ -44,27 +44,25 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "unknown";
 
-    const data = await triggerN8n<Record<string, string>>("forms", {
-      type:     "lead",
-      name,
-      email,
-      phone:    phone    || "",
-      company:  company  || "",
-      service:  service  || "",
-      budget:   budget   || "",
-      message:  message  || "",
-      formType: formType || "get-started",
-      source:   page     || "unknown",
+    const lead: Lead = {
+      id:        newId(),
+      name:      name.trim(),
+      email:     email.trim(),
+      phone:     phone    || "",
+      company:   company  || "",
+      service:   service  || "",
+      budget:    budget   || "",
+      message:   message  || "",
+      formType:  formType || "get-started",
+      source:    page     || "unknown",
       ip,
-    });
+      createdAt: new Date().toISOString(),
+    };
+    prepend<Lead>("leads", lead);
 
-    return NextResponse.json({
-      success: true,
-      leadId:  data?.leadId || data?.id || null,
-      message: data?.message || "We'll be in touch within 24 hours!",
-    });
+    return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
-    console.error("Forms (lead) pipeline error:", error);
+    console.error("Forms (lead) error:", error);
     return NextResponse.json({ success: true, message: "Thank you! We'll be in touch shortly." });
   }
 }
