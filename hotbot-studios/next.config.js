@@ -11,6 +11,8 @@ const nextConfig = {
       { source: '/marketing-services/:path*', destination: '/digital-marketing/:path*', permanent: true },
       { source: '/consultancy', destination: '/marketing-consulting', permanent: true },
       { source: '/consultancy/:path*', destination: '/marketing-consulting/:path*', permanent: true },
+      // Team member vCard pages
+      { source: '/team/gopalsharma', destination: '/vcard/gopal/', permanent: false },
       // Sub-page slug renames within digital-marketing
       { source: '/digital-marketing/analytics', destination: '/digital-marketing/marketing-analytics', permanent: true },
       { source: '/digital-marketing/cro', destination: '/digital-marketing/conversion-rate-optimization', permanent: true },
