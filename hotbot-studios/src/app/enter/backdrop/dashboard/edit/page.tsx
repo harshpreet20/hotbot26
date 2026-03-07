@@ -49,7 +49,9 @@ function EditPostContent() {
     const s = sessionStorage.getItem("backdrop_secret");
     if (!s) { router.replace("/enter/backdrop"); return; }
 
-    fetch(`/api/blog/publish?secret=${encodeURIComponent(s)}&slug=${encodeURIComponent(urlSlug)}`)
+    fetch(`/api/blog/publish?slug=${encodeURIComponent(urlSlug)}`, {
+      headers: { Authorization: `Bearer ${s}` },
+    })
       .then((r) => r.json())
       .then((d: { exists: boolean; post: BlogPost | null }) => {
         if (!d.exists || !d.post) { router.replace("/enter/backdrop/dashboard"); return; }

@@ -17,7 +17,7 @@ export default function CallbacksPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/callbacks?secret=${encodeURIComponent(secret)}`)
+    fetch('/api/dashboard/callbacks', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
       .then((d) => { if (d) setItems((d as { callbacks: CallbackRequest[] }).callbacks); })
       .catch(console.error)
@@ -28,7 +28,8 @@ export default function CallbacksPage() {
     const secret = getSecret();
     setMarking(id);
     try {
-      await fetch(`/api/dashboard/callbacks?secret=${encodeURIComponent(secret)}`, {
+      await fetch('/api/dashboard/callbacks', {
+        headers: { Authorization: `Bearer ${secret}` },
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

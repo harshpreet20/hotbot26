@@ -27,10 +27,10 @@ export default function BlogPage() {
     if (!secret) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
     try {
-      // Verify auth
-      const authRes = await fetch(`/api/blog/publish?secret=${encodeURIComponent(secret)}`);
-      if (authRes.status === 401) { router.replace("/enter/backdrop"); return; }
-      const allRes = await fetch(`/api/blog/posts?status=all&limit=500`);
+      const allRes = await fetch(`/api/blog/posts?status=all&limit=500`, {
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      if (allRes.status === 401) { router.replace("/enter/backdrop"); return; }
       const data = await allRes.json() as { posts: BlogPost[] };
       setPosts(data.posts || []);
     } catch {

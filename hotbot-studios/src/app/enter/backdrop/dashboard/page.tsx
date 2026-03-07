@@ -48,7 +48,7 @@ export default function OverviewPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/overview?secret=${encodeURIComponent(secret)}`)
+    fetch('/api/dashboard/overview', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
       .then((d) => { if (d) setData(d as DashboardOverview); })
       .catch(console.error)

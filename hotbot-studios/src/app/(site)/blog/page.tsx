@@ -3,8 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import Link from "next/link";
 import { Reveal } from "@/components/shared/Reveal";
 import type { BlogPost } from "@/types/blog";
-import fs from "fs";
-import path from "path";
+import { getPublishedPosts } from "@/lib/postsStore";
 
 // ISR: revalidate this page whenever /api/blog/publish calls revalidatePath('/blog').
 // The default is already on-demand via revalidatePath; this is a fallback safety net.
@@ -24,14 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function loadPosts(): BlogPost[] {
-  try {
-    const postsFile = path.join(process.cwd(), "public", "data", "posts.json");
-    const raw = fs.readFileSync(postsFile, "utf-8");
-    const store = JSON.parse(raw) as { posts: BlogPost[] };
-    return store.posts.filter((p) => p.status === "published");
-  } catch {
-    return [];
-  }
+  return getPublishedPosts();
 }
 
 // Dynamic metadata — reflects live post count and latest titles as posts are published

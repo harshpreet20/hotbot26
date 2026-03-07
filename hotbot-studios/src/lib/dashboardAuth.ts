@@ -4,10 +4,25 @@
  * Two valid credential forms:
  *  1. Per-user session token  (issued by /api/blog/auth on login)
  *  2. Static publish secret   (env var / admin.json — for legacy & external tools)
+ *
+ * Tokens are accepted via:
+ *  - Authorization: Bearer <token>  (preferred — never logged in server logs)
+ *  - Cookie: backdrop_auth           (set on login for middleware + SSR routes)
+ *  - Query param ?secret=            (legacy fallback; kept for N8N compatibility)
  */
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/sessions";
 import { getPublishSecret } from "@/lib/adminStore";
 import type { Role, SessionInfo } from "@/types/dashboard";
+
+/** Extract token from a Next.js request — prefers Authorization header over cookie over query param. */
+export function extractToken(req: NextRequest): string | null {
+  const auth = req.headers.get("authorization");
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  const cookie = req.cookies.get("backdrop_auth")?.value;
+  if (cookie) return cookie;
+  return req.nextUrl.searchParams.get("secret"); // legacy / N8N fallback
+}
 
 /** Any valid credential (session token or publish secret) */
 export function isAuthorized(secret: string | null | undefined): boolean {
@@ -45,7 +60,6 @@ export function authorizeData(token: string | null | undefined): boolean {
   if (!token) return false;
   const session = getSession(token);
   if (session) return session.role === "admin" || session.role === "manager";
-  // Publish secret fallback for external tools
   const ps = getPublishSecret();
   return !!ps && token === ps;
 }

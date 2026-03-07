@@ -1,27 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import type { BlogPostsStore } from "@/types/blog";
+import { readPosts } from "@/lib/postsStore";
+import { getSession } from "@/lib/sessions";
 
-const POSTS_FILE = path.join(process.cwd(), "public", "data", "posts.json");
-
-function readPosts(): BlogPostsStore {
-  try {
-    const raw = fs.readFileSync(POSTS_FILE, "utf-8");
-    return JSON.parse(raw) as BlogPostsStore;
-  } catch {
-    return { posts: [] };
-  }
+function extractToken(req: NextRequest): string | null {
+  const auth = req.headers.get("authorization");
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  return req.cookies.get("backdrop_auth")?.value || null;
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
-  const status = searchParams.get("status") || "published";
-  const limit = parseInt(searchParams.get("limit") || "100");
+  const status   = searchParams.get("status") || "published";
+  const limit    = parseInt(searchParams.get("limit") || "100");
+
+  // Drafts / all-posts require an authenticated admin session
+  if (status !== "published") {
+    const token   = extractToken(req);
+    const session = token ? getSession(token) : null;
+    if (!session || session.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
 
   const store = readPosts();
-  let posts = store.posts.filter((p) => p.status === status);
+
+  // "all" → no status filter; anything else → exact match
+  let posts = status === "all"
+    ? store.posts
+    : store.posts.filter((p) => p.status === status);
 
   if (category) {
     posts = posts.filter((p) => p.category.toLowerCase() === category.toLowerCase());
@@ -31,10 +38,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json(
     { posts },
-    {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-      },
-    }
+    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } },
   );
 }

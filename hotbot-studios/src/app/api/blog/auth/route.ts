@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { readAdminStore, writeAdminStore, isSetupNeeded, getEnvFallbackUser } from "@/lib/adminStore";
-import { createSession, deleteSession } from "@/lib/sessions";
+import { createSession, getSession, deleteSession } from "@/lib/sessions";
 import type { AdminStore, UserRecord, Role } from "@/types/dashboard";
 
 // ── Cookie ────────────────────────────────────────────────────────────────────
@@ -42,9 +42,22 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-// ── GET — check if first-run setup is needed ──────────────────────────────────
-export async function GET() {
-  return NextResponse.json({ needsSetup: isSetupNeeded() });
+// ── GET — check if setup is needed; also validates an existing session ────────
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  if (token) {
+    const session = getSession(token);
+    if (session) {
+      return NextResponse.json({
+        needsSetup:    false,
+        authenticated: true,
+        token,
+        role:          session.role,
+        username:      session.username,
+      });
+    }
+  }
+  return NextResponse.json({ needsSetup: isSetupNeeded(), authenticated: false });
 }
 
 // ── POST — login or first-run setup ──────────────────────────────────────────

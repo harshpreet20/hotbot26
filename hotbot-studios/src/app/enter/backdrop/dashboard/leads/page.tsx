@@ -22,7 +22,7 @@ export default function LeadsPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/leads?secret=${encodeURIComponent(secret)}`)
+    fetch('/api/dashboard/leads', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
       .then((d) => { if (d) setLeads((d as { leads: Lead[] }).leads); })
       .catch(console.error)

@@ -17,7 +17,7 @@ export default function ChatsPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/chats?secret=${encodeURIComponent(secret)}`)
+    fetch('/api/dashboard/chats', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
       .then((d) => { if (d) setSessions((d as { sessions: ChatSession[] }).sessions); })
       .catch(console.error)

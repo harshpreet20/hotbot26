@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { CTASection } from "@/components/sections/CTASection";
 import { InlineAdBanner } from "@/components/blog/InlineAdBanner";
 import type { BlogPost } from "@/types/blog";
-import fs from "fs";
-import path from "path";
+import { getPost, getPublishedPosts } from "@/lib/postsStore";
 
 interface PageProps {
   params: { slug: string };
@@ -28,27 +27,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Social Media": "#ec4899",
 };
 
-function loadPost(slug: string): BlogPost | null {
-  try {
-    const postsFile = path.join(process.cwd(), "public", "data", "posts.json");
-    const raw = fs.readFileSync(postsFile, "utf-8");
-    const store = JSON.parse(raw) as { posts: BlogPost[] };
-    return store.posts.find((p) => p.slug === slug && p.status === "published") || null;
-  } catch {
-    return null;
-  }
-}
-
-function loadAllPosts(): BlogPost[] {
-  try {
-    const postsFile = path.join(process.cwd(), "public", "data", "posts.json");
-    const raw = fs.readFileSync(postsFile, "utf-8");
-    const store = JSON.parse(raw) as { posts: BlogPost[] };
-    return store.posts.filter((p) => p.status === "published");
-  } catch {
-    return [];
-  }
-}
+function loadPost(slug: string): BlogPost | null  { return getPost(slug); }
+function loadAllPosts(): BlogPost[]               { return getPublishedPosts(); }
 
 export async function generateStaticParams() {
   const posts = loadAllPosts();

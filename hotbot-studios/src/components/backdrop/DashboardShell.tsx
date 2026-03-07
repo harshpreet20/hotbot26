@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -114,11 +115,38 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+
+    const stored = sessionStorage.getItem("backdrop_secret");
+    if (stored) {
       setRole((sessionStorage.getItem("backdrop_role") as Role | null) ?? null);
       setUsername(sessionStorage.getItem("backdrop_username") ?? "");
+      return;
     }
-  }, []);
+
+    // sessionStorage was cleared (tab close / cold start) — try to restore from the
+    // HttpOnly cookie by calling the auth check endpoint.
+    fetch("/api/blog/auth")
+      .then((r) => r.json() as Promise<{
+        authenticated?: boolean;
+        token?: string;
+        role?: string;
+        username?: string;
+      }>)
+      .then((data) => {
+        if (data.authenticated && data.token) {
+          sessionStorage.setItem("backdrop_secret",  data.token);
+          if (data.role)     sessionStorage.setItem("backdrop_role",     data.role);
+          if (data.username) sessionStorage.setItem("backdrop_username", data.username);
+          setRole((data.role as Role | undefined) ?? null);
+          setUsername(data.username ?? "");
+        } else {
+          // Cookie invalid or expired — middleware should have caught this, but guard anyway
+          router.replace("/enter/backdrop");
+        }
+      })
+      .catch(() => router.replace("/enter/backdrop"));
+  }, [router]);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -150,12 +178,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-4 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
-          >
-            ✦
-          </div>
+          <Image
+            src="/logos/hotbot-logo.svg"
+            alt="HotBot Studios"
+            width={28}
+            height={28}
+            className="shrink-0 object-contain"
+          />
           <div>
             <p className="text-white text-sm font-semibold leading-none">Backdrop</p>
             <p className="text-slate-600 text-[10px] mt-0.5">HotBot Studios</p>

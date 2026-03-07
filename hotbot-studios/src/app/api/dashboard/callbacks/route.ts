@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, authorizeData } from "@/lib/dashboardAuth";
 import { readAll, writeAll } from "@/lib/store";
 import type { CallbackRequest } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (!authorizeData(secret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!authorizeData(extractToken(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   return NextResponse.json({ callbacks: readAll<CallbackRequest>("callbacks") });
 }
 
 // PATCH — mark as called (admin + manager)
 export async function PATCH(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (!authorizeData(secret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  if (!authorizeData(extractToken(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await req.json() as { id: string };
   const items = readAll<CallbackRequest>("callbacks");
   const idx = items.findIndex((c) => c.id === id);

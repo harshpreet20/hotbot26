@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, authorizeData } from "@/lib/dashboardAuth";
 import { readAll } from "@/lib/store";
+import { readPosts } from "@/lib/postsStore";
 import type { Lead, Contact, CallbackRequest, NewsletterSubscriber, ChatSession } from "@/types/dashboard";
-import type { BlogPostsStore } from "@/types/blog";
-import fs from "fs";
-import path from "path";
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (!authorizeData(secret)) {
+  if (!authorizeData(extractToken(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -17,13 +14,7 @@ export async function GET(req: NextRequest) {
   const newsletter = readAll<NewsletterSubscriber>("newsletter");
   const callbacks  = readAll<CallbackRequest>("callbacks");
   const chats      = readAll<ChatSession>("chats");
-
-  let postsCount = 0;
-  try {
-    const raw = fs.readFileSync(path.join(process.cwd(), "public", "data", "posts.json"), "utf-8");
-    const store = JSON.parse(raw) as BlogPostsStore;
-    postsCount = store.posts?.length ?? 0;
-  } catch { /* no posts yet */ }
+  const postsCount = readPosts().posts?.length ?? 0;
 
   return NextResponse.json({
     leads:           leads.length,

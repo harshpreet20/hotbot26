@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,7 +15,9 @@ export default function BackdropLoginPage() {
   const [loading, setLoading]           = useState(false);
   const userRef = useRef<HTMLInputElement>(null);
 
-  // Check auth status + whether first-run setup is needed
+  // Check auth status + whether first-run setup is needed.
+  // If sessionStorage is empty but the HttpOnly cookie is still valid (e.g. after
+  // a tab close / page refresh), restore the session and skip the login form.
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem("backdrop_secret")) {
       router.replace("/enter/backdrop/dashboard");
@@ -22,9 +25,23 @@ export default function BackdropLoginPage() {
     }
 
     fetch("/api/blog/auth")
-      .then((r) => r.json() as Promise<{ needsSetup: boolean }>)
-      .then(({ needsSetup }) => {
-        setMode(needsSetup ? "setup" : "login");
+      .then((r) => r.json() as Promise<{
+        needsSetup: boolean;
+        authenticated?: boolean;
+        token?: string;
+        role?: string;
+        username?: string;
+      }>)
+      .then((data) => {
+        if (data.authenticated && data.token) {
+          // Cookie is still valid — restore sessionStorage and go straight to dashboard
+          sessionStorage.setItem("backdrop_secret", data.token);
+          if (data.role)     sessionStorage.setItem("backdrop_role",     data.role);
+          if (data.username) sessionStorage.setItem("backdrop_username", data.username);
+          router.replace("/enter/backdrop/dashboard");
+          return;
+        }
+        setMode(data.needsSetup ? "setup" : "login");
         setTimeout(() => userRef.current?.focus(), 50);
       })
       .catch(() => {
@@ -128,10 +145,16 @@ export default function BackdropLoginPage() {
         {/* Logo / brand */}
         <div className="text-center mb-5">
           <div
-            className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3 shadow-xl"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3 mx-auto"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}
           >
-            <span className="text-white text-xl font-bold select-none">✦</span>
+            <Image
+              src="/logos/hotbot-logo.svg"
+              alt="HotBot Studios"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Backdrop</h1>
           <p className="text-slate-500 text-xs mt-0.5">HotBot Studios · Blog Admin</p>

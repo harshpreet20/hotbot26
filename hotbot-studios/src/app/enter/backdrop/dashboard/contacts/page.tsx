@@ -17,7 +17,7 @@ export default function ContactsPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/contacts?secret=${encodeURIComponent(secret)}`)
+    fetch('/api/dashboard/contacts', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
       .then((d) => { if (d) setContacts((d as { contacts: Contact[] }).contacts); })
       .catch(console.error)
