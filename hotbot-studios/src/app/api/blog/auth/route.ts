@@ -76,14 +76,16 @@ export async function POST(req: NextRequest) {
 
   // ── Option A: proxy to N8N (if fully configured) ───────────────────────────
   if (N8N_BASE && N8N_AUTH_ENDPOINT) {
+    const url = N8N_BASE.replace(/\/$/, "") + "/" + N8N_AUTH_ENDPOINT.replace(/^\//, "");
+    console.log("[blog/auth] Calling N8N:", url);
     try {
-      const url = N8N_BASE.replace(/\/$/, "") + "/" + N8N_AUTH_ENDPOINT.replace(/^\//, "");
       const n8nRes = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
         signal: AbortSignal.timeout(8000),
       });
+      console.log("[blog/auth] N8N responded:", n8nRes.status);
       if (n8nRes.ok) {
         const data = await n8nRes.json() as { success?: boolean; token?: string; error?: string };
         if (data.success && data.token) {
@@ -96,10 +98,12 @@ export async function POST(req: NextRequest) {
           { status: 401 },
         );
       }
-    } catch {
-      // N8N unreachable → fall through to local validation
-      console.warn("[blog/auth] N8N unreachable — falling back to local validation");
+      console.warn("[blog/auth] N8N non-OK status, falling back to local validation");
+    } catch (err) {
+      console.error("[blog/auth] N8N unreachable:", (err as Error).message, "— falling back to local validation");
     }
+  } else {
+    console.warn("[blog/auth] N8N not configured (N8N_BASE_URL or N8N_WEBHOOK_BLOG_AUTH missing), using local auth");
   }
 
   // ── Option B: validate locally against env vars ─────────────────────────────
