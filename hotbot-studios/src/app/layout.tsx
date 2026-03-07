@@ -73,6 +73,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 // JSON-LD: Organization schema (E-E-A-T signals for Google + LLMs)
