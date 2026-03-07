@@ -29,9 +29,8 @@ export default function CallbacksPage() {
     setMarking(id);
     try {
       await fetch('/api/dashboard/callbacks', {
-        headers: { Authorization: `Bearer ${secret}` },
+        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
       setItems((prev) => prev.map((c) => c.id === id ? { ...c, status: "called" } : c));
