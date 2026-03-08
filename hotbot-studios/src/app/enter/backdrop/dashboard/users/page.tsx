@@ -45,7 +45,13 @@ export default function UsersPage() {
       const res = await fetch(`/api/blog/users`, {
         headers: { Authorization: `Bearer ${secret}` },
       });
-      if (res.status === 401 || res.status === 403) { router.replace("/enter/backdrop"); return; }
+      if (res.status === 401 || res.status === 403) {
+        sessionStorage.removeItem("backdrop_secret");
+        sessionStorage.removeItem("backdrop_role");
+        sessionStorage.removeItem("backdrop_username");
+        router.replace("/enter/backdrop");
+        return;
+      }
       const data = await res.json() as { users: User[] };
       setUsers(data.users);
     } catch { /* ignore */ }

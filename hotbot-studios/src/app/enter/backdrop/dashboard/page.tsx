@@ -49,7 +49,16 @@ export default function OverviewPage() {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch('/api/dashboard/overview', { headers: { Authorization: `Bearer ${secret}` } })
-      .then((r) => r.status === 401 ? (router.replace("/enter/backdrop"), null) : r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          sessionStorage.removeItem("backdrop_secret");
+          sessionStorage.removeItem("backdrop_role");
+          sessionStorage.removeItem("backdrop_username");
+          router.replace("/enter/backdrop");
+          return null;
+        }
+        return r.json();
+      })
       .then((d) => { if (d) setData(d as DashboardOverview); })
       .catch(console.error)
       .finally(() => setLoading(false));

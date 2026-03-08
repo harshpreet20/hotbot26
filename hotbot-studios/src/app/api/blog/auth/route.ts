@@ -56,6 +56,9 @@ export async function GET(req: NextRequest) {
         username:      session.username,
       });
     }
+    // Cookie exists but session is gone (e.g. server restarted and wiped /tmp).
+    // The user already had an account — show login form, not setup form.
+    return NextResponse.json({ needsSetup: false, authenticated: false });
   }
   return NextResponse.json({ needsSetup: isSetupNeeded(), authenticated: false });
 }

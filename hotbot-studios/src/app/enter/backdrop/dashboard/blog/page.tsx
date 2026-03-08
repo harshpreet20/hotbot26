@@ -30,7 +30,13 @@ export default function BlogPage() {
       const allRes = await fetch(`/api/blog/posts?status=all&limit=500`, {
         headers: { Authorization: `Bearer ${secret}` },
       });
-      if (allRes.status === 401) { router.replace("/enter/backdrop"); return; }
+      if (allRes.status === 401) {
+        sessionStorage.removeItem("backdrop_secret");
+        sessionStorage.removeItem("backdrop_role");
+        sessionStorage.removeItem("backdrop_username");
+        router.replace("/enter/backdrop");
+        return;
+      }
       const data = await allRes.json() as { posts: BlogPost[] };
       setPosts(data.posts || []);
     } catch {
