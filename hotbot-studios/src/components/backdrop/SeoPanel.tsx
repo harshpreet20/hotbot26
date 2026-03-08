@@ -238,15 +238,14 @@ export function SeoPanel({
   const improvement = currentChecks.filter((c) => c.status === "improvement").length;
   const error = currentChecks.filter((c) => c.status === "error").length;
 
-  // ── AI Intelligence state ─────────────────────────────────────────────────
-  const [aiOpen, setAiOpen]         = useState(false);
-  const [aiLoading, setAiLoading]   = useState(false);
-  const [aiResult, setAiResult]     = useState<ContentIntelligenceResult | null>(null);
-  const [aiError, setAiError]       = useState("");
-  const [aiRemaining, setAiRemaining] = useState<number | null>(null);
+  // ── Intelligence state ────────────────────────────────────────────────────
+  const [aiOpen, setAiOpen]       = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult]   = useState<ContentIntelligenceResult | null>(null);
+  const [aiError, setAiError]     = useState("");
 
-  async function runAiAnalysis() {
-    if (!content.trim()) { setAiError("Add some content before running AI analysis."); return; }
+  async function runIntelligence() {
+    if (!content.trim()) { setAiError("Add some content before running analysis."); return; }
     setAiLoading(true);
     setAiError("");
     try {
@@ -255,13 +254,9 @@ export function SeoPanel({
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
         body: JSON.stringify({ title, slug, content, excerpt, metaTitle, metaDescription, focusKeyword, featuredImageAlt }),
       });
-      const data = await res.json() as ContentIntelligenceResult & { error?: string; rate_limit_remaining?: number };
-      if (!res.ok) {
-        setAiError(data.error || "AI analysis failed.");
-        return;
-      }
+      const data = await res.json() as ContentIntelligenceResult & { error?: string };
+      if (!res.ok) { setAiError(data.error || "Analysis failed."); return; }
       setAiResult(data);
-      if (typeof data.rate_limit_remaining === "number") setAiRemaining(data.rate_limit_remaining);
       setAiOpen(true);
     } catch {
       setAiError("Connection error. Please try again.");
@@ -413,7 +408,7 @@ export function SeoPanel({
         </div>
       </>)}
 
-      {/* ── AI Intelligence Section ─────────────────────────────────────────── */}
+      {/* ── Content Intelligence Section ────────────────────────────────────── */}
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.25)" }}>
         {/* Header */}
         <button
@@ -422,10 +417,9 @@ export function SeoPanel({
         >
           <div className="flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round">
-              <path d="M12 2a4 4 0 014 4v1a4 4 0 01-8 0V6a4 4 0 014-4z"/><path d="M6.5 10.5A6 6 0 0018 13.5"/><circle cx="12" cy="19" r="3"/>
+              <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
             </svg>
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">AI Intelligence</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>Claude</span>
+            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Content Intelligence</span>
           </div>
           <span className="text-slate-600 font-normal text-xs">{aiOpen ? "▲" : "▼"}</span>
         </button>
@@ -433,34 +427,29 @@ export function SeoPanel({
         {aiOpen && (
           <div className="px-3 pb-3 space-y-3">
             {/* Run button */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={runAiAnalysis}
-                disabled={aiLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-60"
-                style={{ background: aiLoading ? "#4f46e5" : "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
-              >
-                {aiLoading ? (
-                  <>
-                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
-                    Analysing…
-                  </>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                    </svg>
-                    {aiResult ? "Re-run AI Analysis" : "Run AI Analysis"}
-                  </>
-                )}
-              </button>
-              {aiRemaining !== null && (
-                <span className="text-[10px] text-slate-600 shrink-0">{aiRemaining}/5 left</span>
+            <button
+              onClick={runIntelligence}
+              disabled={aiLoading}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-60"
+              style={{ background: aiLoading ? "#4f46e5" : "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
+            >
+              {aiLoading ? (
+                <>
+                  <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Analysing…
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  {aiResult ? "Re-run Analysis" : "Run Intelligence Analysis"}
+                </>
               )}
-            </div>
+            </button>
 
             {/* Error */}
             {aiError && (
