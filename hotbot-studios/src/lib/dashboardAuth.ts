@@ -49,7 +49,7 @@ export function authorizeRole(
 
 /** Any authenticated user regardless of role */
 export function authorizeAny(token: string | null | undefined): SessionInfo | null {
-  return authorizeRole(token, "admin", "manager", "agent");
+  return authorizeRole(token, "admin", "manager", "editor", "contributor", "agent");
 }
 
 /**
@@ -62,4 +62,34 @@ export function authorizeData(token: string | null | undefined): boolean {
   if (session) return session.role === "admin" || session.role === "manager";
   const ps = getPublishSecret();
   return !!ps && token === ps;
+}
+
+/**
+ * Authorises full blog management (create, edit, publish, delete).
+ * Admin and editor roles only.
+ */
+export function authorizeBlogPublish(token: string | null | undefined): SessionInfo | null {
+  if (!token) return null;
+  const session = getSession(token);
+  if (!session) return null;
+  if (session.role === "admin" || session.role === "editor") return session;
+  // Also accept static publish secret as admin-equivalent
+  const ps = getPublishSecret();
+  if (ps && token === ps) return { userId: "publish-secret", username: "publish-secret", role: "admin" };
+  return null;
+}
+
+/**
+ * Authorises blog draft creation/editing (no publish).
+ * Admin, editor, and contributor roles.
+ */
+export function authorizeBlogDraft(token: string | null | undefined): SessionInfo | null {
+  return authorizeRole(token, "admin", "editor", "contributor");
+}
+
+/**
+ * Returns true if the session can READ the user list (admin full control, manager read-only).
+ */
+export function authorizeUserRead(token: string | null | undefined): SessionInfo | null {
+  return authorizeRole(token, "admin", "manager");
 }

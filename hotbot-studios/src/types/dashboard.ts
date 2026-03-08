@@ -1,5 +1,21 @@
 // ── Role-based access control ─────────────────────────────────────────────────
-export type Role = "admin" | "manager" | "agent";
+export type Role = "admin" | "manager" | "editor" | "contributor" | "agent";
+
+/**
+ * Role capability summary:
+ *  admin       – Full access: users, blog, CRM data, settings
+ *  manager     – CRM data (leads, contacts, callbacks, newsletter, overview) + read-only user list
+ *  editor      – Blog management: create, edit, publish/unpublish, delete posts
+ *  contributor – Blog drafts only: create & edit own drafts, cannot publish
+ *  agent       – View chat logs and callbacks
+ */
+export const ROLE_CAPABILITIES: Record<Role, string[]> = {
+  admin:       ["users:manage", "blog:publish", "blog:edit", "data:read", "data:export"],
+  manager:     ["data:read", "data:export", "users:report"],
+  editor:      ["blog:publish", "blog:edit"],
+  contributor: ["blog:draft"],
+  agent:       ["chats:read", "callbacks:read"],
+};
 
 /** Public user info (safe to send to clients) */
 export interface User {

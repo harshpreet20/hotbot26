@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { readAdminStore, writeAdminStore } from "@/lib/adminStore";
-import { authorizeRole } from "@/lib/dashboardAuth";
+import { authorizeRole, authorizeUserRead } from "@/lib/dashboardAuth";
 import type { Role, UserRecord } from "@/types/dashboard";
 
 const COOKIE_NAME = "backdrop_auth";
+const VALID_ROLES: Role[] = ["admin", "manager", "editor", "contributor", "agent"];
 
 function getToken(req: NextRequest): string | null {
   return (
@@ -20,14 +21,17 @@ function publicUser(u: UserRecord) {
   return { id: u.id, username: u.username, role: u.role, createdAt: u.createdAt };
 }
 
-// GET — list all users (admin only)
+// GET — list all users (admin full, manager read-only report)
 export async function GET(req: NextRequest) {
   const token = getToken(req);
-  if (!authorizeRole(token, "admin")) {
+  const session = authorizeUserRead(token);
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const store = readAdminStore();
-  return NextResponse.json({ users: (store?.users ?? []).map(publicUser) });
+  const users = (store?.users ?? []).map(publicUser);
+  // Managers get a read-only view; indicate that with a flag so the UI can hide controls
+  return NextResponse.json({ users, readonly: session.role === "manager" });
 }
 
 // POST — create new user (admin only)
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
   if (!password || password.length < 8) {
     return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
   }
-  if (!["admin", "manager", "agent"].includes(role)) {
+  if (!VALID_ROLES.includes(role)) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
 
@@ -76,6 +80,44 @@ export async function POST(req: NextRequest) {
   writeAdminStore(store);
 
   return NextResponse.json({ success: true, user: publicUser(newUser) }, { status: 201 });
+}
+
+// PATCH — update user role (admin only)
+export async function PATCH(req: NextRequest) {
+  const token = getToken(req);
+  const session = authorizeRole(token, "admin");
+  if (!session) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: { id?: string; role?: string };
+  try { body = await req.json() as typeof body; }
+  catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
+
+  const { id, role } = body;
+  if (!id) return NextResponse.json({ error: "User id required." }, { status: 400 });
+  if (!role || !VALID_ROLES.includes(role as Role)) {
+    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
+  }
+
+  const store = readAdminStore();
+  if (!store) return NextResponse.json({ error: "Store not initialised." }, { status: 500 });
+
+  const target = store.users.find((u) => u.id === id);
+  if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
+
+  // Prevent removing the last admin
+  if (target.role === "admin" && role !== "admin") {
+    const admins = store.users.filter((u) => u.role === "admin");
+    if (admins.length <= 1) {
+      return NextResponse.json({ error: "Cannot demote the only admin account." }, { status: 409 });
+    }
+  }
+
+  target.role = role as Role;
+  writeAdminStore(store);
+
+  return NextResponse.json({ success: true, user: publicUser(target) });
 }
 
 // DELETE — remove user by id (admin only, cannot delete self)

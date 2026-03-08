@@ -12,22 +12,50 @@ function getRole() {
 }
 
 const ROLE_COLORS: Record<Role, string> = {
-  admin:   "#818cf8",
-  manager: "#34d399",
-  agent:   "#f59e0b",
+  admin:       "#818cf8",
+  manager:     "#34d399",
+  editor:      "#3b82f6",
+  contributor: "#06b6d4",
+  agent:       "#f59e0b",
+};
+
+const ROLE_DESCRIPTIONS: Record<Role, { title: string; perms: string[] }> = {
+  admin: {
+    title: "Full Access",
+    perms: ["Manage all users", "Publish & edit blog posts", "View all CRM data", "Access settings & reports"],
+  },
+  manager: {
+    title: "CRM & Reports",
+    perms: ["View leads, contacts, callbacks", "View newsletter subscribers", "View dashboard overview", "Read-only user list"],
+  },
+  editor: {
+    title: "Blog Management",
+    perms: ["Create & edit blog posts", "Publish & unpublish posts", "Delete posts", "Upload & manage images"],
+  },
+  contributor: {
+    title: "Content Drafts",
+    perms: ["Create & edit blog drafts", "Submit drafts for review", "Cannot publish posts", "Upload images"],
+  },
+  agent: {
+    title: "Support View",
+    perms: ["View chat logs", "View callback requests", "No CRM data access", "No blog access"],
+  },
 };
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers]       = useState<User[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [users, setUsers]               = useState<User[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [readonly, setReadonly]         = useState(false);
+  const [deleting, setDeleting]         = useState<string | null>(null);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
+  const [showForm, setShowForm]         = useState(false);
+  const [showRoles, setShowRoles]       = useState(false);
 
   // New user form state
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole]         = useState<Role>("agent");
+  const [newRole, setNewRole]         = useState<Role>("contributor");
   const [creating, setCreating]       = useState(false);
   const [formError, setFormError]     = useState("");
 
@@ -35,7 +63,10 @@ export default function UsersPage() {
     const secret = getSecret();
     const role   = getRole();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    if (role && role !== "admin") { router.replace("/enter/backdrop/dashboard"); return; }
+    if (role && role !== "admin" && role !== "manager") {
+      router.replace("/enter/backdrop/dashboard");
+      return;
+    }
     loadUsers(secret);
   }, [router]);
 
@@ -52,8 +83,9 @@ export default function UsersPage() {
         router.replace("/enter/backdrop");
         return;
       }
-      const data = await res.json() as { users: User[] };
+      const data = await res.json() as { users: User[]; readonly?: boolean };
       setUsers(data.users);
+      setReadonly(data.readonly ?? false);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }
@@ -71,6 +103,23 @@ export default function UsersPage() {
     finally { setDeleting(null); }
   }
 
+  async function changeRole(id: string, role: Role) {
+    const secret = getSecret();
+    setChangingRole(id);
+    try {
+      const res = await fetch("/api/blog/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ id, role }),
+      });
+      const data = await res.json() as { user?: User; error?: string };
+      if (res.ok && data.user) {
+        setUsers((prev) => prev.map((u) => (u.id === id ? data.user! : u)));
+      }
+    } catch { /* ignore */ }
+    finally { setChangingRole(null); }
+  }
+
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -85,11 +134,17 @@ export default function UsersPage() {
       const data = await res.json() as { user?: User; error?: string };
       if (!res.ok) { setFormError(data.error || "Failed to create user."); return; }
       if (data.user) setUsers((prev) => [...prev, data.user!]);
-      setNewUsername(""); setNewPassword(""); setNewRole("agent");
+      setNewUsername(""); setNewPassword(""); setNewRole("contributor");
       setShowForm(false);
     } catch { setFormError("Network error."); }
     finally { setCreating(false); }
   }
+
+  // Role breakdown counts for report
+  const roleCounts = users.reduce<Record<string, number>>((acc, u) => {
+    acc[u.role] = (acc[u.role] || 0) + 1;
+    return acc;
+  }, {});
 
   const inputCls = "w-full px-3 py-2 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none";
   const inputStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" };
@@ -99,21 +154,100 @@ export default function UsersPage() {
       <div className="flex flex-col min-h-full">
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
-            <h1 className="text-white font-semibold">User Management</h1>
+            <h1 className="text-white font-semibold">
+              User Management
+              {readonly && <span className="ml-2 text-xs text-slate-500 font-normal">(read-only)</span>}
+            </h1>
             <p className="text-slate-500 text-xs mt-0.5">{users.length} account{users.length !== 1 ? "s" : ""}</p>
           </div>
-          <button
-            onClick={() => { setShowForm((v) => !v); setFormError(""); }}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", boxShadow: "0 4px 16px rgba(99,102,241,0.3)" }}
-          >
-            {showForm ? "Cancel" : "+ New User"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowRoles((v) => !v)}
+              className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              {showRoles ? "Hide Role Guide" : "Role Guide"}
+            </button>
+            {!readonly && (
+              <button
+                onClick={() => { setShowForm((v) => !v); setFormError(""); }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", boxShadow: "0 4px 16px rgba(99,102,241,0.3)" }}
+              >
+                {showForm ? "Cancel" : "+ New User"}
+              </button>
+            )}
+          </div>
         </header>
 
-        <div className="flex-1 p-6 max-w-3xl space-y-5">
+        <div className="flex-1 p-6 max-w-4xl space-y-5">
+
+          {/* Role guide */}
+          {showRoles && (
+            <div className="rounded-2xl p-4 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+              <h2 className="text-white text-sm font-semibold mb-3">Role Capabilities</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(Object.keys(ROLE_DESCRIPTIONS) as Role[]).map((r) => {
+                  const d = ROLE_DESCRIPTIONS[r];
+                  return (
+                    <div key={r} className="rounded-xl p-3 space-y-2" style={{ border: `1px solid ${ROLE_COLORS[r]}25`, background: `${ROLE_COLORS[r]}08` }}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs font-bold capitalize"
+                          style={{ background: `${ROLE_COLORS[r]}18`, color: ROLE_COLORS[r] }}
+                        >
+                          {r}
+                        </span>
+                        <span className="text-slate-400 text-xs">{d.title}</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {d.perms.map((p) => (
+                          <li key={p} className="flex items-start gap-1.5 text-xs text-slate-500">
+                            <span className="mt-0.5 text-[10px] shrink-0" style={{ color: ROLE_COLORS[r] }}>●</span>
+                            {p}
+                          </li>
+                        ))}
+                      </ul>
+                      {roleCounts[r] !== undefined && (
+                        <p className="text-[10px] text-slate-600 pt-1 border-t" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+                          {roleCounts[r]} user{roleCounts[r] !== 1 ? "s" : ""} assigned
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Team overview report */}
+          {users.length > 0 && (
+            <div className="rounded-2xl p-4" style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.015)" }}>
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Team Overview</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(ROLE_COLORS) as Role[]).filter((r) => roleCounts[r]).map((r) => (
+                  <div
+                    key={r}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                    style={{ background: `${ROLE_COLORS[r]}12`, border: `1px solid ${ROLE_COLORS[r]}30`, color: ROLE_COLORS[r] }}
+                  >
+                    <span className="font-bold">{roleCounts[r]}</span>
+                    <span className="capitalize opacity-80">{r}</span>
+                  </div>
+                ))}
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#64748b" }}
+                >
+                  <span className="font-bold">{users.length}</span>
+                  <span>total</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Create user form */}
-          {showForm && (
+          {!readonly && showForm && (
             <form
               onSubmit={createUser}
               className="rounded-2xl p-5 space-y-4"
@@ -148,12 +282,13 @@ export default function UsersPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Role</label>
-                <div className="flex gap-2">
-                  {(["admin", "manager", "agent"] as Role[]).map((r) => (
+                <div className="flex flex-wrap gap-2">
+                  {(["admin", "manager", "editor", "contributor", "agent"] as Role[]).map((r) => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => setNewRole(r)}
+                      title={ROLE_DESCRIPTIONS[r].title}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
                       style={{
                         border: `1px solid ${newRole === r ? ROLE_COLORS[r] : "rgba(255,255,255,0.1)"}`,
@@ -165,6 +300,9 @@ export default function UsersPage() {
                     </button>
                   ))}
                 </div>
+                {newRole && (
+                  <p className="text-xs text-slate-600 mt-1.5 pl-1">{ROLE_DESCRIPTIONS[newRole].title} — {ROLE_DESCRIPTIONS[newRole].perms[0]}</p>
+                )}
               </div>
               {formError && (
                 <p className="text-red-400 text-xs px-1">{formError}</p>
@@ -190,39 +328,76 @@ export default function UsersPage() {
               {users.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl"
+                  className="rounded-2xl p-4"
                   style={{ border: "1px solid rgba(255,255,255,0.06)" }}
                 >
-                  {/* Avatar */}
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${ROLE_COLORS[u.role as Role]}cc, ${ROLE_COLORS[u.role as Role]}66)` }}
-                  >
-                    {u.username.charAt(0).toUpperCase()}
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
+                      style={{ background: `linear-gradient(135deg, ${ROLE_COLORS[u.role as Role]}cc, ${ROLE_COLORS[u.role as Role]}66)` }}
+                      aria-label={`${u.username} avatar`}
+                    >
+                      {u.username.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium">{u.username}</p>
+                      <p className="text-slate-600 text-xs">
+                        Added {new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+
+                    {/* Role selector (admin) or badge (manager) */}
+                    {!readonly ? (
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        {(["admin", "manager", "editor", "contributor", "agent"] as Role[]).map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => u.role !== r && changeRole(u.id, r)}
+                            disabled={changingRole === u.id || u.role === r}
+                            title={ROLE_DESCRIPTIONS[r].title}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize transition-all"
+                            style={{
+                              background: u.role === r ? `${ROLE_COLORS[r]}25` : "transparent",
+                              color: u.role === r ? ROLE_COLORS[r] : "#334155",
+                              border: `1px solid ${u.role === r ? ROLE_COLORS[r] : "rgba(255,255,255,0.05)"}`,
+                              cursor: u.role === r ? "default" : "pointer",
+                            }}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold capitalize"
+                        style={{ background: `${ROLE_COLORS[u.role as Role]}18`, color: ROLE_COLORS[u.role as Role] }}
+                      >
+                        {u.role}
+                      </span>
+                    )}
+
+                    {!readonly && (
+                      <button
+                        onClick={() => deleteUser(u.id)}
+                        disabled={deleting === u.id}
+                        className="px-3 py-1.5 rounded-lg text-xs text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 shrink-0"
+                        style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
+                      >
+                        {deleting === u.id ? "…" : "Delete"}
+                      </button>
+                    )}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium">{u.username}</p>
-                    <p className="text-slate-600 text-xs">
-                      Added {new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {/* Role capability hint */}
+                  <div className="mt-2 pl-[52px]">
+                    <p className="text-xs text-slate-600">
+                      <span style={{ color: ROLE_COLORS[u.role as Role] }} className="font-medium">{ROLE_DESCRIPTIONS[u.role as Role]?.title}</span>
+                      {" — "}
+                      {ROLE_DESCRIPTIONS[u.role as Role]?.perms.slice(0, 2).join(" · ")}
                     </p>
                   </div>
-
-                  <span
-                    className="px-2.5 py-1 rounded-full text-xs font-semibold capitalize"
-                    style={{ background: `${ROLE_COLORS[u.role as Role]}18`, color: ROLE_COLORS[u.role as Role] }}
-                  >
-                    {u.role}
-                  </span>
-
-                  <button
-                    onClick={() => deleteUser(u.id)}
-                    disabled={deleting === u.id}
-                    className="px-3 py-1.5 rounded-lg text-xs text-red-500 hover:text-red-400 transition-colors disabled:opacity-40"
-                    style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
-                  >
-                    {deleting === u.id ? "…" : "Delete"}
-                  </button>
                 </div>
               ))}
             </div>

@@ -29,7 +29,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/blog",
     label: "Blog",
-    roles: ["admin"],
+    roles: ["admin", "editor", "contributor"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -40,7 +40,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/users",
     label: "Users",
-    roles: ["admin"],
+    roles: ["admin", "manager"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -73,6 +73,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/chats",
     label: "Chat Logs",
+    roles: ["admin", "manager", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
@@ -82,7 +83,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/callbacks",
     label: "Callbacks",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
@@ -103,9 +104,11 @@ const NAV: NavItem[] = [
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
-  admin:   { label: "Admin",   color: "#818cf8" },
-  manager: { label: "Manager", color: "#34d399" },
-  agent:   { label: "Agent",   color: "#f59e0b" },
+  admin:       { label: "Admin",       color: "#818cf8" },
+  manager:     { label: "Manager",     color: "#34d399" },
+  editor:      { label: "Editor",      color: "#3b82f6" },
+  contributor: { label: "Contributor", color: "#06b6d4" },
+  agent:       { label: "Agent",       color: "#f59e0b" },
 };
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -180,7 +183,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2.5 px-4 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <Image
             src="/logos/hotbot-logo.svg"
-            alt="HotBot Studios"
+            alt="HotBot Studios logo"
             width={28}
             height={28}
             className="shrink-0 object-contain"
@@ -192,7 +195,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-0.5" aria-label="Dashboard navigation">
           {NAV.filter(canSee).map((item) => {
             const active = isActive(item);
             return (
