@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { SeoCheck, SeoCheckStatus } from "@/types/blog";
+import { analyzeAll } from "@/lib/seo-analyzer";
 import type { FullAnalysis, AnalysisTab } from "@/lib/seo-analyzer";
+import { computeLocalIntelligence } from "@/lib/content-intelligence";
 import type { ContentIntelligenceResult } from "@/lib/content-intelligence";
 
 interface SeoPanelProps {
@@ -199,14 +201,9 @@ export function SeoPanel({
 
   const runAnalysis = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(() => {
       try {
-        const res = await fetch("/api/seo/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, metaTitle, metaDescription, focusKeyword, slug, content, excerpt, featuredImageAlt }),
-        });
-        const data = await res.json() as FullAnalysis;
+        const data = analyzeAll({ title, metaTitle, metaDescription, focusKeyword, slug, content, excerpt, featuredImageAlt });
         setAnalysis(data);
       } catch { /* silent */ }
     }, 500);
@@ -244,22 +241,18 @@ export function SeoPanel({
   const [aiResult, setAiResult]   = useState<ContentIntelligenceResult | null>(null);
   const [aiError, setAiError]     = useState("");
 
-  async function runIntelligence() {
+  function runIntelligence() {
     if (!content.trim()) { setAiError("Add some content before running analysis."); return; }
     setAiLoading(true);
     setAiError("");
     try {
-      const res = await fetch("/api/content/intelligence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-        body: JSON.stringify({ title, slug, content, excerpt, metaTitle, metaDescription, focusKeyword, featuredImageAlt }),
-      });
-      const data = await res.json() as ContentIntelligenceResult & { error?: string };
-      if (!res.ok) { setAiError(data.error || "Analysis failed."); return; }
+      const input = { title, slug, content, excerpt, metaTitle, metaDescription, focusKeyword, featuredImageAlt };
+      const ruleAnalysis = analyzeAll(input);
+      const data = computeLocalIntelligence(input, ruleAnalysis);
       setAiResult(data);
       setAiOpen(true);
     } catch {
-      setAiError("Connection error. Please try again.");
+      setAiError("Analysis failed. Please try again.");
     } finally {
       setAiLoading(false);
     }
