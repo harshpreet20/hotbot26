@@ -24,15 +24,3 @@ export function slugify(text: string): string {
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-
-export async function trackEvent(event: string, properties?: Record<string, unknown>) {
-  try {
-    await fetch("/api/n8n/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event, properties }),
-    });
-  } catch {
-    // Silent fail
-  }
-}
