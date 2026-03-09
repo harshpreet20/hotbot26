@@ -49,7 +49,7 @@ function computeWeightedScore(analysis: FullAnalysis): number {
 // Pull "good" checks from the most impactful check IDs across all dimensions.
 
 const STRENGTH_CHECK_IDS = new Set([
-  "seo-kw-title", "seo-kw-intro", "seo-length", "seo-headings", "seo-ctr", "seo-links",
+  "seo-kw-title", "seo-kw-intro", "seo-kw-h2", "seo-length", "seo-headings", "seo-ctr", "seo-links",
   "aeo-q-headings", "aeo-faq", "aeo-lists", "aeo-direct", "aeo-snippet",
   "geo-stats", "geo-citations", "geo-depth", "geo-expert", "geo-table", "geo-comparison",
   "geo-authority", "geo-recency",
@@ -95,7 +95,7 @@ function extractWeaknesses(analysis: FullAnalysis): string[] {
 // "improvement" checks across all dimensions — already actionable messages.
 
 const IMPROVEMENT_CHECK_IDS = new Set([
-  "seo-kw-slug", "seo-kw-meta", "seo-kw-intro", "seo-density", "seo-headings",
+  "seo-kw-slug", "seo-kw-meta", "seo-kw-intro", "seo-kw-h2", "seo-density", "seo-headings",
   "seo-links", "seo-img-alt", "seo-ctr",
   "aeo-q-headings", "aeo-faq", "aeo-direct", "aeo-lists", "aeo-steps", "aeo-tone", "aeo-snippet",
   "geo-comparison", "geo-authority", "geo-recency", "geo-table",
@@ -124,7 +124,7 @@ function extractContextExpansion(input: AnalyzerInput, analysis: FullAnalysis): 
 
   if (geo.get("geo-depth")?.status !== "good")
     suggestions.push(
-      `Expand to 1,500+ words (currently ${wc}) — add subtopics, case examples, or a step-by-step walkthrough to signal comprehensive coverage.`,
+      `Expand to 1,800+ words (currently ${wc}) — add subtopics, case examples, or a step-by-step walkthrough to signal comprehensive coverage to AI engines.`,
     );
 
   if (geo.get("geo-comparison")?.status !== "good")
@@ -251,10 +251,10 @@ function generateAssessmentText(
   const errorCount = allChecks.filter((c) => c.status === "error").length;
 
   const weakDims: string[] = [];
-  if (analysis.seo.score < 50)         weakDims.push("SEO fundamentals");
-  if (analysis.aeo.score < 50)         weakDims.push("answer engine optimisation");
-  if (analysis.geo.score < 50)         weakDims.push("generative AI citation signals");
-  if (analysis.readability.score < 50) weakDims.push("readability");
+  if (analysis.seo.score < 60)         weakDims.push("SEO fundamentals");
+  if (analysis.aeo.score < 60)         weakDims.push("answer engine optimisation");
+  if (analysis.geo.score < 60)         weakDims.push("generative AI citation signals");
+  if (analysis.readability.score < 60) weakDims.push("readability");
 
   const parts: string[] = [];
 

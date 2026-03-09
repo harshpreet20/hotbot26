@@ -58,38 +58,39 @@ export function analyzeSeo(p: AnalyzerInput): SeoCheck[] {
       inMeta ? "good" : "improvement",
       inMeta ? "Focus keyword in meta description." : "Include focus keyword in meta description."));
 
-    const inIntro = plain.slice(0, 300).includes(kw);
+    const introPlain = plain.split(/\s+/).slice(0, 100).join(" ");
+    const inIntro = introPlain.includes(kw);
     checks.push(check("seo-kw-intro", "Keyword in introduction",
       inIntro ? "good" : "improvement",
-      inIntro ? "Keyword in opening paragraph — good signal." : "Use focus keyword in the first paragraph."));
+      inIntro ? "Keyword appears within the first 100 words — strong on-page relevance signal." : "Use focus keyword within the first 100 words to establish topical relevance immediately."));
 
     const count = (plain.match(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
     const density = words > 0 ? (count / words) * 100 : 0;
     checks.push(check("seo-density", "Keyword density",
-      density >= 0.5 && density <= 2.5 ? "good" : density === 0 ? "error" : "improvement",
-      density === 0 ? "Keyword not found in content."
-        : density < 0.5 ? `${density.toFixed(1)}% density — too low. Aim for 0.5–2.5%.`
-        : density > 2.5 ? `${density.toFixed(1)}% — may look like stuffing. Aim for 0.5–2.5%.`
-        : `${density.toFixed(1)}% keyword density — natural and correct.`));
+      density >= 0.8 && density <= 2.0 ? "good" : density === 0 ? "error" : "improvement",
+      density === 0 ? "Keyword not found in content — add it naturally throughout."
+        : density < 0.8 ? `${density.toFixed(1)}% density — too sparse. Aim for 0.8–2.0% for natural prominence.`
+        : density > 2.0 ? `${density.toFixed(1)}% — risks over-optimisation. Reduce to the 0.8–2.0% range.`
+        : `${density.toFixed(1)}% keyword density — well-balanced and natural.`));
   }
 
   // Meta title
   const mtLen = p.metaTitle.length;
   checks.push(check("seo-meta-title", "Meta title length",
-    mtLen === 0 ? "error" : mtLen >= 50 && mtLen <= 60 ? "good" : "improvement",
-    mtLen === 0 ? "Meta title is empty."
-      : mtLen < 50 ? `${mtLen} chars — aim for 50–60.`
-      : mtLen > 60 ? `${mtLen} chars — may be truncated in results.`
-      : `${mtLen} chars — perfect.`));
+    mtLen === 0 ? "error" : mtLen >= 55 && mtLen <= 60 ? "good" : mtLen >= 45 && mtLen <= 65 ? "improvement" : "error",
+    mtLen === 0 ? "Meta title is empty — required for search visibility."
+      : mtLen < 55 ? `${mtLen} chars — too short. Aim for 55–60 for maximum SERP real estate.`
+      : mtLen > 60 ? `${mtLen} chars — will truncate in search results. Keep under 60.`
+      : `${mtLen} chars — in the 55–60 sweet spot.`));
 
   // Meta description
   const mdLen = p.metaDescription.length;
   checks.push(check("seo-meta-desc", "Meta description length",
-    mdLen === 0 ? "error" : mdLen >= 120 && mdLen <= 160 ? "good" : "improvement",
-    mdLen === 0 ? "Meta description is empty — hurts CTR."
-      : mdLen < 120 ? `${mdLen} chars — too short. Aim for 120–160.`
-      : mdLen > 160 ? `${mdLen} chars — may be truncated. Keep under 160.`
-      : `${mdLen} chars — perfect.`));
+    mdLen === 0 ? "error" : mdLen >= 130 && mdLen <= 155 ? "good" : mdLen >= 110 && mdLen <= 165 ? "improvement" : "error",
+    mdLen === 0 ? "Meta description is empty — directly hurts organic CTR."
+      : mdLen < 130 ? `${mdLen} chars — too short. Aim for 130–155 to fill the snippet.`
+      : mdLen > 155 ? `${mdLen} chars — likely to truncate. Trim to under 155.`
+      : `${mdLen} chars — within the 130–155 optimal range.`));
 
   // Content length
   checks.push(check("seo-length", "Content length",
@@ -99,12 +100,23 @@ export function analyzeSeo(p: AnalyzerInput): SeoCheck[] {
       : `${words} words — too short. Write at least 300 words.`));
 
   // H2/H3 subheadings
-  const h2 = /<h2/i.test(p.content);
-  const h3 = /<h3/i.test(p.content);
+  const h2Count = (p.content.match(/<h2/gi) || []).length;
+  const h3Count = (p.content.match(/<h3/gi) || []).length;
   checks.push(check("seo-headings", "H2/H3 subheadings",
-    h2 ? "good" : "improvement",
-    h2 ? `Subheadings found (${[h2 && "H2", h3 && "H3"].filter(Boolean).join(", ")}). Good document structure.`
-       : "Add H2 subheadings to structure your content."));
+    h2Count >= 2 ? "good" : h2Count === 1 ? "improvement" : "error",
+    h2Count >= 2 ? `${h2Count} H2${h3Count > 0 ? ` + ${h3Count} H3` : ""} subheadings — well-structured document hierarchy.`
+      : h2Count === 1 ? "Only 1 H2 found. Add at least 2 H2 subheadings to build clear document hierarchy."
+      : "No H2 subheadings found. Add H2s to structure content and help crawlers identify key sections."));
+
+  // Keyword in subheadings
+  if (kw) {
+    const h2Text = (p.content.match(/<h2[^>]*>([\s\S]*?)<\/h2>/gi) || []).map(stripHtml).join(" ").toLowerCase();
+    const inH2 = h2Text.includes(kw);
+    checks.push(check("seo-kw-h2", "Keyword in H2 subheading",
+      inH2 ? "good" : "improvement",
+      inH2 ? "Focus keyword found in an H2 subheading — reinforces topical authority to crawlers."
+           : "Include focus keyword in at least one H2 subheading for stronger on-page signals."));
+  }
 
   // Links
   const hasLinks = /<a\s[^>]*href/i.test(p.content);
@@ -119,12 +131,14 @@ export function analyzeSeo(p: AnalyzerInput): SeoCheck[] {
     hasAlt ? "Featured image has descriptive alt text." : "Add alt text to your featured image."));
 
   // Title power words (CTR signals)
-  const powerWords = ["guide", "best", "top", "how", "why", "what", "complete", "ultimate", "proven", "free", "new", "2025", "2026"];
-  const hasPower = powerWords.some((w) => p.title.toLowerCase().includes(w));
+  const thisYear = new Date().getFullYear();
+  const powerWords = ["guide", "best", "top", "how", "why", "what", "complete", "ultimate", "proven", "free", "new", String(thisYear), String(thisYear + 1)];
+  const matchedPower = powerWords.filter((w) => p.title.toLowerCase().includes(w));
+  const hasPower = matchedPower.length > 0;
   checks.push(check("seo-ctr", "CTR-boosting title words",
     hasPower ? "good" : "improvement",
-    hasPower ? "Title contains power words that improve click-through rate."
-             : `Add words like: ${powerWords.slice(0, 6).join(", ")} to boost CTR.`));
+    hasPower ? `Title uses "${matchedPower[0]}" — power words improve click-through rate in SERPs.`
+             : `Add a power word like: ${powerWords.slice(0, 5).join(", ")} to increase CTR.`));
 
   return checks;
 }
@@ -155,23 +169,26 @@ export function analyzeAeo(p: AnalyzerInput): SeoCheck[] {
            : "Add a FAQ section to increase chances of being pulled into AI answers and People Also Ask."));
 
   // Concise definition (direct answer)
-  const firstPara = plain.slice(0, 500);
-  const shortSentences = firstPara.split(/[.!?]/).filter((s) => s.trim().split(/\s+/).length <= 25 && s.trim().length > 20);
+  const firstPara = plain.slice(0, 600);
+  const shortSentences = firstPara.split(/[.!?]/).filter((s) => {
+    const wc = s.trim().split(/\s+/).filter(Boolean).length;
+    return wc >= 10 && wc <= 30;
+  });
   const hasDirectAnswer = shortSentences.length >= 2;
   checks.push(check("aeo-direct", "Direct answer in opening",
     hasDirectAnswer ? "good" : "improvement",
-    hasDirectAnswer ? "Opening has concise sentences ideal for AI snippet extraction."
-                    : "Start with a short, direct definition or answer (≤25 words) to target AI overviews."));
+    hasDirectAnswer ? "Opening contains concise, self-contained sentences — ideal for AI answer extraction."
+                    : "Open with 2+ short sentences (10–30 words each) that directly answer the topic."));
 
   // Numbered/structured lists
   const hasOrderedList = /<ol/i.test(p.content);
-  const hasUnorderedList = /<ul/i.test(p.content);
   const listItemCount = (p.content.match(/<li/gi) || []).length;
-  const goodLists = listItemCount >= 3;
+  const goodLists = listItemCount >= 4;
   checks.push(check("aeo-lists", "Structured lists",
-    goodLists ? "good" : hasOrderedList || hasUnorderedList ? "improvement" : "improvement",
-    goodLists ? `${listItemCount} list items found — great for AI extraction of step-by-step answers.`
-              : "Add numbered or bullet lists (3+ items) to help AI parse your content into structured answers."));
+    goodLists ? "good" : listItemCount >= 2 ? "improvement" : "improvement",
+    goodLists ? `${listItemCount} list items found — AI assistants extract structured lists reliably for answers.`
+              : listItemCount >= 2 ? `Only ${listItemCount} list items found. Expand to 4+ items across ordered or unordered lists.`
+              : "Add bullet or numbered lists (4+ items) to make content scannable and AI-extractable."));
 
   // How-to steps
   const hasSteps = /step \d|step-by-step|\d\.\s+[A-Z]/i.test(p.content);
@@ -188,17 +205,17 @@ export function analyzeAeo(p: AnalyzerInput): SeoCheck[] {
     goodTone ? "Good use of 'you/your' — conversational content performs better in voice and AI answers."
              : "Use more 'you/your' language. Voice assistants and AI prefer conversational content."));
 
-  // Concise paragraph under 300 chars (featured snippet target)
+  // Concise paragraph — featured snippet target (40–55 words)
   const paragraphs = p.content.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
   const snippetCandidate = paragraphs.some((pg) => {
     const t = stripHtml(pg).trim();
     const wc = wordCount(t);
-    return wc >= 40 && wc <= 60;
+    return wc >= 40 && wc <= 55;
   });
   checks.push(check("aeo-snippet", "Featured snippet paragraph",
     snippetCandidate ? "good" : "improvement",
-    snippetCandidate ? "40–60 word paragraph found — ideal for Google featured snippet extraction."
-                     : "Write a standalone 40–60 word paragraph that directly answers the main topic."));
+    snippetCandidate ? "40–55 word paragraph found — tight target for Google featured snippet extraction."
+                     : "Write a standalone 40–55 word paragraph that directly answers the main query."));
 
   return checks;
 }
@@ -215,26 +232,26 @@ export function analyzeGeo(p: AnalyzerInput): SeoCheck[] {
   const checks: SeoCheck[] = [];
 
   // Statistics and specific numbers
-  const statsPattern = /\d+[\.,]?\d*\s*(%|percent|million|billion|trillion|x\s*faster|x\s*more|times|\$[\d,]+)/i;
+  const statsPattern = /\d+[\.,]?\d*\s*(%|percent|million|billion|trillion|thousand|\bk\b|x\s*(faster|more|better)|\btimes\s+(faster|more|better|larger)\b|\$[\d,]+|£[\d,]+|€[\d,]+)|\d+\s+out\s+of\s+\d+|increased?\s+by\s+\d+|reduced?\s+by\s+\d+|grew\s+by\s+\d+|\d+x\s+(improvement|increase|growth|faster|better)/i;
   const hasStats = statsPattern.test(p.content);
   checks.push(check("geo-stats", "Statistics & specific numbers",
     hasStats ? "good" : "improvement",
-    hasStats ? "Contains statistics — generative AI engines use data-rich content as sources."
-             : "Add specific statistics (e.g. '47% of businesses...' or '$2.3M saved') to become citable by AI engines."));
+    hasStats ? "Quantitative data detected — data-rich content is significantly more likely to be cited by generative AI."
+             : "Add specific statistics (e.g. '47% of marketers report…' or '$2.3M saved') to become a citable source for AI engines."));
 
   // Citations / attributions
-  const hasCitation = /according to|study shows|research (shows|finds|indicates|suggests)|report by|source:|via |cited by|published by|\[[\d]+\]/i.test(lower);
+  const hasCitation = /according to|study (shows|found|indicates|suggests)|research (shows|finds|indicates|suggests|by)|report (by|from)|source:|cited by|published by|based on (data|research|a study|findings)|\[[\d]+\]|\(\d{4}\)/i.test(lower);
   checks.push(check("geo-citations", "Citations & attributions",
     hasCitation ? "good" : "improvement",
-    hasCitation ? "Sources/citations found — GenAI engines heavily favour attributed claims."
-                : "Add attributions ('According to [Source]...') to boost trustworthiness for AI engines."));
+    hasCitation ? "Attribution pattern found — attributed claims are trusted and cited more by GenAI engines."
+                : "Reference third-party sources ('According to [Source]…' or 'A 2024 study found…') to signal credibility."));
 
   // Content depth / comprehensiveness
   checks.push(check("geo-depth", "Content comprehensiveness",
-    words >= 1500 ? "good" : words >= 800 ? "improvement" : "error",
-    words >= 1500 ? `${words} words — comprehensive coverage signals expertise to GenAI.`
-      : words >= 800 ? `${words} words — decent, but 1500+ words are more likely cited by ChatGPT/Perplexity.`
-      : `${words} words — too short. Generative AI prefers in-depth authoritative content (1500+ words).`));
+    words >= 1800 ? "good" : words >= 1000 ? "improvement" : "error",
+    words >= 1800 ? `${words} words — in-depth coverage. Strong AI citation potential.`
+      : words >= 1000 ? `${words} words — adequate depth, but 1,800+ words significantly increase AI citation rates.`
+      : `${words} words — too thin. GenAI engines rarely cite content under 1,000 words.`));
 
   // Comparison / vs content
   const hasComparison = /\bvs\.?\b|versus|compared to|comparison|better than|alternative/i.test(lower);
@@ -397,14 +414,16 @@ export function analyzeReadability(p: AnalyzerInput): SeoCheck[] {
       : avgSentLen <= 25 ? `${avgSentLen.toFixed(1)} words/sentence — slightly long. Aim for ≤20 words per sentence.`
       : `${avgSentLen.toFixed(1)} words/sentence — too long. Split long sentences in two.`));
 
-  // 3. Passive voice
-  const passiveMatches = plain.match(/\b(am|is|are|was|were|be|been|being)\s+\w+(ed|en)\b/gi) || [];
-  const passivePct = (passiveMatches.length / sentCount) * 100;
+  // 3. Passive voice (sentence-level detection to reduce false positives)
+  const passiveSentences = sentences.filter((s) =>
+    /\b(is|are|was|were|been|being)\s+(being\s+)?\w+ed\b|\b(is|are|was|were)\s+\w+en\b/i.test(s)
+  ).length;
+  const passivePct = (passiveSentences / sentCount) * 100;
   checks.push(check("read-passive", "Passive voice usage",
-    passivePct <= 10 ? "good" : passivePct <= 20 ? "improvement" : "error",
-    passivePct <= 10 ? "Low passive voice — active writing is clearer and more persuasive."
-      : passivePct <= 20 ? `${passivePct.toFixed(0)}% passive sentences — reduce for sharper copy.`
-      : `${passivePct.toFixed(0)}% passive voice — high. Prefer active voice ('We built X' over 'X was built').`));
+    passivePct <= 10 ? "good" : passivePct <= 18 ? "improvement" : "error",
+    passivePct <= 10 ? "Passive voice well-controlled — active voice keeps copy direct and persuasive."
+      : passivePct <= 18 ? `${passivePct.toFixed(0)}% passive sentences — trim further. Active voice reads faster.`
+      : `${passivePct.toFixed(0)}% passive voice — too high. Rewrite as active ('We built X' not 'X was built').`));
 
   // 4. Transition words (Yoast-style)
   const transitions = [
@@ -415,6 +434,9 @@ export function analyzeReadability(p: AnalyzerInput): SeoCheck[] {
     "thus", "yet", "also", "besides", "hence", "indeed", "instead", "likewise",
     "next", "then", "above all", "after all", "as well", "in fact", "in other words",
     "to illustrate", "to summarize", "to conclude", "by contrast", "on the contrary",
+    "as a consequence", "at the same time", "despite this", "even so", "in particular",
+    "more importantly", "on balance", "put differently", "specifically", "that said",
+    "to begin with", "what is more", "with that in mind",
   ];
   const withTransitions = sentences.filter((s) => {
     const sl = s.toLowerCase();
@@ -422,10 +444,10 @@ export function analyzeReadability(p: AnalyzerInput): SeoCheck[] {
   }).length;
   const transitionPct = (withTransitions / sentCount) * 100;
   checks.push(check("read-transitions", "Transition words",
-    transitionPct >= 30 ? "good" : transitionPct >= 15 ? "improvement" : "error",
-    transitionPct >= 30 ? `${transitionPct.toFixed(0)}% of sentences use transitions — excellent logical flow.`
-      : transitionPct >= 15 ? `${transitionPct.toFixed(0)}% transition usage — add words like 'Furthermore', 'However', 'Therefore'.`
-      : `${transitionPct.toFixed(0)}% — very low. Transition words guide readers through your argument.`));
+    transitionPct >= 25 ? "good" : transitionPct >= 12 ? "improvement" : "error",
+    transitionPct >= 25 ? `${transitionPct.toFixed(0)}% of sentences use transitions — strong logical flow and scannability.`
+      : transitionPct >= 12 ? `${transitionPct.toFixed(0)}% transition usage — add connectors like 'Furthermore', 'However', 'As a result'.`
+      : `${transitionPct.toFixed(0)}% — critically low. Transition words are essential to guide readers.`));
 
   // 5. Paragraph length — split content into <p> blocks
   const paraBlocks = p.content.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
