@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CTASection } from "@/components/sections/CTASection";
-import { InlineAdBanner } from "@/components/blog/InlineAdBanner";
-import type { BlogPost } from "@/types/blog";
+import { AdSlot } from "@/components/blog/AdSlot";
+import type { BlogPost, AdSlot as AdSlotType } from "@/types/blog";
 import { getPost, getPublishedPosts } from "@/lib/postsStore";
 
 interface PageProps {
@@ -103,26 +103,23 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-// Split HTML content into chunks to inject ads between them.
-function splitContentChunks(html: string): string[] {
-  const chunks: string[] = [];
-  let remaining = html;
-  const closingTags = ["</p>", "</h2>", "</h3>", "</ul>", "</ol>", "</blockquote>"];
-
-  while (remaining.length > 0) {
-    let splitAt = -1;
-    for (const tag of closingTags) {
-      const idx = remaining.indexOf(tag);
-      if (idx !== -1 && (splitAt === -1 || idx < splitAt)) {
-        splitAt = idx + tag.length;
-      }
-    }
-    if (splitAt === -1) { chunks.push(remaining); break; }
-    chunks.push(remaining.slice(0, splitAt));
-    remaining = remaining.slice(splitAt);
+/**
+ * Split HTML on [ad:N] shortcodes.
+ * Returns an array alternating between html strings and ad-slot indices (1-based).
+ * e.g. ["<p>intro</p>", 1, "<p>more</p>", 2, "<p>end</p>"]
+ */
+function splitOnAdShortcodes(html: string): Array<string | number> {
+  const parts: Array<string | number> = [];
+  const re = /\[ad:(\d+)\]/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > last) parts.push(html.slice(last, m.index));
+    parts.push(parseInt(m[1], 10));
+    last = m.index + m[0].length;
   }
-
-  return chunks.filter((c) => c.trim().length > 0);
+  if (last < html.length) parts.push(html.slice(last));
+  return parts;
 }
 
 export default function BlogPostPage({ params }: PageProps) {
@@ -131,7 +128,7 @@ export default function BlogPostPage({ params }: PageProps) {
 
   const allPosts = loadAllPosts();
   const related = allPosts
-    .filter((p) => p.slug !== post.slug && (p.category === post.category || p.adTopic === post.adTopic))
+    .filter((p) => p.slug !== post.slug && p.category === post.category)
     .slice(0, 3);
 
   const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
@@ -201,8 +198,8 @@ export default function BlogPostPage({ params }: PageProps) {
     ],
   };
 
-  const chunks = splitContentChunks(post.content || "");
-  const AD_INTERVAL = 3;
+  const contentParts = splitOnAdShortcodes(post.content || "");
+  const adSlots: AdSlotType[] = post.adSlots ?? [];
   const accentColor = CATEGORY_COLORS[post.category] || "#3b82f6";
 
   return (
@@ -266,10 +263,8 @@ export default function BlogPostPage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* ── Article Content with Inline Ads ── */}
+      {/* ── Article Content with manually-placed Ad Slots ── */}
       <section className="relative z-10 px-4 sm:px-6 max-w-3xl mx-auto pb-12">
-        <InlineAdBanner topic={post.adTopic} variant="compact" />
-
         <div className="prose prose-invert prose-lg max-w-none
           prose-headings:font-black prose-headings:text-white
           prose-h2:text-xl prose-h2:sm:text-2xl prose-h2:mt-10 prose-h2:mb-4
@@ -281,17 +276,14 @@ export default function BlogPostPage({ params }: PageProps) {
           prose-blockquote:border-l-blue-500 prose-blockquote:text-slate-400
           prose-ul:my-4 prose-ol:my-4
         ">
-          {chunks.map((chunk, i) => (
-            <div key={i}>
-              <div dangerouslySetInnerHTML={{ __html: chunk }} />
-              {(i + 1) % AD_INTERVAL === 0 && i < chunks.length - 1 && (
-                <InlineAdBanner topic={post.adTopic} />
-              )}
-            </div>
-          ))}
+          {contentParts.map((part, i) => {
+            if (typeof part === "number") {
+              const slot = adSlots[part - 1];
+              return slot ? <AdSlot key={`ad-${i}`} slot={slot} /> : null;
+            }
+            return <div key={i} dangerouslySetInnerHTML={{ __html: part }} />;
+          })}
         </div>
-
-        <InlineAdBanner topic={post.adTopic} />
 
         {/* Tags footer */}
         {post.tags?.length > 0 && (

@@ -16,12 +16,22 @@ export type BlogAdTopic =
   | "consultancy"
   | "general";
 
+export type AdSlotType = "contextual" | "code";
+
+export interface AdSlot {
+  id: string;
+  type: AdSlotType;
+  topic?: BlogAdTopic; // used when type === "contextual"
+  code?: string;       // raw HTML/JS when type === "code"
+  label?: string;      // optional display name in editor
+}
+
 export interface BlogPost {
   id: string;
   slug: string;
   title: string;
   excerpt: string;
-  content: string; // HTML content
+  content: string; // HTML content — use [ad:1], [ad:2] … shortcodes to place ad slots inline
   category: string;
   tags: string[];
   author: string;
@@ -31,7 +41,8 @@ export interface BlogPost {
   readTime: string;
   featuredImage?: string;
   featuredImageAlt?: string;
-  adTopic: BlogAdTopic;
+  adTopic: BlogAdTopic; // legacy fallback topic (kept for backwards compat)
+  adSlots?: AdSlot[];   // manually placed ad slots referenced by [ad:N] shortcodes
   // SEO fields
   metaTitle?: string;
   metaDescription?: string;

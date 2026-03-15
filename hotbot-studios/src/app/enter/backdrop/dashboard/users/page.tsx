@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
-import type { User, Role } from "@/types/dashboard";
+import type { User, Role, PendingUser } from "@/types/dashboard";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -59,6 +59,13 @@ export default function UsersPage() {
   const [creating, setCreating]       = useState(false);
   const [formError, setFormError]     = useState("");
 
+  // Pending registrations
+  const [pending, setPending]               = useState<PendingUser[]>([]);
+  const [approvingId, setApprovingId]       = useState<string | null>(null);
+  const [approvePassword, setApprovePassword] = useState("");
+  const [approveError, setApproveError]     = useState("");
+  const [processingId, setProcessingId]     = useState<string | null>(null);
+
   useEffect(() => {
     const secret = getSecret();
     const role   = getRole();
@@ -68,7 +75,56 @@ export default function UsersPage() {
       return;
     }
     loadUsers(secret);
+    if (role === "admin") loadPending(secret);
   }, [router]);
+
+  async function loadPending(secret: string) {
+    try {
+      const res = await fetch("/api/blog/users/pending", { headers: { Authorization: `Bearer ${secret}` } });
+      if (res.ok) {
+        const data = await res.json() as { pending: PendingUser[] };
+        setPending(data.pending);
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleApprove(id: string) {
+    setApproveError("");
+    const secret = getSecret();
+    if (!approvePassword || approvePassword.length < 8) {
+      setApproveError("Password must be at least 8 characters.");
+      return;
+    }
+    setProcessingId(id);
+    try {
+      const res = await fetch("/api/blog/users/pending", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ id, action: "approve", password: approvePassword }),
+      });
+      const data = await res.json() as { success?: boolean; user?: User; error?: string };
+      if (!res.ok) { setApproveError(data.error || "Failed."); return; }
+      setPending((prev) => prev.filter((p) => p.id !== id));
+      if (data.user) setUsers((prev) => [...prev, data.user!]);
+      setApprovingId(null);
+      setApprovePassword("");
+    } catch { setApproveError("Network error."); }
+    finally { setProcessingId(null); }
+  }
+
+  async function handleReject(id: string) {
+    const secret = getSecret();
+    setProcessingId(id);
+    try {
+      await fetch("/api/blog/users/pending", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ id, action: "reject" }),
+      });
+      setPending((prev) => prev.filter((p) => p.id !== id));
+    } catch { /* ignore */ }
+    finally { setProcessingId(null); }
+  }
 
   async function loadUsers(secret: string) {
     setLoading(true);
@@ -243,6 +299,79 @@ export default function UsersPage() {
                   <span>total</span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Pending registration requests (admin only) */}
+          {!readonly && pending.length > 0 && (
+            <div className="rounded-2xl p-4 space-y-3" style={{ border: "1px solid rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.04)" }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <p className="text-amber-300 text-sm font-semibold">Pending Access Requests</p>
+                <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-300" style={{ background: "rgba(251,191,36,0.15)" }}>{pending.length}</span>
+              </div>
+              {pending.map((p) => (
+                <div key={p.id} className="rounded-xl p-3 space-y-2" style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-white text-sm font-medium">{p.username}</p>
+                      <p className="text-slate-500 text-xs">{p.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+                          style={{ background: `${ROLE_COLORS[p.requestedRole]}18`, color: ROLE_COLORS[p.requestedRole] }}>
+                          {p.requestedRole}
+                        </span>
+                        <span className="text-slate-600 text-[10px]">
+                          {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => { setApprovingId(approvingId === p.id ? null : p.id); setApproveError(""); setApprovePassword(""); }}
+                        disabled={processingId === p.id}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-40"
+                        style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(p.id)}
+                        disabled={processingId === p.id}
+                        className="px-3 py-1.5 rounded-lg text-xs text-red-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                        style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
+                      >
+                        {processingId === p.id ? "…" : "Reject"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {approvingId === p.id && (
+                    <div className="pt-2 space-y-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                      <p className="text-xs text-slate-400">Set a temporary password for <strong className="text-white">{p.username}</strong>:</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          placeholder="min 8 characters"
+                          value={approvePassword}
+                          onChange={(e) => setApprovePassword(e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                        />
+                        <button
+                          onClick={() => handleApprove(p.id)}
+                          disabled={processingId === p.id}
+                          className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-50"
+                          style={{ background: "linear-gradient(135deg,#22c55e,#16a34a)" }}
+                        >
+                          {processingId === p.id ? "…" : "Confirm"}
+                        </button>
+                      </div>
+                      {approveError && <p className="text-red-400 text-xs">{approveError}</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

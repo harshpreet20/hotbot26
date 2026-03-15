@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import type { BlogPost, BlogAdTopic } from "@/types/blog";
+import type { BlogPost, BlogAdTopic, AdSlot } from "@/types/blog";
 import { SeoPanel } from "@/components/backdrop/SeoPanel";
 import dynamic from "next/dynamic";
 
@@ -15,11 +15,13 @@ const CATEGORIES = [
   "AI Automation", "Digital Marketing", "AI Products",
   "Content Strategy", "Public Relations", "SEO", "Social Media", "n8n",
 ];
-const AD_TOPICS = [
+const AD_TOPICS: BlogAdTopic[] = [
   "general", "ai-automation", "ai-chatbot", "voice-ai", "n8n", "seo", "ppc",
   "social-media", "email-marketing", "analytics", "content", "video", "pr",
   "software-dev", "ui-ux", "consultancy",
-] as const;
+];
+
+function newSlotId() { return Math.random().toString(36).slice(2, 10); }
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -44,6 +46,9 @@ function EditPostContent() {
     metaTitle: "", metaDescription: "", focusKeyword: "", featuredImageAlt: "",
   });
 
+  const [adSlots, setAdSlots] = useState<AdSlot[]>([]);
+  const [copied, setCopied] = useState<string | null>(null);
+
   useEffect(() => {
     if (!urlSlug) { router.replace("/enter/backdrop/dashboard"); return; }
     const s = sessionStorage.getItem("backdrop_secret");
@@ -58,6 +63,7 @@ function EditPostContent() {
         const p = d.post;
         setPost(p);
         editorKey.current += 1;
+        setAdSlots(p.adSlots ?? []);
         setForm({
           title: p.title, slug: p.slug, category: p.category,
           tags: (p.tags || []).join(", "), author: p.author || "",
@@ -100,6 +106,7 @@ function EditPostContent() {
             status,
             metaTitle: form.metaTitle || form.title,
             metaDescription: form.metaDescription || form.excerpt,
+            adSlots,
           },
         }),
       });
@@ -156,19 +163,84 @@ function EditPostContent() {
             onChange={(e) => set("title", e.target.value)}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Category</label>
-              <select className={inputClass} style={inputStyle} value={form.category} onChange={(e) => set("category", e.target.value)}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Category</label>
+            <select className={inputClass} style={inputStyle} value={form.category} onChange={(e) => set("category", e.target.value)}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* ── Ad Slots Manager ─────────────────────────────────────── */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white text-sm font-semibold">Ad Slots</p>
+                <p className="text-slate-500 text-xs mt-0.5">Place <code className="text-indigo-400">[ad:1]</code>, <code className="text-indigo-400">[ad:2]</code> … anywhere in your content to position ads.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdSlots((prev) => [...prev, { id: newSlotId(), type: "contextual", topic: "general" }])}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shrink-0"
+                style={{ background: "linear-gradient(135deg,#3b82f6,#8b5cf6)" }}
+              >
+                + Add Slot
+              </button>
             </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Ad Topic</label>
-              <select className={inputClass} style={inputStyle} value={form.adTopic} onChange={(e) => set("adTopic", e.target.value as BlogAdTopic)}>
-                {AD_TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+            {adSlots.length === 0 && (
+              <p className="text-slate-600 text-xs">No ad slots yet. Add one and place <code className="text-indigo-400">[ad:1]</code> in the content where you want it to appear.</p>
+            )}
+            {adSlots.map((slot, idx) => (
+              <div key={slot.id} className="rounded-xl p-3 space-y-2" style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.2)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-mono text-indigo-400 shrink-0">[ad:{idx + 1}]</span>
+                  <div className="flex items-center gap-2 flex-1">
+                    <select
+                      value={slot.type}
+                      onChange={(e) => setAdSlots((prev) => prev.map((s, i) => i === idx ? { ...s, type: e.target.value as "contextual" | "code", code: "", topic: "general" } : s))}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                    >
+                      <option value="contextual">Contextual (HotBot branded)</option>
+                      <option value="code">Custom Code (HTML / AdSense / any)</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(`[ad:${idx + 1}]`); setCopied(slot.id); setTimeout(() => setCopied(null), 1500); }}
+                      className="px-2 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white shrink-0 transition-colors"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    >
+                      {copied === slot.id ? "Copied!" : "Copy shortcode"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdSlots((prev) => prev.filter((_, i) => i !== idx))}
+                      className="text-red-500 hover:text-red-400 text-xs px-1 shrink-0 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                {slot.type === "contextual" ? (
+                  <select
+                    value={slot.topic ?? "general"}
+                    onChange={(e) => setAdSlots((prev) => prev.map((s, i) => i === idx ? { ...s, topic: e.target.value as BlogAdTopic } : s))}
+                    className="w-full px-3 py-2 rounded-lg text-xs text-white outline-none"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    {AD_TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                ) : (
+                  <textarea
+                    rows={3}
+                    placeholder="Paste ad HTML or script tag here…"
+                    value={slot.code ?? ""}
+                    onChange={(e) => setAdSlots((prev) => prev.map((s, i) => i === idx ? { ...s, code: e.target.value } : s))}
+                    className="w-full px-3 py-2 rounded-lg text-xs text-slate-300 font-mono outline-none resize-y"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  />
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -102,6 +102,16 @@ export interface ChatSession {
   lastMessageAt: string;
 }
 
+/** A user registration request pending admin approval */
+export interface PendingUser {
+  id: string;
+  username: string;
+  email: string;
+  requestedRole: Role;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+}
+
 export interface DashboardOverview {
   leads: number;
   contacts: number;

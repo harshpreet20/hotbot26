@@ -220,7 +220,8 @@ export default function BackdropLoginPage() {
         </form>
 
         <p className="text-center text-slate-700 text-xs mt-4">
-          Private access only · Not indexed by search engines
+          Private access only ·{" "}
+          <a href="/enter/backdrop/register" className="text-slate-600 hover:text-slate-400 transition-colors">Request access</a>
         </p>
       </div>
     </div>
