@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
     };
     prepend<NewsletterSubscriber>("newsletter", subscriber);
 
+    // Forward to N8N
+    const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";
+    fetch(n8nUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "newsletter-signup", ...subscriber }),
+    }).catch((err) => console.error("N8N forward error (newsletter):", err));
+
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
     console.error("Newsletter error:", error);

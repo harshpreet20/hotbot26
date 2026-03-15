@@ -60,6 +60,14 @@ export async function POST(req: NextRequest) {
     };
     prepend<Lead>("leads", lead);
 
+    // Forward to N8N
+    const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";
+    fetch(n8nUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "lead-form", ...lead }),
+    }).catch((err) => console.error("N8N forward error (form):", err));
+
     return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
     console.error("Forms (lead) error:", error);

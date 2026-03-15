@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
     };
     prepend<CallbackRequest>("callbacks", callback);
 
+    // Forward to N8N
+    const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";
+    fetch(n8nUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "callback-request", ...callback }),
+    }).catch((err) => console.error("N8N forward error (callback):", err));
+
     return NextResponse.json({ success: true, message: "Confirmed! We'll call you back shortly." });
   } catch (error) {
     console.error("Callback error:", error);
