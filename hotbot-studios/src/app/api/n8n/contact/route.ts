@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
     };
     prepend<Contact>("contacts", contact);
 
-    // Forward to N8N
-    const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";
+    // Forward to N8N Contact pipeline workflow
+    const n8nUrl = process.env.N8N_WEBHOOK_CONTACT || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-contact";
     fetch(n8nUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "contact-form", ...contact }),
+      body: JSON.stringify(contact),
     }).catch((err) => console.error("N8N forward error (contact):", err));
 
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });

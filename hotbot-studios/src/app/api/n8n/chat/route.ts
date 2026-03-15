@@ -58,5 +58,13 @@ export async function POST(req: NextRequest) {
   ];
   prepend<ChatSession>("chats", { id: sessionId, messages: allMsgs, ip, startedAt: now, lastMessageAt: now });
 
+  // Forward session to N8N Chat workflow (async — does not block response)
+  const n8nChatUrl = process.env.N8N_WEBHOOK_CHAT || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-chat";
+  fetch(n8nChatUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, message, botReply, ip, history }),
+  }).catch((err) => console.error("N8N forward error (chat):", err));
+
   return NextResponse.json({ message: botReply, sessionId });
 }
