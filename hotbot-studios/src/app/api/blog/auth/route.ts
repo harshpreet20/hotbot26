@@ -69,7 +69,15 @@ export async function POST(req: NextRequest) {
 
   // ── Authenticate via N8N Blog Auth workflow ──────────────────────────────────
   const n8nUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-blog-auth";
-  let n8nData: { success: boolean; role?: string; userId?: string; username?: string; error?: string };
+  // N8N success shape: { success: true, token, user: { id?, username?, role? }, expiresAt }
+  // N8N failure shape: { success: false, error? }  (HTTP 401)
+  let n8nData: {
+    success: boolean;
+    error?: string;
+    token?: string;
+    user?: { id?: string; username?: string; role?: string };
+    expiresAt?: string;
+  };
   try {
     const n8nRes = await fetch(n8nUrl, {
       method: "POST",
@@ -77,7 +85,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ username, password }),
     });
     if (!n8nRes.ok) {
-      return NextResponse.json({ success: false, error: "Invalid username or password." }, { status: 401 });
+      const errBody = await n8nRes.json().catch(() => ({})) as { error?: string };
+      return NextResponse.json({ success: false, error: errBody.error || "Invalid username or password." }, { status: 401 });
     }
     n8nData = await n8nRes.json() as typeof n8nData;
   } catch {
@@ -88,9 +97,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: n8nData.error || "Invalid username or password." }, { status: 401 });
   }
 
-  const role             = (n8nData.role     || "admin") as Role;
-  const userId           = n8nData.userId    || `n8n-${Date.now()}`;
-  const authedUsername   = n8nData.username  || username;
+  const role           = (n8nData.user?.role     || "admin") as Role;
+  const userId         =  n8nData.user?.id        || `n8n-${Date.now()}`;
+  const authedUsername =  n8nData.user?.username  || username;
 
   let sessionToken: string;
   try { sessionToken = createSession(userId, authedUsername, role); }
