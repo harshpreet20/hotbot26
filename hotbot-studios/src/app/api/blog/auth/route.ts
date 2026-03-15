@@ -67,14 +67,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Username and password are required." }, { status: 400 });
   }
 
-  // ── Authenticate via N8N ────────────────────────────────────────────────────
-  const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";
+  // ── Authenticate via N8N Blog Auth workflow ──────────────────────────────────
+  const n8nUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-blog-auth";
   let n8nData: { success: boolean; role?: string; userId?: string; username?: string; error?: string };
   try {
     const n8nRes = await fetch(n8nUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "backdrop-auth", username, password }),
+      body: JSON.stringify({ username, password }),
     });
     if (!n8nRes.ok) {
       return NextResponse.json({ success: false, error: "Invalid username or password." }, { status: 401 });
