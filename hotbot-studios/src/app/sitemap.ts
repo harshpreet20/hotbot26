@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import fs from "fs";
 import path from "path";
 import type { BlogPost } from "@/types/blog";
+import { SEO_SERVICES, SEO_LOCATIONS } from "@/lib/seo-pages-data";
 
 // Force dynamic so Google always gets a fresh sitemap the instant a new post is published.
 // N8N → /api/blog/publish writes posts.json → Next.js revalidates /blog → sitemap is live.
@@ -85,7 +86,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/marketing-consulting/martech-stack",           priority: 0.8, changeFrequency: "monthly" },
     { path: "/marketing-consulting/team-building",           priority: 0.8, changeFrequency: "monthly" },
     { path: "/marketing-consulting/go-to-market",            priority: 0.8, changeFrequency: "monthly" },
-    { path: "/products",           priority: 0.7, changeFrequency: "monthly" },
+    { path: "/products",                              priority: 0.7, changeFrequency: "monthly" },
+    { path: "/products/competitor-analysis",          priority: 0.8, changeFrequency: "monthly" },
+    { path: "/locations",                             priority: 0.7, changeFrequency: "monthly" },
     { path: "/blog",               priority: 0.9, changeFrequency: "daily"   },
     { path: "/contact",            priority: 0.7, changeFrequency: "monthly" },
     { path: "/privacy",            priority: 0.3, changeFrequency: "yearly"  },
@@ -108,5 +111,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.75,
   }));
 
-  return [...staticEntries, ...blogEntries];
+  // ── Programmatic SEO pages ────────────────────────────────────────────────
+  // Location hub pages: /locations/[city-slug]
+  const locationHubEntries: MetadataRoute.Sitemap = SEO_LOCATIONS.map((loc) => ({
+    url: `${BASE}/locations/${loc.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  // Service + location pages: /services/[service]/[city-slug]
+  const serviceLocationEntries: MetadataRoute.Sitemap = SEO_SERVICES.flatMap((svc) =>
+    SEO_LOCATIONS.map((loc) => ({
+      url: `${BASE}/services/${svc.slug}/${loc.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.65,
+    }))
+  );
+
+  return [
+    ...staticEntries,
+    ...blogEntries,
+    ...locationHubEntries,
+    ...serviceLocationEntries,
+  ];
 }

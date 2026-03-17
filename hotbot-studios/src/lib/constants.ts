@@ -101,4 +101,12 @@ export const PRODUCTS = [
     color: "#f59e0b",
     href: "/products/mental-wellness-assistant",
   },
+  {
+    name: "AI Competitor Analysis",
+    tagline: "See exactly what your competitors rank for",
+    description: "Instant AI analysis of any competitor's SEO strategy—keyword gaps, content opportunities, on-page signals, and backlink profile. Free on-demand analysis. Pro subscription adds weekly monitoring, keyword gap alerts, and monthly AI optimization playbooks.",
+    icon: "🔎",
+    color: "#8b5cf6",
+    href: "/products/competitor-analysis",
+  },
 ];
