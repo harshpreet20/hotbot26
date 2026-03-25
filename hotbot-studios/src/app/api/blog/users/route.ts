@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { readAdminStore, writeAdminStore } from "@/lib/adminStore";
-import { authorizeRole, authorizeUserRead } from "@/lib/dashboardAuth";
+import { getAllUsers, createUser, updateUserRole, deleteUser } from "@/lib/adminStore";
+import { revokeAllSessions } from "@/lib/sessions";
+import { authorizeRole, authorizeUserRead, extractToken } from "@/lib/dashboardAuth";
 import type { Role, UserRecord } from "@/types/dashboard";
 
-const COOKIE_NAME = "backdrop_auth";
-const VALID_ROLES: Role[] = ["admin", "manager", "editor", "contributor", "agent"];
+const COOKIE_NAME  = "backdrop_auth";
+const VALID_ROLES: Role[] = ["admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"];
 
 function getToken(req: NextRequest): string | null {
   return (
@@ -21,26 +22,19 @@ function publicUser(u: UserRecord) {
   return { id: u.id, username: u.username, role: u.role, createdAt: u.createdAt };
 }
 
-// GET — list all users (admin full, manager read-only report)
+// GET — list all users (admin full, manager read-only)
 export async function GET(req: NextRequest) {
-  const token = getToken(req);
-  const session = authorizeUserRead(token);
-  if (!session) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  const store = readAdminStore();
-  const users = (store?.users ?? []).map(publicUser);
-  // Managers get a read-only view; indicate that with a flag so the UI can hide controls
-  return NextResponse.json({ users, readonly: session.role === "manager" });
+  const session = await authorizeUserRead(getToken(req));
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const users = await getAllUsers();
+  return NextResponse.json({ users: users.map(publicUser), readonly: session.role === "manager" });
 }
 
 // POST — create new user (admin only)
 export async function POST(req: NextRequest) {
-  const token = getToken(req);
-  const session = authorizeRole(token, "admin");
-  if (!session) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const session = await authorizeRole(getToken(req), "admin");
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   let body: { username?: string; password?: string; role?: string };
   try { body = await req.json() as typeof body; }
@@ -60,35 +54,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
 
-  const store = readAdminStore();
-  if (!store) return NextResponse.json({ error: "Store not initialised." }, { status: 500 });
-
-  if (store.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+  const existing = await getAllUsers();
+  if (existing.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
     return NextResponse.json({ error: "Username already exists." }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
   const newUser: UserRecord = {
     id:           `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`,
     username,
-    passwordHash,
+    passwordHash: await bcrypt.hash(password, 12),
     role,
     createdAt:    new Date().toISOString(),
   };
 
-  store.users.push(newUser);
-  writeAdminStore(store);
-
+  await createUser(newUser);
   return NextResponse.json({ success: true, user: publicUser(newUser) }, { status: 201 });
 }
 
-// PATCH — update user role (admin only)
+// PATCH — update role (admin only)
 export async function PATCH(req: NextRequest) {
-  const token = getToken(req);
-  const session = authorizeRole(token, "admin");
-  if (!session) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const session = await authorizeRole(getToken(req), "admin");
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   let body: { id?: string; role?: string };
   try { body = await req.json() as typeof body; }
@@ -100,52 +86,44 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
 
-  const store = readAdminStore();
-  if (!store) return NextResponse.json({ error: "Store not initialised." }, { status: 500 });
-
-  const target = store.users.find((u) => u.id === id);
+  const users  = await getAllUsers();
+  const target = users.find((u) => u.id === id);
   if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
 
-  // Prevent removing the last admin
+  // Prevent removing last admin
   if (target.role === "admin" && role !== "admin") {
-    const admins = store.users.filter((u) => u.role === "admin");
+    const admins = users.filter((u) => u.role === "admin");
     if (admins.length <= 1) {
       return NextResponse.json({ error: "Cannot demote the only admin account." }, { status: 409 });
     }
   }
 
-  target.role = role as Role;
-  writeAdminStore(store);
+  await updateUserRole(id, role as Role);
+  // Revoke existing sessions so the new role takes effect immediately
+  await revokeAllSessions(id);
 
-  return NextResponse.json({ success: true, user: publicUser(target) });
+  return NextResponse.json({ success: true, user: publicUser({ ...target, role: role as Role }) });
 }
 
-// DELETE — remove user by id (admin only, cannot delete self)
+// DELETE — remove user (admin only, cannot delete self)
 export async function DELETE(req: NextRequest) {
-  const token = getToken(req);
-  const session = authorizeRole(token, "admin");
-  if (!session) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const session = await authorizeRole(getToken(req), "admin");
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "User id required." }, { status: 400 });
 
-  const store = readAdminStore();
-  if (!store) return NextResponse.json({ error: "Store not initialised." }, { status: 500 });
-
-  const target = store.users.find((u) => u.id === id);
+  const users  = await getAllUsers();
+  const target = users.find((u) => u.id === id);
   if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
 
-  // Prevent deleting the last admin
-  const admins = store.users.filter((u) => u.role === "admin");
+  // Prevent deleting last admin
+  const admins = users.filter((u) => u.role === "admin");
   if (target.role === "admin" && admins.length <= 1) {
     return NextResponse.json({ error: "Cannot delete the only admin account." }, { status: 409 });
   }
 
-  store.users = store.users.filter((u) => u.id !== id);
-  writeAdminStore(store);
-
+  await deleteUser(id);
+  await revokeAllSessions(id);
   return NextResponse.json({ success: true });
 }

@@ -1,76 +1,131 @@
 /**
- * Per-user session tokens stored in data/sessions.json.
+ * Per-user session tokens.
+ * Primary:  Supabase `sessions` table (all instances share state).
+ * Fallback: Local JSON file (dev mode).
+ *
  * Sessions expire after 30 days of inactivity (sliding window).
- * Accessing a session extends it by another 30 days.
  */
 import crypto from "crypto";
-import { readAll, writeAll } from "@/lib/store";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
+import { _fsRead, _fsWrite } from "@/lib/store";
 import type { Role, SessionInfo } from "@/types/dashboard";
 
-const TTL_MS       = 30 * 24 * 60 * 60 * 1000; // 30 days
-const REFRESH_AFTER = 60 * 60 * 1000;           // refresh expiresAt if last touch > 1 h ago
+const TTL_MS        = 30 * 24 * 60 * 60 * 1000; // 30 days
+const REFRESH_AFTER =       60 * 60 * 1000;       // slide after 1 h idle
+
+// ── Internal session shape (maps 1-to-1 with the `sessions` Supabase table) ──
 
 interface StoredSession {
-  token: string;
-  userId: string;
-  username: string;
-  role: Role;
-  createdAt: string;
-  expiresAt: string;
-  lastAccessAt: string;
+  token:          string;
+  user_id:        string;
+  username:       string;
+  role:           Role;
+  created_at:     string;
+  expires_at:     string;
+  last_access_at: string;
 }
 
-function activeSessions(): StoredSession[] {
+// ── Filesystem fallback helpers ───────────────────────────────────────────────
+
+function fsActive(): StoredSession[] {
   const now = Date.now();
-  return readAll<StoredSession>("sessions").filter((s) => new Date(s.expiresAt).getTime() > now);
+  return _fsRead<StoredSession>("sessions").filter(
+    (s) => new Date(s.expires_at).getTime() > now
+  );
 }
 
-export function createSession(userId: string, username: string, role: Role): string {
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export async function createSession(
+  userId: string,
+  username: string,
+  role: Role
+): Promise<string> {
   const token = crypto.randomBytes(40).toString("hex");
   const now   = new Date();
   const session: StoredSession = {
     token,
-    userId,
+    user_id:        userId,
     username,
     role,
-    createdAt:    now.toISOString(),
-    expiresAt:    new Date(now.getTime() + TTL_MS).toISOString(),
-    lastAccessAt: now.toISOString(),
+    created_at:     now.toISOString(),
+    expires_at:     new Date(now.getTime() + TTL_MS).toISOString(),
+    last_access_at: now.toISOString(),
   };
-  const sessions = activeSessions(); // prune expired automatically
-  sessions.push(session);
-  writeAll("sessions", sessions);
+
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from("sessions").insert(session);
+    if (error) throw new Error(`Session create failed: ${error.message}`);
+  } else {
+    const sessions = fsActive();
+    sessions.push(session);
+    _fsWrite("sessions", sessions);
+  }
+
   return token;
 }
 
-export function getSession(token: string): SessionInfo | null {
+export async function getSession(token: string): Promise<SessionInfo | null> {
   if (!token) return null;
-  const sessions = activeSessions();
+
+  if (isSupabaseEnabled()) {
+    const { data, error } = await sb()
+      .from("sessions")
+      .select("*")
+      .eq("token", token)
+      .gt("expires_at", new Date().toISOString())
+      .single();
+
+    if (error || !data) return null;
+
+    const session = data as StoredSession;
+    const now = Date.now();
+    if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
+      await sb()
+        .from("sessions")
+        .update({
+          expires_at:     new Date(now + TTL_MS).toISOString(),
+          last_access_at: new Date(now).toISOString(),
+        })
+        .eq("token", token)
+        .then(() => {})
+        .catch(() => {});
+    }
+
+    return { userId: session.user_id, username: session.username, role: session.role };
+  }
+
+  // Filesystem fallback
+  const sessions = fsActive();
   const idx = sessions.findIndex((s) => s.token === token);
   if (idx === -1) return null;
 
   const session = sessions[idx];
-  const now     = Date.now();
-
-  // Sliding expiry: extend session if it hasn't been refreshed recently
-  const lastAccess = new Date(session.lastAccessAt).getTime();
-  if (now - lastAccess > REFRESH_AFTER) {
+  const now = Date.now();
+  if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
     sessions[idx] = {
       ...session,
-      expiresAt:    new Date(now + TTL_MS).toISOString(),
-      lastAccessAt: new Date(now).toISOString(),
+      expires_at:     new Date(now + TTL_MS).toISOString(),
+      last_access_at: new Date(now).toISOString(),
     };
-    try { writeAll("sessions", sessions); } catch { /* non-fatal */ }
+    try { _fsWrite("sessions", sessions); } catch { /* non-fatal */ }
   }
 
-  return { userId: session.userId, username: session.username, role: session.role };
+  return { userId: session.user_id, username: session.username, role: session.role };
 }
 
-export function deleteSession(token: string): void {
-  writeAll("sessions", activeSessions().filter((s) => s.token !== token));
+export async function deleteSession(token: string): Promise<void> {
+  if (isSupabaseEnabled()) {
+    await sb().from("sessions").delete().eq("token", token);
+    return;
+  }
+  _fsWrite("sessions", fsActive().filter((s) => s.token !== token));
 }
 
-/** Revoke all sessions for a given userId (e.g. on password change or role update). */
-export function revokeAllSessions(userId: string): void {
-  writeAll("sessions", activeSessions().filter((s) => s.userId !== userId));
+export async function revokeAllSessions(userId: string): Promise<void> {
+  if (isSupabaseEnabled()) {
+    await sb().from("sessions").delete().eq("user_id", userId);
+    return;
+  }
+  _fsWrite("sessions", fsActive().filter((s) => s.user_id !== userId));
 }

@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, writeAll, prepend, newId } from "@/lib/store";
+import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import type { Lead, CRMUpdate, LeadStatus } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  if (!authorizeData(extractToken(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const leads = readAll<Lead>("leads");
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status") as LeadStatus | null;
-  const filtered = status ? leads.filter((l) => l.status === status) : leads;
-  return NextResponse.json({ leads: filtered });
+  if (!await authorizeData(extractToken(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const leads = await readAll<Lead>("leads");
+  const status = new URL(req.url).searchParams.get("status") as LeadStatus | null;
+  return NextResponse.json({ leads: status ? leads.filter((l) => l.status === status) : leads });
 }
 
 export async function POST(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["admin", "manager", "sales"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -38,24 +38,21 @@ export async function POST(req: NextRequest) {
     notes:      body.notes,
     tags:       body.tags,
   };
-  prepend<Lead>("leads", lead);
+  await insert<Lead>("leads", lead);
   return NextResponse.json({ lead }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body   = await req.json() as Partial<Lead> & { id: string };
   const { id } = body;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const leads = readAll<Lead>("leads");
-  const idx   = leads.findIndex((l) => l.id === id);
-  if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const existing   = leads[idx];
-  const prevStatus = existing.status;
+  const leads = await readAll<Lead>("leads");
+  const existing = leads.find((l) => l.id === id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const updated: Lead = {
     ...existing,
@@ -65,38 +62,31 @@ export async function PATCH(req: NextRequest) {
     lastUpdatedBy: session.username,
   };
 
-  leads[idx] = updated;
-  writeAll<Lead>("leads", leads);
+  await updateById<Lead>("leads", id, updated);
 
   // Auto-log status change
-  if (body.status && body.status !== prevStatus) {
-    const statusUpdate: CRMUpdate = {
+  if (body.status && body.status !== existing.status) {
+    await insert<CRMUpdate>("crm_updates", {
       id:        newId(),
       leadId:    id,
       type:      "status_change",
-      content:   `Status changed from "${prevStatus ?? "new"}" to "${body.status}"`,
+      content:   `Status changed from "${existing.status ?? "new"}" to "${body.status}"`,
       createdAt: new Date().toISOString(),
       createdBy: session.username,
-      metadata:  { prevStatus: prevStatus ?? "new", newStatus: body.status },
-    };
-    const updates = readAll<CRMUpdate>("crm_updates");
-    updates.unshift(statusUpdate);
-    writeAll<CRMUpdate>("crm_updates", updates);
+      metadata:  { prevStatus: existing.status ?? "new", newStatus: body.status },
+    });
   }
 
   // Auto-log assignment change
   if (body.assignedTo !== undefined && body.assignedTo !== existing.assignedTo) {
-    const assignUpdate: CRMUpdate = {
+    await insert<CRMUpdate>("crm_updates", {
       id:        newId(),
       leadId:    id,
       type:      "assignment",
       content:   body.assignedTo ? `Assigned to ${body.assignedTo}` : "Assignment removed",
       createdAt: new Date().toISOString(),
       createdBy: session.username,
-    };
-    const updates = readAll<CRMUpdate>("crm_updates");
-    updates.unshift(assignUpdate);
-    writeAll<CRMUpdate>("crm_updates", updates);
+    });
   }
 
   return NextResponse.json({ lead: updated });

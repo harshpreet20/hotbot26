@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
+import { getUserByUsername, getEnvFallbackUser } from "@/lib/adminStore";
 import { rateLimit } from "@/lib/rateLimit";
 import type { Role } from "@/types/dashboard";
 
-// ── Cookie ────────────────────────────────────────────────────────────────────
 const COOKIE_NAME  = "backdrop_auth";
 const COOKIE_MAX_S = 60 * 60 * 24 * 30;
 
 function setAuthCookie(res: NextResponse, token: string) {
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure:   process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/",
-    maxAge: COOKIE_MAX_S,
+    path:     "/",
+    maxAge:   COOKIE_MAX_S,
   });
 }
 
-// ── GET — validates an existing session ──────────────────────────────────────
+// ── GET — validate existing session ──────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
   if (token) {
-    const session = getSession(token);
+    const session = await getSession(token);
     if (session) {
       return NextResponse.json({
         needsSetup:    false,
@@ -35,12 +36,18 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ needsSetup: false, authenticated: false });
 }
 
-// ── POST — login via N8N ──────────────────────────────────────────────────────
+// ── POST — login (direct Supabase / file auth, no N8N dependency) ─────────────
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
   const { allowed } = rateLimit(ip, "auth", { limit: 10, windowMs: 60_000 });
   if (!allowed) {
-    return NextResponse.json({ success: false, error: "Too many attempts. Please wait a minute." }, { status: 429 });
+    return NextResponse.json(
+      { success: false, error: "Too many attempts. Please wait a minute." },
+      { status: 429 }
+    );
   }
 
   let body: { username?: string; password?: string };
@@ -50,48 +57,46 @@ export async function POST(req: NextRequest) {
   const username = (body.username || "").trim();
   const password = (body.password || "").trim();
   if (!username || !password) {
-    return NextResponse.json({ success: false, error: "Username and password are required." }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "Username and password are required." },
+      { status: 400 }
+    );
   }
 
-  // ── Authenticate via N8N Blog Auth workflow ──────────────────────────────────
-  const n8nUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-blog-auth";
-  // N8N success shape: { success: true, token, user: { id?, username?, role? }, expiresAt }
-  // N8N failure shape: { success: false, error? }  (HTTP 401)
-  let n8nData: {
-    success: boolean;
-    error?: string;
-    token?: string;
-    user?: { id?: string; username?: string; role?: string };
-    expiresAt?: string;
-  };
-  try {
-    const n8nRes = await fetch(n8nUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (!n8nRes.ok) {
-      const errBody = await n8nRes.json().catch(() => ({})) as { error?: string };
-      return NextResponse.json({ success: false, error: errBody.error || "Invalid username or password." }, { status: 401 });
-    }
-    n8nData = await n8nRes.json() as typeof n8nData;
-  } catch {
-    return NextResponse.json({ success: false, error: "Authentication service unavailable. Please try again." }, { status: 503 });
+  // Look up user from Supabase or filesystem, with env-var fallback
+  let user = await getUserByUsername(username);
+  if (!user) user = getEnvFallbackUser();
+  if (!user || user.username.toLowerCase() !== username.toLowerCase()) {
+    return NextResponse.json(
+      { success: false, error: "Invalid username or password." },
+      { status: 401 }
+    );
   }
 
-  if (!n8nData.success) {
-    return NextResponse.json({ success: false, error: n8nData.error || "Invalid username or password." }, { status: 401 });
+  const passwordOk = await bcrypt.compare(password, user.passwordHash);
+  if (!passwordOk) {
+    return NextResponse.json(
+      { success: false, error: "Invalid username or password." },
+      { status: 401 }
+    );
   }
-
-  const role           = (n8nData.user?.role     || "admin") as Role;
-  const userId         =  n8nData.user?.id        || `n8n-${Date.now()}`;
-  const authedUsername =  n8nData.user?.username  || username;
 
   let sessionToken: string;
-  try { sessionToken = createSession(userId, authedUsername, role); }
-  catch { return NextResponse.json({ success: false, error: "Session could not be created — storage error." }, { status: 500 }); }
+  try {
+    sessionToken = await createSession(user.id, user.username, user.role as Role);
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Session could not be created — storage error." },
+      { status: 500 }
+    );
+  }
 
-  const res = NextResponse.json({ success: true, token: sessionToken, role, username: authedUsername });
+  const res = NextResponse.json({
+    success:  true,
+    token:    sessionToken,
+    role:     user.role,
+    username: user.username,
+  });
   setAuthCookie(res, sessionToken);
   return res;
 }
@@ -99,7 +104,7 @@ export async function POST(req: NextRequest) {
 // ── DELETE — logout ───────────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
-  if (token) deleteSession(token);
+  if (token) await deleteSession(token);
   const res = NextResponse.json({ success: true });
   res.cookies.set(COOKIE_NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;

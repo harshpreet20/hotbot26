@@ -1,23 +1,20 @@
 /**
- * Centralised read/write for data/admin.json.
- * Handles automatic migration from the legacy single-admin flat format.
+ * User and publish-secret management.
+ * Primary:  Supabase `users` + `app_config` tables.
+ * Fallback: Local admin.json file (dev mode / migration).
  */
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import type { AdminStore, UserRecord, Role } from "@/types/dashboard";
 
-// Vercel's project root (/var/task) is read-only; use /tmp for writable storage
+// ── Filesystem fallback path ──────────────────────────────────────────────────
+
 const ADMIN_FILE = process.env.VERCEL
   ? "/tmp/hotbot-data/admin.json"
   : path.join(process.cwd(), "data", "admin.json");
 
-function ensureDir() {
-  const dir = path.dirname(ADMIN_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-// Legacy format written by the original auth route
 interface LegacyAdminCreds {
   username: string;
   passwordHash: string;
@@ -25,12 +22,16 @@ interface LegacyAdminCreds {
   createdAt: string;
 }
 
-export function readAdminStore(): AdminStore | null {
+function ensureAdminDir() {
+  const dir = path.dirname(ADMIN_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function fsReadAdmin(): AdminStore | null {
   try {
     const raw  = fs.readFileSync(ADMIN_FILE, "utf-8");
     const data = JSON.parse(raw) as Record<string, unknown>;
-
-    // ── Migrate legacy single-user format ──────────────────────────────────
+    // Migrate legacy single-user format
     if (typeof data.username === "string" && !Array.isArray(data.users)) {
       const legacy = data as unknown as LegacyAdminCreds;
       const migrated: AdminStore = {
@@ -43,35 +44,121 @@ export function readAdminStore(): AdminStore | null {
           createdAt:    legacy.createdAt || new Date().toISOString(),
         }],
       };
-      writeAdminStore(migrated);  // persist new format immediately
+      fsWriteAdmin(migrated);
       return migrated;
     }
-
     return data as unknown as AdminStore;
   } catch {
     return null;
   }
 }
 
-export function writeAdminStore(store: AdminStore): void {
-  ensureDir();
+function fsWriteAdmin(store: AdminStore): void {
+  ensureAdminDir();
   fs.writeFileSync(ADMIN_FILE, JSON.stringify(store, null, 2), { encoding: "utf-8", mode: 0o600 });
 }
 
-export function isSetupNeeded(): boolean {
-  const store = readAdminStore();
-  if (store && store.users.length > 0) return false;
-  // Also accept env-var credentials as a valid "setup"
-  return !(process.env.BLOG_ADMIN_PASSWORD_HASH && process.env.BLOG_PUBLISH_SECRET);
-}
+// ── Publish secret (always read from env; DB is optional secondary) ───────────
 
 export function getPublishSecret(): string | null {
-  const store = readAdminStore();
-  if (store?.publishSecret) return store.publishSecret;
   return process.env.BLOG_PUBLISH_SECRET || null;
 }
 
-/** Returns env-var user as a fallback when admin.json doesn't exist */
+// ── User CRUD ─────────────────────────────────────────────────────────────────
+
+export async function getAllUsers(): Promise<UserRecord[]> {
+  if (isSupabaseEnabled()) {
+    const { data, error } = await sb()
+      .from("users")
+      .select("id, username, password_hash, role, created_at")
+      .order("created_at", { ascending: true });
+    if (error) { console.error("[adminStore] getAllUsers:", error.message); return []; }
+    return (data ?? []).map((u: Record<string, string>) => ({
+      id:           u.id,
+      username:     u.username,
+      passwordHash: u.password_hash,
+      role:         u.role as Role,
+      createdAt:    u.created_at,
+    }));
+  }
+  return fsReadAdmin()?.users ?? [];
+}
+
+export async function getUserByUsername(username: string): Promise<UserRecord | null> {
+  if (isSupabaseEnabled()) {
+    const { data, error } = await sb()
+      .from("users")
+      .select("id, username, password_hash, role, created_at")
+      .ilike("username", username)
+      .single();
+    if (error || !data) return null;
+    const u = data as Record<string, string>;
+    return {
+      id:           u.id,
+      username:     u.username,
+      passwordHash: u.password_hash,
+      role:         u.role as Role,
+      createdAt:    u.created_at,
+    };
+  }
+  const store = fsReadAdmin();
+  return store?.users.find((u) => u.username.toLowerCase() === username.toLowerCase()) ?? null;
+}
+
+export async function createUser(user: UserRecord): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from("users").insert({
+      id:            user.id,
+      username:      user.username,
+      password_hash: user.passwordHash,
+      role:          user.role,
+      created_at:    user.createdAt,
+    });
+    if (error) throw new Error(`[adminStore] createUser: ${error.message}`);
+    return;
+  }
+  const store = fsReadAdmin() ?? { publishSecret: crypto.randomBytes(32).toString("hex"), users: [] };
+  store.users.push(user);
+  fsWriteAdmin(store);
+}
+
+export async function updateUserRole(userId: string, role: Role): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from("users").update({ role }).eq("id", userId);
+    if (error) throw new Error(`[adminStore] updateUserRole: ${error.message}`);
+    return;
+  }
+  const store = fsReadAdmin();
+  if (!store) throw new Error("Admin store not initialised.");
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) throw new Error("User not found.");
+  user.role = role;
+  fsWriteAdmin(store);
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from("users").delete().eq("id", userId);
+    if (error) throw new Error(`[adminStore] deleteUser: ${error.message}`);
+    return;
+  }
+  const store = fsReadAdmin();
+  if (!store) throw new Error("Admin store not initialised.");
+  store.users = store.users.filter((u) => u.id !== userId);
+  fsWriteAdmin(store);
+}
+
+export async function isSetupNeeded(): Promise<boolean> {
+  if (isSupabaseEnabled()) {
+    const { count } = await sb().from("users").select("id", { count: "exact", head: true });
+    return (count ?? 0) === 0 && !process.env.BLOG_ADMIN_PASSWORD_HASH;
+  }
+  const store = fsReadAdmin();
+  if (store && store.users.length > 0) return false;
+  return !(process.env.BLOG_ADMIN_PASSWORD_HASH && process.env.BLOG_PUBLISH_SECRET);
+}
+
+/** Env-var fallback user for when no DB is set up yet. */
 export function getEnvFallbackUser(): UserRecord | null {
   const hash   = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
   const secret = process.env.BLOG_PUBLISH_SECRET || "";
@@ -83,4 +170,16 @@ export function getEnvFallbackUser(): UserRecord | null {
     role:         "admin",
     createdAt:    "",
   };
+}
+
+// ── Legacy sync helpers (kept for backwards compatibility) ────────────────────
+
+/** @deprecated Use async functions above. */
+export function readAdminStore(): AdminStore | null {
+  return fsReadAdmin();
+}
+
+/** @deprecated Use async functions above. */
+export function writeAdminStore(store: AdminStore): void {
+  fsWriteAdmin(store);
 }

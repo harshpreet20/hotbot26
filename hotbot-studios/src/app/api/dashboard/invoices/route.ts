@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, writeAll, prepend, newId } from "@/lib/store";
+import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import type { Invoice, InvoiceLineItem } from "@/types/dashboard";
 
 function getNextInvoiceNumber(invoices: Invoice[]): string {
@@ -11,11 +11,7 @@ function getNextInvoiceNumber(invoices: Invoice[]): string {
   return `INV-${String(next).padStart(4, "0")}`;
 }
 
-function calcTotals(
-  lineItems: InvoiceLineItem[],
-  taxRate: number,
-  discount: number
-) {
+function calcTotals(lineItems: InvoiceLineItem[], taxRate: number, discount: number) {
   const subtotal  = lineItems.reduce((s, li) => s + li.amount, 0);
   const taxAmount = parseFloat(((subtotal - discount) * (taxRate / 100)).toFixed(2));
   const total     = parseFloat((subtotal - discount + taxAmount).toFixed(2));
@@ -23,24 +19,23 @@ function calcTotals(
 }
 
 export async function GET(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const invoices = readAll<Invoice>("invoices");
-  const { searchParams } = new URL(req.url);
-  const leadId = searchParams.get("leadId");
-  const filtered = leadId ? invoices.filter((inv) => inv.leadId === leadId) : invoices;
-  return NextResponse.json({ invoices: filtered });
+
+  const invoices = await readAll<Invoice>("invoices");
+  const leadId   = new URL(req.url).searchParams.get("leadId");
+  return NextResponse.json({ invoices: leadId ? invoices.filter((inv) => inv.leadId === leadId) : invoices });
 }
 
 export async function POST(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["admin", "manager"].includes(session.role)) {
+  if (!["admin", "manager", "finance"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json() as Partial<Invoice>;
-  const invoices = readAll<Invoice>("invoices");
+  const body     = await req.json() as Partial<Invoice>;
+  const invoices = await readAll<Invoice>("invoices");
 
   const lineItems: InvoiceLineItem[] = (body.lineItems ?? []).map((li) => ({
     id:          li.id ?? newId(),
@@ -80,26 +75,24 @@ export async function POST(req: NextRequest) {
     leadId:        body.leadId,
   };
 
-  prepend<Invoice>("invoices", invoice);
+  await insert<Invoice>("invoices", invoice);
   return NextResponse.json({ invoice }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["admin", "manager"].includes(session.role)) {
+  if (!["admin", "manager", "finance"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body   = await req.json() as Partial<Invoice> & { id: string };
-  const { id } = body;
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const body = await req.json() as Partial<Invoice> & { id: string };
+  if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const invoices = readAll<Invoice>("invoices");
-  const idx = invoices.findIndex((inv) => inv.id === id);
-  if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const invoices = await readAll<Invoice>("invoices");
+  const existing = invoices.find((inv) => inv.id === body.id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const existing = invoices[idx];
   const lineItems = body.lineItems
     ? body.lineItems.map((li) => ({
         id:          li.id ?? newId(),
@@ -117,7 +110,7 @@ export async function PATCH(req: NextRequest) {
   const updated: Invoice = {
     ...existing,
     ...body,
-    id,
+    id:            body.id,
     lineItems,
     subtotal,
     taxRate,
@@ -131,27 +124,25 @@ export async function PATCH(req: NextRequest) {
       : (body.paidDate ?? existing.paidDate),
   };
 
-  invoices[idx] = updated;
-  writeAll<Invoice>("invoices", invoices);
+  await updateById<Invoice>("invoices", body.id, updated);
   return NextResponse.json({ invoice: updated });
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const invoices = readAll<Invoice>("invoices");
-  const filtered = invoices.filter((inv) => inv.id !== id);
-  if (filtered.length === invoices.length) {
+  const invoices = await readAll<Invoice>("invoices");
+  if (!invoices.find((inv) => inv.id === id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  writeAll<Invoice>("invoices", filtered);
+
+  await removeById("invoices", id);
   return NextResponse.json({ ok: true });
 }

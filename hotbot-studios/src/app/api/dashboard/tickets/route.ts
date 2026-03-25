@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, writeAll, newId } from "@/lib/store";
+import { readAll, updateById, removeById, newId } from "@/lib/store";
 import { sendStaffReplyNotification, sendStatusUpdateNotification } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketStatus } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const tickets = readAll<Ticket>("tickets");
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status") as TicketStatus | null;
-  const filtered = status ? tickets.filter((t) => t.status === status) : tickets;
-  return NextResponse.json({ tickets: filtered });
+  const tickets = await readAll<Ticket>("tickets");
+  const status  = new URL(req.url).searchParams.get("status") as TicketStatus | null;
+  return NextResponse.json({ tickets: status ? tickets.filter((t) => t.status === status) : tickets });
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as {
@@ -24,16 +22,15 @@ export async function PATCH(req: NextRequest) {
     status?: TicketStatus;
     assignedTo?: string;
     priority?: Ticket["priority"];
-    // Staff comment
     type?: string;
     text?: string;
   };
 
   if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const tickets = readAll<Ticket>("tickets");
-  const idx = tickets.findIndex((t) => t.id === body.id);
-  if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const tickets = await readAll<Ticket>("tickets");
+  const ticket  = tickets.find((t) => t.id === body.id);
+  if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Add staff comment
   if (body.type === "comment") {
@@ -46,37 +43,34 @@ export async function PATCH(req: NextRequest) {
       isStaff:    true,
       createdAt:  new Date().toISOString(),
     };
-    tickets[idx].comments  = [...(tickets[idx].comments ?? []), comment];
-    tickets[idx].updatedAt = new Date().toISOString();
-    writeAll<Ticket>("tickets", tickets);
+    const updatedComments = [...(ticket.comments ?? []), comment];
+    const updatedTicket: Ticket = { ...ticket, comments: updatedComments, updatedAt: new Date().toISOString() };
+    await updateById<Ticket>("tickets", body.id, updatedTicket);
 
-    // Notify requester of new staff reply (non-blocking)
-    sendStaffReplyNotification(tickets[idx], comment).catch((err) =>
-      console.error("[Ticket Email] Staff reply notification failed:", err)
+    sendStaffReplyNotification(updatedTicket, comment).catch((err) =>
+      console.error("[Ticket Email] Staff reply failed:", err)
     );
-
     return NextResponse.json({ comment });
   }
 
   // Update ticket fields
-  const prevStatus = tickets[idx].status;
+  const prevStatus = ticket.status;
   const updated: Ticket = {
-    ...tickets[idx],
-    status:     body.status     ?? tickets[idx].status,
-    assignedTo: body.assignedTo !== undefined ? body.assignedTo : tickets[idx].assignedTo,
-    priority:   body.priority   ?? tickets[idx].priority,
+    ...ticket,
+    status:     body.status     ?? ticket.status,
+    assignedTo: body.assignedTo !== undefined ? body.assignedTo : ticket.assignedTo,
+    priority:   body.priority   ?? ticket.priority,
     updatedAt:  new Date().toISOString(),
-    resolvedAt: (body.status === "resolved" || body.status === "closed") && !tickets[idx].resolvedAt
+    resolvedAt: (body.status === "resolved" || body.status === "closed") && !ticket.resolvedAt
       ? new Date().toISOString()
-      : tickets[idx].resolvedAt,
+      : ticket.resolvedAt,
   };
-  tickets[idx] = updated;
-  writeAll<Ticket>("tickets", tickets);
 
-  // Notify requester on status change (non-blocking)
+  await updateById<Ticket>("tickets", body.id, updated);
+
   if (body.status && body.status !== prevStatus) {
     sendStatusUpdateNotification(updated, body.status).catch((err) =>
-      console.error("[Ticket Email] Status update notification failed:", err)
+      console.error("[Ticket Email] Status update failed:", err)
     );
   }
 
@@ -84,17 +78,18 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = authorizeAny(extractToken(req));
+  const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const tickets = readAll<Ticket>("tickets");
-  const filtered = tickets.filter((t) => t.id !== id);
-  if (filtered.length === tickets.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  writeAll<Ticket>("tickets", filtered);
+  const tickets = await readAll<Ticket>("tickets");
+  if (!tickets.find((t) => t.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await removeById("tickets", id);
   return NextResponse.json({ ok: true });
 }

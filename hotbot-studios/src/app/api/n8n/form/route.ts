@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepend, newId } from "@/lib/store";
+import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Lead } from "@/types/dashboard";
 
@@ -22,10 +22,12 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
   }
 }
 
-// Handles all lead-capture forms: get-started · strategy-call · consultation · enquiry
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 }); // 5 submissions per 5 min
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
+  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 });
   if (limited) return limited;
 
   try {
@@ -44,8 +46,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
 
-    // ip already extracted above for rate limiting
-
     const lead: Lead = {
       id:        newId(),
       name:      name.trim(),
@@ -61,19 +61,21 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
       status:    "new",
     };
-    prepend<Lead>("leads", lead);
 
-    // Forward to N8N Forms workflow
+    // Save to Supabase (or filesystem fallback) — primary write
+    await insert<Lead>("leads", lead);
+
+    // Forward to N8N Forms workflow (Telegram alert + Google Sheets) — fire-and-forget
     const n8nUrl = process.env.N8N_WEBHOOK_FORMS || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-forms";
     fetch(n8nUrl, {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(lead),
-    }).catch((err) => console.error("N8N forward error (form):", err));
+      body:    JSON.stringify({ ...lead, type: "lead" }),
+    }).catch((err) => console.error("[N8N] form forward error:", err));
 
     return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
-    console.error("Forms (lead) error:", error);
+    console.error("[form] error:", error);
     return NextResponse.json({ success: true, message: "Thank you! We'll be in touch shortly." });
   }
 }

@@ -5,24 +5,23 @@ import { readPosts } from "@/lib/postsStore";
 import type { Lead, Contact, CallbackRequest, NewsletterSubscriber, ChatSession, Invoice, CRMTask } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  if (!authorizeData(extractToken(req))) {
+  if (!await authorizeData(extractToken(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const leads      = readAll<Lead>("leads");
-  const contacts   = readAll<Contact>("contacts");
-  const newsletter = readAll<NewsletterSubscriber>("newsletter");
-  const callbacks  = readAll<CallbackRequest>("callbacks");
-  const chats      = readAll<ChatSession>("chats");
-  const invoices   = readAll<Invoice>("invoices");
-  const tasks      = readAll<CRMTask>("crm_tasks");
-  const postsCount = readPosts().posts?.length ?? 0;
+  const [leads, contacts, newsletter, callbacks, chats, invoices, tasks] = await Promise.all([
+    readAll<Lead>("leads"),
+    readAll<Contact>("contacts"),
+    readAll<NewsletterSubscriber>("newsletter"),
+    readAll<CallbackRequest>("callbacks"),
+    readAll<ChatSession>("chats"),
+    readAll<Invoice>("invoices"),
+    readAll<CRMTask>("crm_tasks"),
+  ]);
 
-  const invoiceRevenue = invoices
-    .filter((inv) => inv.status === "paid")
-    .reduce((sum, inv) => sum + inv.total, 0);
-
-  const openTasks = tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
+  const postsCount      = readPosts().posts?.length ?? 0;
+  const invoiceRevenue  = invoices.filter((inv) => inv.status === "paid").reduce((s, inv) => s + inv.total, 0);
+  const openTasks       = tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
 
   return NextResponse.json({
     leads:           leads.length,

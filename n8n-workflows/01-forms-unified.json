@@ -24,7 +24,7 @@
       "typeVersion": 2,
       "position": [480, 400],
       "parameters": {
-        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\n// Normalise to a flat object with safe defaults\nreturn [{ json: {\n  type:      (body.type || 'lead').toLowerCase().trim(),\n  // Lead / Contact fields\n  name:      (body.name      || '').trim(),\n  email:     (body.email     || '').trim().toLowerCase(),\n  phone:     (body.phone     || '').trim(),\n  company:   (body.company   || '').trim(),\n  service:   (body.service   || '').trim(),\n  budget:    (body.budget    || '').trim(),\n  message:   (body.message   || '').trim(),\n  subject:   (body.subject   || '').trim(),\n  formType:  (body.formType  || body.type || 'general').trim(),\n  source:    (body.source    || 'website').trim(),\n  ip:        (body.ip        || 'unknown').trim(),\n  // Analytics fields\n  event:      body.event      || '',\n  properties: body.properties || {},\n  page:       body.page       || '',\n  sessionId:  body.sessionId  || '',\n  referrer:   body.referrer   || '',\n  // Timestamp\n  receivedAt: new Date().toISOString()\n}}];"
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nreturn [{ json: {\n  id:        body.id        || '',\n  type:      (body.type || body.formType || 'lead').toLowerCase().trim(),\n  name:      (body.name      || '').trim(),\n  email:     (body.email     || '').trim().toLowerCase(),\n  phone:     (body.phone     || '').trim(),\n  company:   (body.company   || '').trim(),\n  service:   (body.service   || '').trim(),\n  budget:    (body.budget    || '').trim(),\n  message:   (body.message   || '').trim(),\n  subject:   (body.subject   || '').trim(),\n  formType:  (body.formType  || body.type || 'general').trim(),\n  source:    (body.source    || 'website').trim(),\n  ip:        (body.ip        || 'unknown').trim(),\n  event:      body.event      || '',\n  properties: body.properties || {},\n  page:       body.page       || '',\n  sessionId:  body.sessionId  || '',\n  referrer:   body.referrer   || '',\n  receivedAt: body.createdAt  || new Date().toISOString()\n}}];"
       }
     },
 
@@ -114,11 +114,36 @@
     },
 
     {
+      "id": "supabase-upsert-lead",
+      "name": "Supabase — Confirm Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [980, 360],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.id || ($json.email + '-' + Date.now()), name: $json.name, email: $json.email, phone: $json.phone, company: $json.company, service: $json.service, budget: $json.budget, message: $json.message, form_type: $json.formType, source: $json.source, ip: $json.ip, status: 'new', created_at: $json.receivedAt }) }}",
+        "options": { "timeout": 10000, "redirect": { "redirect": { "followRedirects": false } } }
+      }
+    },
+
+    {
       "id": "sheets-newsletter",
       "name": "Sheets — Append Newsletter",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [980, 380],
+      "position": [980, 500],
       "parameters": {
         "operation": "append",
         "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
@@ -138,11 +163,36 @@
     },
 
     {
+      "id": "supabase-upsert-newsletter",
+      "name": "Supabase — Upsert Newsletter Subscriber",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [980, 620],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/newsletter",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.email.replace('@','-').replace('.','_') + '-nl', name: $json.name, email: $json.email, source: $json.source, created_at: $json.receivedAt }) }}",
+        "options": { "timeout": 10000 }
+      }
+    },
+
+    {
       "id": "sheets-contact",
       "name": "Sheets — Append Contact",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [980, 520],
+      "position": [980, 760],
       "parameters": {
         "operation": "append",
         "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
@@ -169,7 +219,7 @@
       "name": "Telegram — Contact Alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [980, 660],
+      "position": [980, 880],
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
         "text":   "={{ '📩 Contact Page Message\\n\\nFrom: ' + $json.name + ' &lt;' + $json.email + '&gt;\\nSubject: ' + ($json.subject || 'n/a') + '\\n\\n' + $json.message }}",
@@ -179,11 +229,36 @@
     },
 
     {
+      "id": "supabase-insert-contact",
+      "name": "Supabase — Insert Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [980, 1000],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.email + '-' + Date.now(), name: $json.name, email: $json.email, phone: $json.phone, subject: $json.subject, message: $json.message, source: $json.source, created_at: $json.receivedAt }) }}",
+        "options": { "timeout": 10000 }
+      }
+    },
+
+    {
       "id": "sheets-analytics",
       "name": "Sheets — Append Analytics Event",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [980, 800],
+      "position": [980, 1140],
       "parameters": {
         "operation": "append",
         "documentId": { "__rl": true, "value": "={{ $env.SHEETS_DOC_ID }}", "mode": "id" },
@@ -228,25 +303,28 @@
     "Switch — Form Type": {
       "main": [
         [
-          { "node": "Sheets — Append Lead",   "type": "main", "index": 0 },
-          { "node": "Telegram — New Lead Alert", "type": "main", "index": 0 }
+          { "node": "Sheets — Append Lead",       "type": "main", "index": 0 },
+          { "node": "Telegram — New Lead Alert",  "type": "main", "index": 0 },
+          { "node": "Supabase — Confirm Lead",    "type": "main", "index": 0 }
         ],
         [
-          { "node": "Sheets — Append Newsletter", "type": "main", "index": 0 }
+          { "node": "Sheets — Append Newsletter",               "type": "main", "index": 0 },
+          { "node": "Supabase — Upsert Newsletter Subscriber",  "type": "main", "index": 0 }
         ],
         [
-          { "node": "Sheets — Append Contact",    "type": "main", "index": 0 },
-          { "node": "Telegram — Contact Alert",   "type": "main", "index": 0 }
+          { "node": "Sheets — Append Contact",   "type": "main", "index": 0 },
+          { "node": "Telegram — Contact Alert",  "type": "main", "index": 0 },
+          { "node": "Supabase — Insert Contact", "type": "main", "index": 0 }
         ],
         [
           { "node": "Sheets — Append Analytics Event", "type": "main", "index": 0 }
         ]
       ]
     },
-    "Sheets — Append Lead":         { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
-    "Sheets — Append Newsletter":   { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
-    "Sheets — Append Contact":      { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
-    "Sheets — Append Analytics Event": { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] }
+    "Sheets — Append Lead":                    { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Newsletter":              { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Contact":                 { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] },
+    "Sheets — Append Analytics Event":         { "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]] }
   },
 
   "settings": { "executionOrder": "v1" },
@@ -257,18 +335,14 @@
   },
 
   "__setup_notes__": {
-    "replaces": ["01-form-pipeline.json", "04-leads-pipeline.json", "05-analytics-pipeline.json", "06-contact-pipeline.json", "07-newsletter-pipeline.json"],
     "webhook_path": "hotbotstudios-forms",
-    "env_var": "N8N_WEBHOOK_FORMS=hotbotstudios-forms",
-    "type_field": "The 'type' field in the POST body controls routing: 'lead' | 'newsletter' | 'contact' | 'analytics'. Anything else also routes as lead (fallback).",
-    "google_sheets": "One spreadsheet (SHEETS_DOC_ID) with 4 tabs: Leads | Newsletter | Contact | Analytics",
-    "sheets_columns": {
-      "Leads":      "receivedAt | name | email | phone | company | service | budget | message | formType | source | ip",
-      "Newsletter": "subscribedAt | name | email | source",
-      "Contact":    "receivedAt | name | email | phone | subject | message | source",
-      "Analytics":  "timestamp | event | page | sessionId | referrer | properties"
+    "env_var": "N8N_WEBHOOK_FORMS=https://your-n8n.app.n8n.cloud/webhook/hotbotstudios-forms",
+    "supabase_env": {
+      "SUPABASE_URL": "Your Supabase project URL (e.g. https://xxx.supabase.co)",
+      "SUPABASE_SERVICE_ROLE_KEY": "Your service_role key (Settings → API)"
     },
-    "telegram": "Set TELEGRAM_CHAT_ID in n8n env vars. Leads and Contact messages trigger alerts; newsletter/analytics do not.",
-    "credentials": "Replace 'google-sheets-cred' and 'telegram-cred' IDs with your actual n8n credential IDs."
+    "type_field": "The 'type' field controls routing: 'lead' | 'newsletter' | 'contact' | 'analytics'. Fallback = lead.",
+    "google_sheets": "One spreadsheet (SHEETS_DOC_ID) with 4 tabs: Leads | Newsletter | Contact | Analytics",
+    "credentials": "Replace 'google-sheets-cred' and 'telegram-cred' with your actual n8n credential IDs."
   }
 }

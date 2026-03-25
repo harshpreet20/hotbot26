@@ -1,12 +1,19 @@
 /**
- * Generic JSON file store for persisting data to disk.
- * Files live in {cwd}/data/ — outside public/, never HTTP-accessible.
+ * Unified async data store.
+ *
+ * Primary:  Supabase (when SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are set)
+ * Fallback: Local JSON files  (dev / no-Supabase mode)
+ *
+ * camelCase ↔ snake_case conversion is handled automatically so TypeScript
+ * types (camelCase) match Postgres column names (snake_case) transparently.
  */
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { sb, isSupabaseEnabled, toSnake, toCamel } from "@/lib/supabase";
 
-// Vercel's project root (/var/task) is read-only; use /tmp for writable storage
+// ── Filesystem helpers ─────────────────────────────────────────────────────────
+
 const DATA_DIR = process.env.VERCEL
   ? "/tmp/hotbot-data"
   : path.join(process.cwd(), "data");
@@ -15,13 +22,13 @@ function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function filePath(name: string) {
+function fp(name: string) {
   return path.join(DATA_DIR, `${name}.json`);
 }
 
-export function readAll<T>(store: string): T[] {
+function fsRead<T>(store: string): T[] {
   try {
-    const raw = fs.readFileSync(filePath(store), "utf-8");
+    const raw = fs.readFileSync(fp(store), "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch {
@@ -29,18 +36,127 @@ export function readAll<T>(store: string): T[] {
   }
 }
 
-export function writeAll<T>(store: string, items: T[]): void {
+function fsWrite<T>(store: string, items: T[]): void {
   ensureDir();
-  fs.writeFileSync(filePath(store), JSON.stringify(items, null, 2), "utf-8");
+  fs.writeFileSync(fp(store), JSON.stringify(items, null, 2), "utf-8");
 }
 
-/** Prepend a new item (newest first) */
-export function prepend<T>(store: string, item: T): void {
-  const items = readAll<T>(store);
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/** Read all rows from a table, newest first. */
+export async function readAll<T>(table: string): Promise<T[]> {
+  if (isSupabaseEnabled()) {
+    const { data, error } = await sb()
+      .from(table)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(`[store] readAll(${table}):`, error.message);
+      return [];
+    }
+    return ((data ?? []) as Record<string, unknown>[]).map(toCamel<T>);
+  }
+  return fsRead<T>(table);
+}
+
+/** Read rows filtered by a single column equality. */
+export async function readWhere<T>(
+  table: string,
+  column: string,
+  value: string
+): Promise<T[]> {
+  if (isSupabaseEnabled()) {
+    const { data, error } = await sb()
+      .from(table)
+      .select("*")
+      .eq(column, value)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(`[store] readWhere(${table}):`, error.message);
+      return [];
+    }
+    return ((data ?? []) as Record<string, unknown>[]).map(toCamel<T>);
+  }
+  // Filesystem fallback — filter in memory
+  const items = fsRead<Record<string, unknown>>(table);
+  return items.filter((i) => i[column] === value) as T[];
+}
+
+/** Insert one row (newest first in filesystem fallback). */
+export async function insert<T>(table: string, item: T): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb()
+      .from(table)
+      .insert(toSnake(item as Record<string, unknown>));
+    if (error) throw new Error(`[store] insert(${table}): ${error.message}`);
+    return;
+  }
+  const items = fsRead<T>(table);
   items.unshift(item);
-  writeAll(store, items);
+  fsWrite(table, items);
 }
 
+/** Update a single row by its `id` field. */
+export async function updateById<T>(
+  table: string,
+  id: string,
+  data: Partial<T>
+): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb()
+      .from(table)
+      .update(toSnake(data as Record<string, unknown>))
+      .eq("id", id);
+    if (error) throw new Error(`[store] updateById(${table}): ${error.message}`);
+    return;
+  }
+  const items = fsRead<T & { id: string }>(table);
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx !== -1) {
+    items[idx] = { ...items[idx], ...data };
+    fsWrite(table, items);
+  }
+}
+
+/** Delete a single row by its `id` field. */
+export async function removeById(table: string, id: string): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from(table).delete().eq("id", id);
+    if (error) throw new Error(`[store] removeById(${table}): ${error.message}`);
+    return;
+  }
+  const items = fsRead<{ id: string }>(table);
+  fsWrite(table, items.filter((i) => i.id !== id));
+}
+
+/** Remove rows where `column` equals `value`. */
+export async function removeWhere(
+  table: string,
+  column: string,
+  value: string
+): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from(table).delete().eq(column, value);
+    if (error) throw new Error(`[store] removeWhere(${table}): ${error.message}`);
+    return;
+  }
+  const items = fsRead<Record<string, unknown>>(table);
+  fsWrite(table, items.filter((i) => i[column] !== value));
+}
+
+/** Generate a time-sortable unique id (filesystem compat; Supabase uses its own). */
 export function newId(): string {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+}
+
+// ── Sync helpers (sessions.ts internal use only) ───────────────────────────────
+
+/** @internal Synchronous filesystem read — used only by sessions.ts fallback. */
+export function _fsRead<T>(store: string): T[] {
+  return fsRead<T>(store);
+}
+
+/** @internal Synchronous filesystem write — used only by sessions.ts fallback. */
+export function _fsWrite<T>(store: string, items: T[]): void {
+  fsWrite(store, items);
 }

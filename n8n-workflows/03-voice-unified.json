@@ -24,7 +24,7 @@
       "typeVersion": 2,
       "position": [480, 300],
       "parameters": {
-        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nconst name        = (body.name        || '').trim();\nconst phone       = (body.phone       || '').trim();\nconst requestedAt = body.requestedAt  || new Date().toISOString();\nconst source      = body.source       || 'website';\n\nif (!name || !phone) {\n  return [{ json: { valid: false, error: 'Name and phone are required.' } }];\n}\n\n// Basic phone sanity check — must have at least 7 digits\nconst digits = phone.replace(/\\D/g, '');\nif (digits.length < 7) {\n  return [{ json: { valid: false, error: 'Invalid phone number.' } }];\n}\n\nconst SARVAM_KEY     = $env.SARVAM_API_KEY     || '';\nconst SARVAM_AGENT   = $env.SARVAM_AGENT_ID    || '';\nconst SARVAM_BASE    = $env.SARVAM_BASE_URL     || 'https://api.sarvam.ai';\n\nreturn [{ json: {\n  valid:       true,\n  name,\n  phone,\n  digits,\n  requestedAt,\n  source,\n  sarvamKey:   SARVAM_KEY,\n  sarvamAgent: SARVAM_AGENT,\n  sarvamBase:  SARVAM_BASE\n}}];"
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nconst callbackId  = body.id           || '';\nconst name        = (body.name        || '').trim();\nconst phone       = (body.phone       || '').trim();\nconst requestedAt = body.requestedAt  || body.created_at || new Date().toISOString();\nconst source      = body.source       || 'website';\n\nif (!name || !phone) {\n  return [{ json: { valid: false, error: 'Name and phone are required.' } }];\n}\n\n// Basic phone sanity check — must have at least 7 digits\nconst digits = phone.replace(/\\D/g, '');\nif (digits.length < 7) {\n  return [{ json: { valid: false, error: 'Invalid phone number.' } }];\n}\n\nconst SARVAM_KEY     = $env.SARVAM_API_KEY     || '';\nconst SARVAM_AGENT   = $env.SARVAM_AGENT_ID    || '';\nconst SARVAM_BASE    = $env.SARVAM_BASE_URL     || 'https://api.sarvam.ai';\nconst SUPABASE_URL   = $env.SUPABASE_URL        || '';\nconst SUPABASE_KEY   = $env.SUPABASE_SERVICE_ROLE_KEY || '';\n\nreturn [{ json: {\n  valid:        true,\n  callbackId,\n  name,\n  phone,\n  digits,\n  requestedAt,\n  source,\n  sarvamKey:    SARVAM_KEY,\n  sarvamAgent:  SARVAM_AGENT,\n  sarvamBase:   SARVAM_BASE,\n  supabaseUrl:  SUPABASE_URL,\n  supabaseKey:  SUPABASE_KEY\n}}];"
       }
     },
 
@@ -77,6 +77,34 @@
     },
 
     {
+      "id": "supabase-callback-status",
+      "name": "Supabase — Mark Callback Called",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1200, 200],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Validate & Prepare').first().json.supabaseUrl }}/rest/v1/callbacks?id=eq.{{ $('Validate & Prepare').first().json.callbackId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",          "value": "={{ $('Validate & Prepare').first().json.supabaseKey }}" },
+            { "name": "Authorization",   "value": "=Bearer {{ $('Validate & Prepare').first().json.supabaseKey }}" },
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Prefer",          "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"status\": \"called\" }",
+        "options": {
+          "timeout": 10000,
+          "response": { "response": { "neverError": true } }
+        }
+      }
+    },
+
+    {
       "id": "sheets-callback",
       "name": "Sheets — Log Callback",
       "type": "n8n-nodes-base.googleSheets",
@@ -120,7 +148,7 @@
       "name": "Respond — OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1200, 300],
+      "position": [1440, 200],
       "parameters": {
         "respondWith": "json",
         "responseBody": "{ \"success\": true, \"message\": \"Confirmed! Our AI assistant will call you within 2 minutes.\" }"
@@ -162,6 +190,9 @@
       ]
     },
     "Sarvam AI — Trigger Outbound Call": {
+      "main": [[{ "node": "Supabase — Mark Callback Called", "type": "main", "index": 0 }]]
+    },
+    "Supabase — Mark Callback Called": {
       "main": [[{ "node": "Respond — OK", "type": "main", "index": 0 }]]
     }
   },
@@ -181,6 +212,11 @@
       "SARVAM_API_KEY":   "Your Sarvam AI API subscription key",
       "SARVAM_AGENT_ID":  "The agent/bot ID configured in your Sarvam AI dashboard",
       "SARVAM_BASE_URL":  "https://api.sarvam.ai (default — change if self-hosted)"
+    },
+    "supabase": {
+      "SUPABASE_URL":               "Your Supabase project URL (e.g. https://xxxx.supabase.co)",
+      "SUPABASE_SERVICE_ROLE_KEY":  "Supabase service role key — bypasses RLS; set in N8N env vars",
+      "note":                       "After Sarvam call succeeds, N8N PATCHes /rest/v1/callbacks?id=eq.{id} to set status='called'. The callback id is sent by Next.js in the initial webhook payload."
     },
     "google_sheets": "Requires a 'Callbacks' tab in the same SHEETS_DOC_ID spreadsheet. Columns: requestedAt | name | phone | source | status",
     "telegram": "Set TELEGRAM_CHAT_ID in n8n env. Every callback triggers an alert.",
