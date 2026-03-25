@@ -32,6 +32,10 @@ export default function InvoiceDetailPage() {
   const [error,   setError]     = useState("");
   const [tasks,   setTasks]     = useState<CRMTask[]>([]);
   const [newTask, setNewTask]   = useState("");
+  const [sending,      setSending]      = useState(false);
+  const [sendSuccess,  setSendSuccess]  = useState("");
+  const [sendError,    setSendError]    = useState("");
+  const [sendEmail,    setSendEmail]    = useState("");
 
   // Editable fields
   const [lineItems,     setLineItems]     = useState<InvoiceLineItem[]>([]);
@@ -73,6 +77,7 @@ export default function InvoiceDetailPage() {
         setNotes(inv.notes ?? "");
         setTerms(inv.terms ?? "");
         setStatus(inv.status);
+        setSendEmail(inv.clientEmail ?? "");
         setTasks(taskData.tasks);
       })
       .catch(console.error)
@@ -109,6 +114,26 @@ export default function InvoiceDetailPage() {
       setInvoice(data.invoice);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSendEmail() {
+    setSending(true); setSendError(""); setSendSuccess("");
+    try {
+      const res = await fetch("/api/dashboard/invoices/send", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id, recipientEmail: sendEmail }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string; sentTo?: string; newStatus?: InvoiceStatus };
+      if (!res.ok) { setSendError(data.error ?? "Failed to send invoice."); return; }
+      setSendSuccess(`Invoice sent to ${data.sentTo}`);
+      if (data.newStatus && data.newStatus !== status) {
+        setStatus(data.newStatus);
+        setInvoice((prev) => prev ? { ...prev, status: data.newStatus! } : prev);
+      }
+    } finally {
+      setSending(false);
     }
   }
 
@@ -247,6 +272,44 @@ export default function InvoiceDetailPage() {
           <Section title="Notes & Terms">
             <Field label="Notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="input-field resize-none" /></Field>
             <Field label="Terms"><textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={2} className="input-field resize-none" /></Field>
+          </Section>
+
+          {/* Send via Email */}
+          <Section title="Send Invoice via Email">
+            <p className="text-slate-500 text-xs -mt-2 mb-3">
+              Sends a professionally formatted HTML invoice to the client using HotBot Studios&apos; Google Workspace mail server.
+              The status will automatically update to &apos;Sent&apos; if the invoice is currently a draft.
+            </p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-xs text-slate-500 mb-1.5">Recipient Email</label>
+                <input
+                  type="email"
+                  value={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.value)}
+                  placeholder="client@example.com"
+                  className="input-field"
+                />
+              </div>
+              <button
+                onClick={handleSendEmail}
+                disabled={sending || !sendEmail}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-50 whitespace-nowrap"
+                style={{ background: "rgba(34,197,94,0.75)", minWidth: 130 }}
+              >
+                {sending ? "Sending…" : "✉ Send Invoice"}
+              </button>
+            </div>
+            {sendSuccess && (
+              <div className="mt-3 px-4 py-2.5 rounded-xl text-sm text-emerald-400" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                {sendSuccess}
+              </div>
+            )}
+            {sendError && (
+              <div className="mt-3 px-4 py-2.5 rounded-xl text-sm text-red-400" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                {sendError}
+              </div>
+            )}
           </Section>
 
           {/* Linked tasks */}
