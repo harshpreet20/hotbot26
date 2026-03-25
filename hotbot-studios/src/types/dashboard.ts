@@ -1,5 +1,5 @@
 // ── Role-based access control ─────────────────────────────────────────────────
-export type Role = "admin" | "manager" | "sales" | "crm_operator" | "editor" | "contributor" | "agent";
+export type Role = "admin" | "manager" | "sales" | "crm_operator" | "finance" | "editor" | "contributor" | "agent";
 
 /**
  * Role capability summary:
@@ -7,6 +7,7 @@ export type Role = "admin" | "manager" | "sales" | "crm_operator" | "editor" | "
  *  manager      – CRM data (leads, contacts, callbacks, newsletter, overview) + read-only user list
  *  sales        – Create & manage leads, view CRM pipeline, access sales channels
  *  crm_operator – View & update CRM data (leads, contacts, callbacks); cannot create leads or manage users
+ *  finance      – Full invoice management, read-only CRM data (leads, overview)
  *  editor       – Blog management: create, edit, publish/unpublish, delete posts
  *  contributor  – Blog drafts only: create & edit own drafts, cannot publish
  *  agent        – View chat logs and callbacks
@@ -16,6 +17,7 @@ export const ROLE_CAPABILITIES: Record<Role, string[]> = {
   manager:      ["data:read", "data:export", "users:report", "crm:full", "invoices:read"],
   sales:        ["data:read", "crm:full", "leads:create", "invoices:read"],
   crm_operator: ["data:read", "crm:update"],
+  finance:      ["data:read", "invoices:full", "crm:read"],
   editor:       ["blog:publish", "blog:edit"],
   contributor:  ["blog:draft"],
   agent:        ["chats:read", "callbacks:read", "crm:read"],

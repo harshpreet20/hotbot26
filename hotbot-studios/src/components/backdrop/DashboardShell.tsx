@@ -18,7 +18,7 @@ const NAV: NavItem[] = [
     href: "/enter/backdrop/dashboard",
     label: "Overview",
     exact: true,
-    roles: ["admin", "manager", "sales", "crm_operator"],
+    roles: ["admin", "manager", "sales", "crm_operator", "finance"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -52,7 +52,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/leads",
     label: "Leads",
-    roles: ["admin", "manager", "sales", "crm_operator"],
+    roles: ["admin", "manager", "sales", "crm_operator", "finance"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 7h-9" /><path d="M14 17H5" />
@@ -74,7 +74,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/invoices",
     label: "Invoices",
-    roles: ["admin", "manager", "sales"],
+    roles: ["admin", "manager", "sales", "finance"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -154,6 +154,7 @@ const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
   manager:      { label: "Manager",      color: "#34d399" },
   sales:        { label: "Sales",        color: "#f97316" },
   crm_operator: { label: "CRM Operator", color: "#a78bfa" },
+  finance:      { label: "Finance",      color: "#10b981" },
   editor:       { label: "Editor",       color: "#3b82f6" },
   contributor:  { label: "Contributor",  color: "#06b6d4" },
   agent:        { label: "Agent",        color: "#f59e0b" },

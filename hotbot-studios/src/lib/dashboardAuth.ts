@@ -49,17 +49,17 @@ export function authorizeRole(
 
 /** Any authenticated user regardless of role */
 export function authorizeAny(token: string | null | undefined): SessionInfo | null {
-  return authorizeRole(token, "admin", "manager", "sales", "crm_operator", "editor", "contributor", "agent");
+  return authorizeRole(token, "admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent");
 }
 
 /**
  * Authorises access to inbound data (leads, contacts, newsletter, callbacks, overview).
- * Accepts admin/manager/sales/crm_operator session tokens, OR the static publish secret.
+ * Accepts admin/manager/sales/crm_operator/finance session tokens, OR the static publish secret.
  */
 export function authorizeData(token: string | null | undefined): boolean {
   if (!token) return false;
   const session = getSession(token);
-  if (session) return ["admin", "manager", "sales", "crm_operator"].includes(session.role);
+  if (session) return ["admin", "manager", "sales", "crm_operator", "finance"].includes(session.role);
   const ps = getPublishSecret();
   return !!ps && token === ps;
 }
