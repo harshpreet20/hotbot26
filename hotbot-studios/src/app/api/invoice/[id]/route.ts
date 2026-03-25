@@ -13,7 +13,7 @@ export async function GET(
   const { id } = params;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const invoices = readAll<Invoice>("invoices");
+  const invoices = await readAll<Invoice>("invoices");
   const inv = invoices.find((i) => i.id === id);
   if (!inv) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
