@@ -73,6 +73,16 @@ export function Navbar() {
 
         {/* CTA + Mobile Toggle */}
         <div className="flex items-center gap-3">
+          <Link
+            href="/tickets"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+            </svg>
+            Raise a Ticket
+          </Link>
           <button
             onClick={() => openForm("get-started", pathname)}
             className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/20"
@@ -112,6 +122,13 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/tickets"
+              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
+            >
+              Raise a Ticket
+            </Link>
             <button
               onClick={() => openForm("get-started", pathname)}
               className="mt-2 px-4 py-3 rounded-xl text-sm font-semibold text-white text-center"

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prepend, newId, readAll } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import type { NewsletterSubscriber } from "@/types/dashboard";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const limited = rateLimitResponse(ip, "newsletter", { limit: 3, windowMs: 10 * 60_000 });
+  if (limited) return limited;
+
   try {
     const body = await req.json() as { email?: string; name?: string };
     const { email, name } = body;

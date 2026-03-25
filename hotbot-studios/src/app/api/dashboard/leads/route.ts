@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, writeAll, prepend, newId } from "@/lib/store";
 import type { Lead, CRMUpdate, LeadStatus } from "@/types/dashboard";
 
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["admin", "manager"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body   = await req.json() as Partial<Lead> & { id: string };
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest) {
   const idx   = leads.findIndex((l) => l.id === id);
   if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const existing = leads[idx];
+  const existing   = leads[idx];
   const prevStatus = existing.status;
 
   const updated: Lead = {
@@ -68,13 +68,13 @@ export async function PATCH(req: NextRequest) {
   leads[idx] = updated;
   writeAll<Lead>("leads", leads);
 
-  // Auto-log a status change activity if status changed
+  // Auto-log status change
   if (body.status && body.status !== prevStatus) {
     const statusUpdate: CRMUpdate = {
       id:        newId(),
       leadId:    id,
       type:      "status_change",
-      content:   `Status changed from "${prevStatus}" to "${body.status}"`,
+      content:   `Status changed from "${prevStatus ?? "new"}" to "${body.status}"`,
       createdAt: new Date().toISOString(),
       createdBy: session.username,
       metadata:  { prevStatus: prevStatus ?? "new", newStatus: body.status },
@@ -90,9 +90,7 @@ export async function PATCH(req: NextRequest) {
       id:        newId(),
       leadId:    id,
       type:      "assignment",
-      content:   body.assignedTo
-        ? `Assigned to ${body.assignedTo}`
-        : "Assignment removed",
+      content:   body.assignedTo ? `Assigned to ${body.assignedTo}` : "Assignment removed",
       createdAt: new Date().toISOString(),
       createdBy: session.username,
     };

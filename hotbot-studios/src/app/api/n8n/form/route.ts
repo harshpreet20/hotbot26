@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prepend, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -23,6 +24,10 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
 
 // Handles all lead-capture forms: get-started · strategy-call · consultation · enquiry
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 }); // 5 submissions per 5 min
+  if (limited) return limited;
+
   try {
     const body = await req.json() as Record<string, string>;
     const { name, email, phone, company, service, budget, message, formType, page, recaptchaToken } = body;
@@ -39,10 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
 
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
+    // ip already extracted above for rate limiting
 
     const lead: Lead = {
       id:        newId(),
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
       source:    page     || "unknown",
       ip,
       createdAt: new Date().toISOString(),
+      status:    "new",
     };
     prepend<Lead>("leads", lead);
 

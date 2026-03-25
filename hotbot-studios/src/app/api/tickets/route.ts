@@ -1,0 +1,108 @@
+/**
+ * Public ticket API — no authentication required.
+ * POST  /api/tickets        — submit a new ticket
+ * GET   /api/tickets?id=    — get a single ticket by ID (for status page)
+ * POST  /api/tickets/comment — add a public comment to a ticket
+ */
+import { NextRequest, NextResponse } from "next/server";
+import { readAll, writeAll, prepend, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import type { Ticket, TicketComment, TicketCategory, TicketPriority } from "@/types/dashboard";
+
+function getNextTicketNumber(tickets: Ticket[]): string {
+  const nums = tickets
+    .map((t) => parseInt(t.ticketNumber.replace(/\D/g, ""), 10))
+    .filter((n) => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  return `TKT-${String(next).padStart(4, "0")}`;
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const tickets = readAll<Ticket>("tickets");
+  const ticket  = tickets.find((t) => t.id === id || t.ticketNumber === id.toUpperCase());
+  if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Return ticket without internal IP
+  const { ip: _ip, ...safe } = ticket;
+  return NextResponse.json({ ticket: safe });
+}
+
+export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const limited = rateLimitResponse(ip, "tickets", { limit: 5, windowMs: 10 * 60_000 });
+  if (limited) return limited;
+
+  try {
+    const body = await req.json() as {
+      title?: string;
+      description?: string;
+      requesterName?: string;
+      requesterEmail?: string;
+      category?: TicketCategory;
+      priority?: TicketPriority;
+      // For adding a comment
+      type?: string;
+      ticketId?: string;
+      text?: string;
+    };
+
+    // ── Add public comment ────────────────────────────────────────────────────
+    if (body.type === "comment") {
+      if (!body.ticketId || !body.text?.trim() || !body.requesterName) {
+        return NextResponse.json({ error: "ticketId, text, and requesterName required" }, { status: 400 });
+      }
+      const tickets = readAll<Ticket>("tickets");
+      const idx = tickets.findIndex((t) => t.id === body.ticketId);
+      if (idx === -1) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+
+      const comment: TicketComment = {
+        id:          newId(),
+        ticketId:    body.ticketId,
+        text:        body.text.trim(),
+        authorName:  body.requesterName,
+        authorEmail: body.requesterEmail,
+        isStaff:     false,
+        createdAt:   new Date().toISOString(),
+      };
+      tickets[idx].comments = [...(tickets[idx].comments ?? []), comment];
+      tickets[idx].updatedAt = new Date().toISOString();
+      writeAll<Ticket>("tickets", tickets);
+      return NextResponse.json({ comment }, { status: 201 });
+    }
+
+    // ── Create ticket ─────────────────────────────────────────────────────────
+    if (!body.title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
+    if (!body.requesterName?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
+    if (!body.requesterEmail?.trim()) return NextResponse.json({ error: "Email required" }, { status: 400 });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.requesterEmail.trim())) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    const tickets = readAll<Ticket>("tickets");
+    const ticket: Ticket = {
+      id:             newId(),
+      ticketNumber:   getNextTicketNumber(tickets),
+      title:          body.title.trim(),
+      description:    body.description?.trim() ?? "",
+      status:         "open",
+      priority:       body.priority  ?? "medium",
+      category:       body.category  ?? "general",
+      requesterName:  body.requesterName.trim(),
+      requesterEmail: body.requesterEmail.trim(),
+      createdAt:      new Date().toISOString(),
+      updatedAt:      new Date().toISOString(),
+      ip,
+      comments:       [],
+    };
+    prepend<Ticket>("tickets", ticket);
+
+    return NextResponse.json({ ticket: { id: ticket.id, ticketNumber: ticket.ticketNumber, status: ticket.status } }, { status: 201 });
+  } catch (err) {
+    console.error("Ticket submission error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

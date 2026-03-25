@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, writeAll, prepend, newId } from "@/lib/store";
 import type { TeamMessage, TeamChannel } from "@/types/dashboard";
 
@@ -11,13 +11,13 @@ const DEFAULT_CHANNELS: TeamChannel[] = [
 ];
 
 export async function GET(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const type      = searchParams.get("type");       // "channels" | "messages"
+  const type      = searchParams.get("type");
   const channelId = searchParams.get("channelId");
-  const since     = searchParams.get("since");       // ISO timestamp for polling
+  const since     = searchParams.get("since");
 
   if (type === "channels") {
     const stored   = readAll<TeamChannel>("team_channels");
@@ -25,27 +25,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ channels });
   }
 
-  // Default: return messages for a channel
   const messages = readAll<TeamMessage>("team_messages");
   let filtered = channelId ? messages.filter((m) => m.channelId === channelId) : messages;
   if (since) {
     const sinceTime = new Date(since).getTime();
     filtered = filtered.filter((m) => new Date(m.createdAt).getTime() > sinceTime);
   }
-  // Return newest last (chronological), capped at 100
+  // Return chronological (oldest first), capped at 100
   const sorted = [...filtered].reverse().slice(-100);
   return NextResponse.json({ messages: sorted });
 }
 
 export async function POST(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as { type?: string; channelId?: string; name?: string; description?: string; text?: string; replyTo?: string };
 
   // Create channel
   if (body.type === "channel") {
-    if (session.role !== "admin" && session.role !== "manager") {
+    if (!["admin", "manager"].includes(session.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     if (!body.name) return NextResponse.json({ error: "name required" }, { status: 400 });
@@ -67,6 +66,9 @@ export async function POST(req: NextRequest) {
   // Post message
   if (!body.channelId) return NextResponse.json({ error: "channelId required" }, { status: 400 });
   if (!body.text?.trim()) return NextResponse.json({ error: "text required" }, { status: 400 });
+  if (body.text.trim().length > 4000) {
+    return NextResponse.json({ error: "Message too long (max 4000 chars)" }, { status: 400 });
+  }
 
   const message: TeamMessage = {
     id:        newId(),
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as { id: string; text: string };
@@ -102,7 +104,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);

@@ -127,6 +127,17 @@ const NAV: NavItem[] = [
   },
   // ── Team ───────────────────────────────────────────────────────────────────
   {
+    href: "/enter/backdrop/dashboard/tickets",
+    label: "Tickets",
+    roles: ["admin", "manager", "agent"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+        <line x1="6" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="18" y2="12" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/team-chat",
     label: "Team Chat",
     icon: (

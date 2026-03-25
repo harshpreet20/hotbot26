@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, writeAll, prepend, newId } from "@/lib/store";
 import type { CRMUpdate } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = readAll<CRMUpdate>("crm_updates");
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as Partial<CRMUpdate>;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = authorizeData(extractToken(req));
+  const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
@@ -48,7 +48,6 @@ export async function DELETE(req: NextRequest) {
   const update  = updates.find((u) => u.id === id);
   if (!update) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Only the author or admin can delete
   if (update.createdBy !== session.username && session.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

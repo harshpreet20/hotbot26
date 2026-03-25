@@ -201,6 +201,44 @@ export interface Invoice {
   leadId?: string;              // linked lead/prospect
 }
 
+// ── Ticketing System ──────────────────────────────────────────────────────────
+
+export type TicketPriority = "low" | "medium" | "high" | "critical";
+export type TicketStatus   = "open" | "in_progress" | "waiting" | "resolved" | "closed";
+export type TicketCategory = "bug" | "feature" | "support" | "billing" | "general";
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  text: string;
+  authorName: string;   // public commenter name or username for staff
+  authorEmail?: string;
+  isStaff: boolean;     // true = internal team reply visible to requester
+  createdAt: string;
+  editedAt?: string;
+}
+
+export interface Ticket {
+  id: string;
+  ticketNumber: string;   // e.g. "TKT-0042"
+  title: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  category: TicketCategory;
+  // Requester (public user)
+  requesterName: string;
+  requesterEmail: string;
+  // Internal
+  assignedTo?: string;    // username
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  // Tracking
+  ip?: string;
+  comments?: TicketComment[];
+}
+
 // ── Team Chat ─────────────────────────────────────────────────────────────────
 
 export interface TeamMessage {

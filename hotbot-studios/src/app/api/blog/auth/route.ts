@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
+import { rateLimit } from "@/lib/rateLimit";
 import type { Role } from "@/types/dashboard";
 
 // ── Cookie ────────────────────────────────────────────────────────────────────
@@ -14,18 +15,6 @@ function setAuthCookie(res: NextResponse, token: string) {
     path: "/",
     maxAge: COOKIE_MAX_S,
   });
-}
-
-// ── Rate limiter (per-IP, 10 attempts / 60 s) ─────────────────────────────────
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const rec = attempts.get(ip);
-  if (!rec || now > rec.resetAt) { attempts.set(ip, { count: 1, resetAt: now + 60_000 }); return true; }
-  if (rec.count >= 10) return false;
-  rec.count++;
-  return true;
 }
 
 // ── GET — validates an existing session ──────────────────────────────────────
@@ -48,12 +37,9 @@ export async function GET(req: NextRequest) {
 
 // ── POST — login via N8N ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
-
-  if (!checkRateLimit(ip)) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const { allowed } = rateLimit(ip, "auth", { limit: 10, windowMs: 60_000 });
+  if (!allowed) {
     return NextResponse.json({ success: false, error: "Too many attempts. Please wait a minute." }, { status: 429 });
   }
 
