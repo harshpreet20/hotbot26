@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepend, newId, readAll } from "@/lib/store";
+import { insert, newId, readAll } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { NewsletterSubscriber } from "@/types/dashboard";
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Deduplicate by email
-    const existing = readAll<NewsletterSubscriber>("newsletter");
+    const existing = await readAll<NewsletterSubscriber>("newsletter");
     if (existing.some((s) => s.email.toLowerCase() === email.trim().toLowerCase())) {
       return NextResponse.json({ success: true, message: "You're already subscribed!" });
     }
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       source:    "newsletter-signup",
       createdAt: new Date().toISOString(),
     };
-    prepend<NewsletterSubscriber>("newsletter", subscriber);
+    await insert<NewsletterSubscriber>("newsletter", subscriber);
 
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {

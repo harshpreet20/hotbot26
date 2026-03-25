@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   // Drafts / all-posts require an authenticated admin session
   if (status !== "published") {
     const token   = extractToken(req);
-    const session = token ? getSession(token) : null;
+    const session = token ? await getSession(token) : null;
     if (!session || session.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

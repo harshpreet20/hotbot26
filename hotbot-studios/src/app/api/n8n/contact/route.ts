@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepend, newId } from "@/lib/store";
+import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Contact } from "@/types/dashboard";
 
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       source:    "contact-page",
       createdAt: new Date().toISOString(),
     };
-    prepend<Contact>("contacts", contact);
+    await insert<Contact>("contacts", contact);
 
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });
   } catch (error) {

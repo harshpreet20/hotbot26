@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepend, newId } from "@/lib/store";
+import { insert, newId } from "@/lib/store";
 import type { PendingUser, Role } from "@/types/dashboard";
 
 const VALID_ROLES: Role[] = ["editor", "contributor", "agent", "manager"];
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     createdAt:     new Date().toISOString(),
   };
 
-  prepend<PendingUser>("pending_users", pending);
+  await insert<PendingUser>("pending_users", pending);
 
   // Notify N8N → admin email + user confirmation
   const n8nUrl = process.env.N8N_WEBHOOK_WA_INCOMING || "https://hotbotst.app.n8n.cloud/webhook/wa-incoming";

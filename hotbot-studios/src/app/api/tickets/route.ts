@@ -5,7 +5,7 @@
  * POST  /api/tickets/comment — add a public comment to a ticket
  */
 import { NextRequest, NextResponse } from "next/server";
-import { readAll, writeAll, prepend, newId } from "@/lib/store";
+import { readAll, updateById, insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketCategory, TicketPriority } from "@/types/dashboard";
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const tickets = readAll<Ticket>("tickets");
+  const tickets = await readAll<Ticket>("tickets");
   const ticket  = tickets.find((t) => t.id === id || t.ticketNumber === id.toUpperCase());
   if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
       if (!body.ticketId || !body.text?.trim() || !body.requesterName) {
         return NextResponse.json({ error: "ticketId, text, and requesterName required" }, { status: 400 });
       }
-      const tickets = readAll<Ticket>("tickets");
-      const idx = tickets.findIndex((t) => t.id === body.ticketId);
-      if (idx === -1) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+      const tickets = await readAll<Ticket>("tickets");
+      const ticket = tickets.find((t) => t.id === body.ticketId);
+      if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
 
       const comment: TicketComment = {
         id:          newId(),
@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
         isStaff:     false,
         createdAt:   new Date().toISOString(),
       };
-      tickets[idx].comments = [...(tickets[idx].comments ?? []), comment];
-      tickets[idx].updatedAt = new Date().toISOString();
-      writeAll<Ticket>("tickets", tickets);
+      await updateById<Ticket>("tickets", body.ticketId, {
+        comments:  [...(ticket.comments ?? []), comment],
+        updatedAt: new Date().toISOString(),
+      } as Partial<Ticket>);
       return NextResponse.json({ comment }, { status: 201 });
     }
 
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    const tickets = readAll<Ticket>("tickets");
+    const tickets = await readAll<Ticket>("tickets");
     const ticket: Ticket = {
       id:             newId(),
       ticketNumber:   getNextTicketNumber(tickets),
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
       ip,
       comments:       [],
     };
-    prepend<Ticket>("tickets", ticket);
+    await insert<Ticket>("tickets", ticket);
 
     // Send confirmation email to requester (non-blocking)
     sendTicketConfirmation(ticket).catch((err) =>
