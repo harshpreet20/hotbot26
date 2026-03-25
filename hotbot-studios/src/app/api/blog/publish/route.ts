@@ -12,9 +12,9 @@ function extractToken(req: NextRequest): string | null {
   return req.cookies.get("backdrop_auth")?.value || null;
 }
 
-function isPublishAuthorized(secret: string | null | undefined): boolean {
+async function isPublishAuthorized(secret: string | null | undefined): Promise<boolean> {
   if (!secret) return false;
-  const session = getSession(secret);
+  const session = await getSession(secret);
   if (session?.role === "admin") return true;
   const ps = getPublishSecret();
   return !!ps && secret === ps;
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { secret: string; action?: string; post: BlogPost };
 
-    if (!isPublishAuthorized(body.secret)) {
+    if (!await isPublishAuthorized(body.secret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
     searchParams.get("secret") ||
     null;
 
-  if (!isPublishAuthorized(secret)) {
+  if (!await isPublishAuthorized(secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
