@@ -10,11 +10,11 @@ export type Role = "admin" | "manager" | "editor" | "contributor" | "agent";
  *  agent       – View chat logs and callbacks
  */
 export const ROLE_CAPABILITIES: Record<Role, string[]> = {
-  admin:       ["users:manage", "blog:publish", "blog:edit", "data:read", "data:export"],
-  manager:     ["data:read", "data:export", "users:report"],
+  admin:       ["users:manage", "blog:publish", "blog:edit", "data:read", "data:export", "crm:full", "invoices:full"],
+  manager:     ["data:read", "data:export", "users:report", "crm:full", "invoices:read"],
   editor:      ["blog:publish", "blog:edit"],
   contributor: ["blog:draft"],
-  agent:       ["chats:read", "callbacks:read"],
+  agent:       ["chats:read", "callbacks:read", "crm:read"],
 };
 
 /** Public user info (safe to send to clients) */
@@ -45,6 +45,8 @@ export interface SessionInfo {
 
 // ── Inbound data types persisted to data/*.json ──────────────────────────────
 
+export type LeadStatus = "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost";
+
 export interface Lead {
   id: string;
   name: string;
@@ -58,6 +60,13 @@ export interface Lead {
   source: string;
   ip: string;
   createdAt: string;
+  // CRM fields
+  status: LeadStatus;
+  assignedTo?: string;         // username of assigned agent/manager
+  notes?: string;              // quick internal notes
+  tags?: string[];
+  lastUpdatedAt?: string;
+  lastUpdatedBy?: string;
 }
 
 export interface Contact {
@@ -112,6 +121,108 @@ export interface PendingUser {
   createdAt: string;
 }
 
+// ── CRM Activity Updates ──────────────────────────────────────────────────────
+
+export type UpdateType = "note" | "call" | "email" | "meeting" | "status_change" | "assignment" | "task_linked" | "invoice_linked";
+
+export interface CRMUpdate {
+  id: string;
+  leadId: string;
+  type: UpdateType;
+  content: string;
+  createdAt: string;
+  createdBy: string;   // username
+  metadata?: Record<string, string>;  // e.g. { prevStatus, newStatus } for status_change
+}
+
+// ── CRM Tasks ─────────────────────────────────────────────────────────────────
+
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type TaskStatus   = "open" | "in_progress" | "done" | "cancelled";
+
+export interface CRMTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assignedTo?: string;          // username
+  createdBy: string;            // username
+  createdAt: string;
+  dueDate?: string;             // ISO date
+  completedAt?: string;
+  // Relationships
+  leadId?: string;              // linked lead
+  invoiceId?: string;           // linked invoice
+}
+
+// ── Invoices ──────────────────────────────────────────────────────────────────
+
+export type InvoiceStatus = "draft" | "sent" | "viewed" | "paid" | "overdue" | "cancelled";
+
+export interface InvoiceLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;               // quantity * unitPrice
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;        // e.g. "INV-0001"
+  status: InvoiceStatus;
+  // Client info
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  clientCompany?: string;
+  clientAddress?: string;
+  // Line items
+  lineItems: InvoiceLineItem[];
+  subtotal: number;
+  taxRate: number;              // percentage, e.g. 18 for 18%
+  taxAmount: number;
+  discount: number;             // flat amount
+  total: number;
+  currency: string;             // e.g. "INR", "USD"
+  // Dates
+  issuedDate: string;
+  dueDate: string;
+  paidDate?: string;
+  // Meta
+  notes?: string;
+  terms?: string;
+  createdAt: string;
+  createdBy: string;
+  lastUpdatedAt?: string;
+  lastUpdatedBy?: string;
+  // Relationships
+  leadId?: string;              // linked lead/prospect
+}
+
+// ── Team Chat ─────────────────────────────────────────────────────────────────
+
+export interface TeamMessage {
+  id: string;
+  channelId: string;       // e.g. "general", "sales", "dev"
+  text: string;
+  createdBy: string;       // username
+  createdAt: string;
+  editedAt?: string;
+  replyTo?: string;        // id of parent message for threads
+}
+
+export interface TeamChannel {
+  id: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+// ── Dashboard Overview ────────────────────────────────────────────────────────
+
 export interface DashboardOverview {
   leads: number;
   contacts: number;
@@ -119,7 +230,11 @@ export interface DashboardOverview {
   callbacks: number;
   chats: number;
   posts: number;
+  invoices: number;
+  invoiceRevenue: number;       // total paid invoice amount
+  openTasks: number;
   recentLeads: Lead[];
   recentContacts: Contact[];
   recentCallbacks: CallbackRequest[];
+  recentInvoices: Invoice[];
 }

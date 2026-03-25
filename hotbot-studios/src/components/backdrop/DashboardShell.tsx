@@ -48,6 +48,7 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
+  // ── CRM ────────────────────────────────────────────────────────────────────
   {
     href: "/enter/backdrop/dashboard/leads",
     label: "Leads",
@@ -56,6 +57,29 @@ const NAV: NavItem[] = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 7h-9" /><path d="M14 17H5" />
         <circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/tasks",
+    label: "Tasks",
+    roles: ["admin", "manager", "agent"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/invoices",
+    label: "Invoices",
+    roles: ["admin", "manager"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
       </svg>
     ),
   },
@@ -98,6 +122,17 @@ const NAV: NavItem[] = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 01-3.46 0" />
+      </svg>
+    ),
+  },
+  // ── Team ───────────────────────────────────────────────────────────────────
+  {
+    href: "/enter/backdrop/dashboard/team-chat",
+    label: "Team Chat",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1" />
+        <path d="M15 2H3a2 2 0 00-2 2v8a2 2 0 002 2h2v4l4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z" />
       </svg>
     ),
   },
