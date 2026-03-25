@@ -81,15 +81,15 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
     const session = data as StoredSession;
     const now = Date.now();
     if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
-      await sb()
-        .from("sessions")
-        .update({
-          expires_at:     new Date(now + TTL_MS).toISOString(),
-          last_access_at: new Date(now).toISOString(),
-        })
-        .eq("token", token)
-        .then(() => {})
-        .catch(() => {});
+      await Promise.resolve(
+        sb()
+          .from("sessions")
+          .update({
+            expires_at:     new Date(now + TTL_MS).toISOString(),
+            last_access_at: new Date(now).toISOString(),
+          })
+          .eq("token", token)
+      ).catch(() => {});
     }
 
     return { userId: session.user_id, username: session.username, role: session.role };
