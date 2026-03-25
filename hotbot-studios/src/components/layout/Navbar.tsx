@@ -42,14 +42,14 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity shrink-0"
         >
           <Image
             src="/logos/hotbot-logo.svg"
             alt="HotBot Studios — AI Automation & Digital Marketing Agency"
-            width={320}
-            height={80}
-            className="h-[72px] w-auto object-contain"
+            width={200}
+            height={48}
+            className="h-10 w-auto object-contain"
             priority
             unoptimized
           />
@@ -61,7 +61,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium transition-colors duration-200"
+              className="text-sm font-medium transition-colors duration-200 whitespace-nowrap"
               style={{
                 color: pathname === link.href ? "#93c5fd" : "rgba(148,163,184,0.9)",
               }}
@@ -72,10 +72,10 @@ export function Navbar() {
         </div>
 
         {/* CTA + Mobile Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/tickets"
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
             style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -94,7 +94,7 @@ export function Navbar() {
           </button>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Toggle mobile menu"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
