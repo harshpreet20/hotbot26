@@ -12,11 +12,13 @@ function getRole() {
 }
 
 const ROLE_COLORS: Record<Role, string> = {
-  admin:       "#818cf8",
-  manager:     "#34d399",
-  editor:      "#3b82f6",
-  contributor: "#06b6d4",
-  agent:       "#f59e0b",
+  admin:        "#818cf8",
+  manager:      "#34d399",
+  sales:        "#f97316",
+  crm_operator: "#a78bfa",
+  editor:       "#3b82f6",
+  contributor:  "#06b6d4",
+  agent:        "#f59e0b",
 };
 
 const ROLE_DESCRIPTIONS: Record<Role, { title: string; perms: string[] }> = {
@@ -27,6 +29,14 @@ const ROLE_DESCRIPTIONS: Record<Role, { title: string; perms: string[] }> = {
   manager: {
     title: "CRM & Reports",
     perms: ["View leads, contacts, callbacks", "View newsletter subscribers", "View dashboard overview", "Read-only user list"],
+  },
+  sales: {
+    title: "Sales & CRM",
+    perms: ["Create & manage leads", "View full CRM pipeline", "View contacts & callbacks", "Access invoices (read)"],
+  },
+  crm_operator: {
+    title: "CRM Operator",
+    perms: ["View & update leads", "View contacts, callbacks, newsletter", "No lead creation or user management", "No blog access"],
   },
   editor: {
     title: "Blog Management",
@@ -412,7 +422,7 @@ export default function UsersPage() {
               <div>
                 <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Role</label>
                 <div className="flex flex-wrap gap-2">
-                  {(["admin", "manager", "editor", "contributor", "agent"] as Role[]).map((r) => (
+                  {(["admin", "manager", "sales", "crm_operator", "editor", "contributor", "agent"] as Role[]).map((r) => (
                     <button
                       key={r}
                       type="button"
@@ -480,7 +490,7 @@ export default function UsersPage() {
                     {/* Role selector (admin) or badge (manager) */}
                     {!readonly ? (
                       <div className="flex items-center gap-1 flex-wrap justify-end">
-                        {(["admin", "manager", "editor", "contributor", "agent"] as Role[]).map((r) => (
+                        {(["admin", "manager", "sales", "crm_operator", "editor", "contributor", "agent"] as Role[]).map((r) => (
                           <button
                             key={r}
                             onClick={() => u.role !== r && changeRole(u.id, r)}

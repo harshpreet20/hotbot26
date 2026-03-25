@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["admin", "manager"].includes(session.role)) {
+  if (!["admin", "manager", "sales"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

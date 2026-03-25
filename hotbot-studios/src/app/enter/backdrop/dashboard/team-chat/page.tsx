@@ -40,8 +40,11 @@ export default function TeamChatPage() {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch("/api/dashboard/team-chat?type=channels", { headers: { Authorization: `Bearer ${secret}` } })
-      .then((r) => r.json() as Promise<{ channels: TeamChannel[] }>)
-      .then((d) => setChannels(d.channels))
+      .then((r) => {
+        if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
+        return r.json() as Promise<{ channels?: TeamChannel[] }>;
+      })
+      .then((d) => { if (d?.channels) setChannels(d.channels); })
       .catch(console.error);
   }, [router]);
 
@@ -53,11 +56,15 @@ export default function TeamChatPage() {
     setMessages([]);
     lastMessageIdRef.current = "";
 
-    fetch(`/api/dashboard/team-chat?channelId=${activeChannelId}`, { headers: { Authorization: `Bearer ${secret}` } })
-      .then((r) => r.json() as Promise<{ messages: TeamMessage[] }>)
+    fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`, { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => {
+        if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
+        return r.json() as Promise<{ messages?: TeamMessage[] }>;
+      })
       .then((d) => {
-        setMessages(d.messages);
-        if (d.messages.length > 0) lastMessageIdRef.current = d.messages[d.messages.length - 1].createdAt;
+        const msgs = d?.messages ?? [];
+        setMessages(msgs);
+        if (msgs.length > 0) lastMessageIdRef.current = msgs[msgs.length - 1].createdAt;
       })
       .catch(console.error);
   }, [activeChannelId]);
@@ -72,17 +79,21 @@ export default function TeamChatPage() {
       const since = lastMessageIdRef.current;
       if (!since) return;
 
-      fetch(`/api/dashboard/team-chat?channelId=${activeChannelId}&since=${encodeURIComponent(since)}`, {
+      fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}&since=${encodeURIComponent(since)}`, {
         headers: { Authorization: `Bearer ${secret}` },
       })
-        .then((r) => r.json() as Promise<{ messages: TeamMessage[] }>)
+        .then((r) => {
+          if (r.status === 401) return null;
+          return r.json() as Promise<{ messages?: TeamMessage[] }>;
+        })
         .then((d) => {
-          if (d.messages.length > 0) {
+          const newMessages = d?.messages ?? [];
+          if (newMessages.length > 0) {
             setMessages((prev) => {
               const existingIds = new Set(prev.map((m) => m.id));
-              const newMsgs = d.messages.filter((m) => !existingIds.has(m.id));
+              const newMsgs = newMessages.filter((m) => !existingIds.has(m.id));
               if (newMsgs.length === 0) return prev;
-              lastMessageIdRef.current = d.messages[d.messages.length - 1].createdAt;
+              lastMessageIdRef.current = newMessages[newMessages.length - 1].createdAt;
               return [...prev, ...newMsgs];
             });
           }

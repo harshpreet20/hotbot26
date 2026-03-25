@@ -1,20 +1,24 @@
 // ── Role-based access control ─────────────────────────────────────────────────
-export type Role = "admin" | "manager" | "editor" | "contributor" | "agent";
+export type Role = "admin" | "manager" | "sales" | "crm_operator" | "editor" | "contributor" | "agent";
 
 /**
  * Role capability summary:
- *  admin       – Full access: users, blog, CRM data, settings
- *  manager     – CRM data (leads, contacts, callbacks, newsletter, overview) + read-only user list
- *  editor      – Blog management: create, edit, publish/unpublish, delete posts
- *  contributor – Blog drafts only: create & edit own drafts, cannot publish
- *  agent       – View chat logs and callbacks
+ *  admin        – Full access: users, blog, CRM data, settings
+ *  manager      – CRM data (leads, contacts, callbacks, newsletter, overview) + read-only user list
+ *  sales        – Create & manage leads, view CRM pipeline, access sales channels
+ *  crm_operator – View & update CRM data (leads, contacts, callbacks); cannot create leads or manage users
+ *  editor       – Blog management: create, edit, publish/unpublish, delete posts
+ *  contributor  – Blog drafts only: create & edit own drafts, cannot publish
+ *  agent        – View chat logs and callbacks
  */
 export const ROLE_CAPABILITIES: Record<Role, string[]> = {
-  admin:       ["users:manage", "blog:publish", "blog:edit", "data:read", "data:export", "crm:full", "invoices:full"],
-  manager:     ["data:read", "data:export", "users:report", "crm:full", "invoices:read"],
-  editor:      ["blog:publish", "blog:edit"],
-  contributor: ["blog:draft"],
-  agent:       ["chats:read", "callbacks:read", "crm:read"],
+  admin:        ["users:manage", "blog:publish", "blog:edit", "data:read", "data:export", "crm:full", "invoices:full"],
+  manager:      ["data:read", "data:export", "users:report", "crm:full", "invoices:read"],
+  sales:        ["data:read", "crm:full", "leads:create", "invoices:read"],
+  crm_operator: ["data:read", "crm:update"],
+  editor:       ["blog:publish", "blog:edit"],
+  contributor:  ["blog:draft"],
+  agent:        ["chats:read", "callbacks:read", "crm:read"],
 };
 
 /** Public user info (safe to send to clients) */

@@ -18,7 +18,7 @@ const NAV: NavItem[] = [
     href: "/enter/backdrop/dashboard",
     label: "Overview",
     exact: true,
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "sales", "crm_operator"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -40,7 +40,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/users",
     label: "Users",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "sales", "crm_operator"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -52,7 +52,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/leads",
     label: "Leads",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "sales", "crm_operator"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 7h-9" /><path d="M14 17H5" />
@@ -63,7 +63,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/tasks",
     label: "Tasks",
-    roles: ["admin", "manager", "agent"],
+    roles: ["admin", "manager", "sales", "crm_operator", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 11 12 14 22 4" />
@@ -74,7 +74,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/invoices",
     label: "Invoices",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "sales"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -86,7 +86,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/contacts",
     label: "Contacts",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "sales", "crm_operator"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -107,7 +107,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/callbacks",
     label: "Callbacks",
-    roles: ["admin", "manager", "agent"],
+    roles: ["admin", "manager", "sales", "crm_operator", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
@@ -117,7 +117,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/newsletter",
     label: "Newsletter",
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "crm_operator"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -129,7 +129,7 @@ const NAV: NavItem[] = [
   {
     href: "/enter/backdrop/dashboard/tickets",
     label: "Tickets",
-    roles: ["admin", "manager", "agent"],
+    roles: ["admin", "manager", "sales", "crm_operator", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
@@ -150,11 +150,13 @@ const NAV: NavItem[] = [
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
-  admin:       { label: "Admin",       color: "#818cf8" },
-  manager:     { label: "Manager",     color: "#34d399" },
-  editor:      { label: "Editor",      color: "#3b82f6" },
-  contributor: { label: "Contributor", color: "#06b6d4" },
-  agent:       { label: "Agent",       color: "#f59e0b" },
+  admin:        { label: "Admin",        color: "#818cf8" },
+  manager:      { label: "Manager",      color: "#34d399" },
+  sales:        { label: "Sales",        color: "#f97316" },
+  crm_operator: { label: "CRM Operator", color: "#a78bfa" },
+  editor:       { label: "Editor",       color: "#3b82f6" },
+  contributor:  { label: "Contributor",  color: "#06b6d4" },
+  agent:        { label: "Agent",        color: "#f59e0b" },
 };
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
