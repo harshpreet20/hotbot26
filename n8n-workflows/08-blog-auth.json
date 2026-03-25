@@ -1,13 +1,16 @@
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
-  "name": "HotBot — 08 Blog Auth",
+  "name": "HotBot \u2014 08 Blog Auth",
   "nodes": [
     {
       "id": "node-webhook-auth",
-      "name": "Webhook — Blog Auth",
+      "name": "Webhook \u2014 Blog Auth",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "hotbotstudios-blog-auth",
@@ -22,26 +25,39 @@
       "name": "Validate Credentials",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 300],
+      "position": [
+        480,
+        300
+      ],
       "parameters": {
-        "jsCode": "// ─── CONFIGURE THESE ──────────────────────────────────────────\n// Set your admin credentials in n8n environment variables:\n//   ADMIN_USERNAME  →  your chosen admin username\n//   ADMIN_PASSWORD  →  your strong admin password\n//   ADMIN_TOKEN     →  a long random secret string (the session token)\n// ──────────────────────────────────────────────────────────────\nconst body = $input.first().json.body || $input.first().json;\nconst username = (body.username || '').trim();\nconst password = (body.password || '').trim();\n\nconst ADMIN_USERNAME = $env.ADMIN_USERNAME || 'admin';\nconst ADMIN_PASSWORD = $env.ADMIN_PASSWORD || 'changeme-set-in-n8n-env';\nconst ADMIN_TOKEN    = $env.ADMIN_TOKEN    || 'hotbot-admin-token-2026';\n\nif (!username || !password) {\n  return [{ json: { success: false, error: 'Username and password are required.' } }];\n}\n\nif (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {\n  return [{ json: { success: false, error: 'Invalid credentials.' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    token: ADMIN_TOKEN,\n    user: username,\n    expiresAt: new Date(Date.now() + 86400000 * 30).toISOString()\n  }\n}];"
+        "jsCode": "// \u2500\u2500\u2500 CONFIGURE THESE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Set your admin credentials in n8n environment variables:\n//   ADMIN_USERNAME  \u2192  your chosen admin username\n//   ADMIN_PASSWORD  \u2192  your strong admin password\n//   ADMIN_TOKEN     \u2192  a long random secret string (the session token)\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst body = $input.first().json.body || $input.first().json;\nconst username = (body.username || '').trim();\nconst password = (body.password || '').trim();\n\nconst ADMIN_USERNAME = $env.ADMIN_USERNAME || 'admin';\nconst ADMIN_PASSWORD = $env.ADMIN_PASSWORD || 'changeme-set-in-n8n-env';\nconst ADMIN_TOKEN    = $env.ADMIN_TOKEN    || 'hotbot-admin-token-2026';\n\nif (!username || !password) {\n  return [{ json: { success: false, error: 'Username and password are required.' } }];\n}\n\nif (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {\n  return [{ json: { success: false, error: 'Invalid credentials.' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    token: ADMIN_TOKEN,\n    user: username,\n    expiresAt: new Date(Date.now() + 86400000 * 30).toISOString()\n  }\n}];"
       }
     },
     {
       "id": "node-if-auth",
-      "name": "IF — Auth Successful?",
+      "name": "IF \u2014 Auth Successful?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [720, 300],
+      "position": [
+        720,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "cond-success",
               "leftValue": "={{ $json.success }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -50,10 +66,13 @@
     },
     {
       "id": "node-respond-success",
-      "name": "Respond — Success",
+      "name": "Respond \u2014 Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [960, 200],
+      "position": [
+        960,
+        200
+      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ success: true, token: $json.token, user: $json.user, expiresAt: $json.expiresAt }) }}",
@@ -61,8 +80,14 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
@@ -70,10 +95,13 @@
     },
     {
       "id": "node-respond-error",
-      "name": "Respond — Unauthorized",
+      "name": "Respond \u2014 Unauthorized",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [960, 420],
+      "position": [
+        960,
+        420
+      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ success: false, error: $json.error || 'Invalid credentials.' }) }}",
@@ -81,8 +109,14 @@
           "responseCode": 401,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
@@ -90,20 +124,44 @@
     }
   ],
   "connections": {
-    "Webhook — Blog Auth": {
+    "Webhook \u2014 Blog Auth": {
       "main": [
-        [{ "node": "Validate Credentials", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Validate Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Validate Credentials": {
       "main": [
-        [{ "node": "IF — Auth Successful?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "IF \u2014 Auth Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "IF — Auth Successful?": {
+    "IF \u2014 Auth Successful?": {
       "main": [
-        [{ "node": "Respond — Success",      "type": "main", "index": 0 }],
-        [{ "node": "Respond — Unauthorized", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond \u2014 Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond \u2014 Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -115,6 +173,11 @@
   },
   "meta": {
     "description": "Authenticates admin.hotbotstudios.com login requests. Validates username/password from env vars and returns a session token.",
-    "tags": ["blog", "auth", "admin"]
-  }
+    "tags": [
+      "blog",
+      "auth",
+      "admin"
+    ]
+  },
+  "active": true
 }

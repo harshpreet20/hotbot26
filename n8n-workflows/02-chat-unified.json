@@ -1,39 +1,47 @@
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234560002",
-  "name": "HotBot — 02 Chat (AI + Human Handoff)",
+  "name": "HotBot \u2014 02 Chat (AI + Human Handoff)",
   "nodes": [
-
     {
       "id": "webhook-chat",
-      "name": "Webhook — Chat",
+      "name": "Webhook \u2014 Chat",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "hotbotstudios-chat",
         "responseMode": "lastNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       }
     },
-
     {
       "id": "extract-chat",
       "name": "Extract Chat Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 300],
+      "position": [
+        480,
+        300
+      ],
       "parameters": {
-        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nconst message = (body.message || '').trim();\nconst history = Array.isArray(body.history) ? body.history.slice(-10) : [];\n\nif (!message) throw new Error('Empty message — skip');\n\n// Build the full conversation for the LLM\nconst systemPrompt = `You are HotBot, the AI assistant for HotBot Studios — a US-based AI automation and digital marketing agency.\n\nYour role:\n- Help website visitors understand HotBot Studios services\n- Answer questions about AI automation, digital marketing, content, PR, UI/UX, software development\n- Collect lead information when users show buying intent (name, email, service interest)\n- Be concise, professional, and friendly\n- Always encourage next steps: book a call, fill out the form, or contact the team\n\nHotBot Studios services:\n- AI Automation (n8n, chatbots, voice AI, workflow automation)\n- Digital Marketing (SEO, PPC, social media, email marketing)\n- Content Studio (blog, video, copywriting)\n- Software Development (web apps, SaaS, API integrations)\n- Public Relations (media coverage, brand authority)\n- UI/UX Design (product design, prototyping)\n- Marketing Consulting\n\nContact: hello@hotbotstudios.com | hotbotstudios.com\n\nIf a user wants to book a call, schedule, or speak with a human: tell them to click the Call tab in this chat or fill out the contact form.\nIf a user asks for a quote or pricing: collect their name, email, service interest, and budget range.\nKeep all responses under 120 words unless the user asks for detail.`;\n\nconst messages = [\n  { role: 'system', content: systemPrompt },\n  ...history.map((h) => ({ role: h.role, content: h.content })),\n  { role: 'user', content: message }\n];\n\nreturn [{ json: { message, history, messages, receivedAt: new Date().toISOString() } }];"
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nconst message = (body.message || '').trim();\nconst history = Array.isArray(body.history) ? body.history.slice(-10) : [];\n\nif (!message) throw new Error('Empty message \u2014 skip');\n\n// Build the full conversation for the LLM\nconst systemPrompt = `You are HotBot, the AI assistant for HotBot Studios \u2014 a US-based AI automation and digital marketing agency.\n\nYour role:\n- Help website visitors understand HotBot Studios services\n- Answer questions about AI automation, digital marketing, content, PR, UI/UX, software development\n- Collect lead information when users show buying intent (name, email, service interest)\n- Be concise, professional, and friendly\n- Always encourage next steps: book a call, fill out the form, or contact the team\n\nHotBot Studios services:\n- AI Automation (n8n, chatbots, voice AI, workflow automation)\n- Digital Marketing (SEO, PPC, social media, email marketing)\n- Content Studio (blog, video, copywriting)\n- Software Development (web apps, SaaS, API integrations)\n- Public Relations (media coverage, brand authority)\n- UI/UX Design (product design, prototyping)\n- Marketing Consulting\n\nContact: hello@hotbotstudios.com | hotbotstudios.com\n\nIf a user wants to book a call, schedule, or speak with a human: tell them to click the Call tab in this chat or fill out the contact form.\nIf a user asks for a quote or pricing: collect their name, email, service interest, and budget range.\nKeep all responses under 120 words unless the user asks for detail.`;\n\nconst messages = [\n  { role: 'system', content: systemPrompt },\n  ...history.map((h) => ({ role: h.role, content: h.content })),\n  { role: 'user', content: message }\n];\n\nreturn [{ json: { message, history, messages, receivedAt: new Date().toISOString() } }];"
       }
     },
-
     {
       "id": "openai-chat",
-      "name": "OpenAI — Chat Completion",
+      "name": "OpenAI \u2014 Chat Completion",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1,
-      "position": [720, 300],
+      "position": [
+        720,
+        300
+      ],
       "parameters": {
         "resource": "chat",
         "operation": "message",
@@ -46,109 +54,189 @@
           "temperature": 0.7
         }
       },
-      "credentials": { "openAiApi": { "id": "openai-cred", "name": "OpenAI Account" } }
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI Account"
+        }
+      }
     },
-
     {
       "id": "detect-intent",
       "name": "Detect Intent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 300],
+      "position": [
+        960,
+        300
+      ],
       "parameters": {
         "jsCode": "const aiReply   = $input.first().json?.message?.content || $input.first().json?.choices?.[0]?.message?.content || '';\nconst userMsg   = $('Extract Chat Payload').first().json.message.toLowerCase();\n\n// Simple rule-based intent detection\nconst bookingWords  = ['book', 'call', 'schedule', 'talk', 'speak', 'meet', 'appointment', 'demo', 'zoom', 'consult'];\nconst humanWords    = ['human', 'person', 'agent', 'team', 'real person', 'talk to someone', 'representative'];\nconst quoteWords    = ['price', 'cost', 'quote', 'pricing', 'how much', 'budget', 'rate', 'package'];\n\nconst wantsBooking  = bookingWords.some((w) => userMsg.includes(w));\nconst wantsHuman    = humanWords.some((w)   => userMsg.includes(w));\nconst wantsQuote    = quoteWords.some((w)   => userMsg.includes(w));\n\nconst intent = wantsHuman ? 'human_handoff' : wantsBooking ? 'booking' : wantsQuote ? 'quote' : 'general';\n\nconst suggestForm  = wantsBooking || wantsQuote;\nconst suggestCall  = wantsHuman   || wantsBooking;\n\nreturn [{ json: {\n  reply:       aiReply,\n  intent,\n  suggestForm,\n  suggestCall,\n  userMessage: $('Extract Chat Payload').first().json.message,\n  receivedAt:  $('Extract Chat Payload').first().json.receivedAt\n}}];"
       }
     },
-
     {
       "id": "if-high-intent",
-      "name": "IF — High Intent?",
+      "name": "IF \u2014 High Intent?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1200, 300],
+      "position": [
+        1200,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
           "conditions": [
             {
               "leftValue": "={{ $json.intent }}",
               "rightValue": "general",
-              "operator": { "type": "string", "operation": "notEquals" }
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
             }
           ],
           "combinator": "and"
         }
       }
     },
-
     {
       "id": "telegram-intent",
-      "name": "Telegram — High-Intent Alert",
+      "name": "Telegram \u2014 High-Intent Alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1440, 200],
+      "position": [
+        1440,
+        200
+      ],
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
-        "text":   "={{ '🤖 Chat High Intent\\n\\nIntent: ' + $json.intent + '\\nUser said: \"' + $json.userMessage + '\"\\nAI replied: \"' + $json.reply.slice(0, 200) + '\"\\n\\nTime: ' + $json.receivedAt }}",
-        "additionalFields": { "parse_mode": "HTML" }
+        "text": "={{ '\ud83e\udd16 Chat High Intent\\n\\nIntent: ' + $json.intent + '\\nUser said: \"' + $json.userMessage + '\"\\nAI replied: \"' + $json.reply.slice(0, 200) + '\"\\n\\nTime: ' + $json.receivedAt }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
       },
-      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Account" } }
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-cred",
+          "name": "Telegram Account"
+        }
+      }
     },
-
     {
       "id": "respond-chat",
-      "name": "Respond — Chat Reply",
+      "name": "Respond \u2014 Chat Reply",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1440, 400],
+      "position": [
+        1440,
+        400
+      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ message: $json.reply, intent: $json.intent, suggestForm: $json.suggestForm, suggestCall: $json.suggestCall }) }}"
       }
     }
-
   ],
-
   "connections": {
-    "Webhook — Chat": {
-      "main": [[{ "node": "Extract Chat Payload", "type": "main", "index": 0 }]]
-    },
-    "Extract Chat Payload": {
-      "main": [[{ "node": "OpenAI — Chat Completion", "type": "main", "index": 0 }]]
-    },
-    "OpenAI — Chat Completion": {
-      "main": [[{ "node": "Detect Intent", "type": "main", "index": 0 }]]
-    },
-    "Detect Intent": {
-      "main": [[{ "node": "IF — High Intent?", "type": "main", "index": 0 }]]
-    },
-    "IF — High Intent?": {
+    "Webhook \u2014 Chat": {
       "main": [
-        [{ "node": "Telegram — High-Intent Alert", "type": "main", "index": 0 }],
-        [{ "node": "Respond — Chat Reply",          "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Extract Chat Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Telegram — High-Intent Alert": {
-      "main": [[{ "node": "Respond — Chat Reply", "type": "main", "index": 0 }]]
+    "Extract Chat Payload": {
+      "main": [
+        [
+          {
+            "node": "OpenAI \u2014 Chat Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI \u2014 Chat Completion": {
+      "main": [
+        [
+          {
+            "node": "Detect Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Intent": {
+      "main": [
+        [
+          {
+            "node": "IF \u2014 High Intent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF \u2014 High Intent?": {
+      "main": [
+        [
+          {
+            "node": "Telegram \u2014 High-Intent Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond \u2014 Chat Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram \u2014 High-Intent Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond \u2014 Chat Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-
-  "settings": { "executionOrder": "v1" },
-
+  "settings": {
+    "executionOrder": "v1"
+  },
   "meta": {
     "templateId": "hotbot-02-chat-unified",
     "templateCreatedBy": "HotBot Studios"
   },
-
   "__setup_notes__": {
-    "replaces": ["00-ai-chatbot-workflow.json", "02-chat-pipeline.json"],
+    "replaces": [
+      "00-ai-chatbot-workflow.json",
+      "02-chat-pipeline.json"
+    ],
     "webhook_path": "hotbotstudios-chat",
     "env_var": "N8N_WEBHOOK_CHAT=hotbotstudios-chat",
     "openai": "Requires OpenAI credential in n8n. Uses gpt-4o-mini for cost-efficiency. Switch to gpt-4o for higher quality.",
-    "intent_detection": "Rule-based. Triggers Telegram alert for booking/human/quote intents. 'suggestForm' and 'suggestCall' flags returned to frontend — chat widget uses these to show CTA buttons.",
+    "intent_detection": "Rule-based. Triggers Telegram alert for booking/human/quote intents. 'suggestForm' and 'suggestCall' flags returned to frontend \u2014 chat widget uses these to show CTA buttons.",
     "response_shape": "{ message: string, intent: string, suggestForm: boolean, suggestCall: boolean }",
-    "system_prompt": "Embedded in 'Extract Chat Payload' node — edit the systemPrompt variable to update bot personality.",
+    "system_prompt": "Embedded in 'Extract Chat Payload' node \u2014 edit the systemPrompt variable to update bot personality.",
     "telegram": "Set TELEGRAM_CHAT_ID in n8n env. Alerts only fire for high-intent messages (booking/human/quote), not every message.",
     "credentials": "Replace 'openai-cred' and 'telegram-cred' IDs with your actual n8n credential IDs."
-  }
+  },
+  "active": true
 }
