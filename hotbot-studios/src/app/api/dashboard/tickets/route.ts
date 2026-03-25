@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, writeAll, newId } from "@/lib/store";
+import { sendStaffReplyNotification, sendStatusUpdateNotification } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketStatus } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
@@ -48,10 +49,17 @@ export async function PATCH(req: NextRequest) {
     tickets[idx].comments  = [...(tickets[idx].comments ?? []), comment];
     tickets[idx].updatedAt = new Date().toISOString();
     writeAll<Ticket>("tickets", tickets);
+
+    // Notify requester of new staff reply (non-blocking)
+    sendStaffReplyNotification(tickets[idx], comment).catch((err) =>
+      console.error("[Ticket Email] Staff reply notification failed:", err)
+    );
+
     return NextResponse.json({ comment });
   }
 
   // Update ticket fields
+  const prevStatus = tickets[idx].status;
   const updated: Ticket = {
     ...tickets[idx],
     status:     body.status     ?? tickets[idx].status,
@@ -64,6 +72,14 @@ export async function PATCH(req: NextRequest) {
   };
   tickets[idx] = updated;
   writeAll<Ticket>("tickets", tickets);
+
+  // Notify requester on status change (non-blocking)
+  if (body.status && body.status !== prevStatus) {
+    sendStatusUpdateNotification(updated, body.status).catch((err) =>
+      console.error("[Ticket Email] Status update notification failed:", err)
+    );
+  }
+
   return NextResponse.json({ ticket: updated });
 }
 

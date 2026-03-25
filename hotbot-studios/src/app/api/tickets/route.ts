@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readAll, writeAll, prepend, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendTicketConfirmation } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketCategory, TicketPriority } from "@/types/dashboard";
 
 function getNextTicketNumber(tickets: Ticket[]): string {
@@ -99,6 +100,11 @@ export async function POST(req: NextRequest) {
       comments:       [],
     };
     prepend<Ticket>("tickets", ticket);
+
+    // Send confirmation email to requester (non-blocking)
+    sendTicketConfirmation(ticket).catch((err) =>
+      console.error("[Ticket Email] Confirmation failed:", err)
+    );
 
     return NextResponse.json({ ticket: { id: ticket.id, ticketNumber: ticket.ticketNumber, status: ticket.status } }, { status: 201 });
   } catch (err) {

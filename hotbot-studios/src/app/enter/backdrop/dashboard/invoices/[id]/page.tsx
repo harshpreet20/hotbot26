@@ -274,6 +274,14 @@ export default function InvoiceDetailPage() {
             <Field label="Terms"><textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={2} className="input-field resize-none" /></Field>
           </Section>
 
+          {/* Share Invoice */}
+          <Section title="Share Invoice">
+            <p className="text-slate-500 text-xs -mt-2 mb-3">
+              Share a public view link of this invoice — clients can view, print, or save as PDF.
+            </p>
+            <ShareInvoicePanel invoiceId={id} invoiceNumber={invoice.invoiceNumber} />
+          </Section>
+
           {/* Send via Email */}
           <Section title="Send Invoice via Email">
             <p className="text-slate-500 text-xs -mt-2 mb-3">
@@ -361,6 +369,74 @@ export default function InvoiceDetailPage() {
         .input-field option { background: #1e293b; }
       `}</style>
     </DashboardShell>
+  );
+}
+
+function ShareInvoicePanel({ invoiceId, invoiceNumber }: { invoiceId: string; invoiceNumber: string }) {
+  const [copied, setCopied] = useState(false);
+  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/invoice/${invoiceId}` : `/invoice/${invoiceId}`;
+
+  function copyLink() {
+    navigator.clipboard.writeText(publicUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function shareWhatsApp() {
+    const text = `Invoice ${invoiceNumber} from Hotbot Studios LLP\nView here: ${publicUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  function shareEmail() {
+    const subject = encodeURIComponent(`Invoice ${invoiceNumber} from Hotbot Studios LLP`);
+    const body = encodeURIComponent(`Hi,\n\nPlease find your invoice ${invoiceNumber} from Hotbot Studios LLP.\n\nView it online: ${publicUrl}\n\nThank you,\nHotbot Studios LLP`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 items-center">
+        <input
+          readOnly
+          value={publicUrl}
+          className="input-field flex-1 text-xs font-mono"
+          onClick={(e) => (e.target as HTMLInputElement).select()}
+        />
+        <button
+          onClick={copyLink}
+          className="px-3 py-2 rounded-xl text-xs font-medium text-white whitespace-nowrap transition-all"
+          style={{ background: copied ? "rgba(34,197,94,0.7)" : "rgba(99,102,241,0.6)", minWidth: 90 }}
+        >
+          {copied ? "✓ Copied!" : "Copy Link"}
+        </button>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={shareWhatsApp}
+          className="px-3 py-1.5 rounded-xl text-xs font-medium text-white transition-all"
+          style={{ background: "rgba(37,211,102,0.2)", color: "#25d366", border: "1px solid rgba(37,211,102,0.3)" }}
+        >
+          💬 Share via WhatsApp
+        </button>
+        <button
+          onClick={shareEmail}
+          className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+          style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)" }}
+        >
+          ✉ Share via Email
+        </button>
+        <a
+          href={publicUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+          style={{ background: "rgba(255,255,255,0.05)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", textDecoration: "none" }}
+        >
+          ↗ Preview
+        </a>
+      </div>
+    </div>
   );
 }
 
