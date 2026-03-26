@@ -7,6 +7,7 @@ import { AnimatedGrid } from "@/components/layout/AnimatedGrid";
 import { ProgressiveBlur } from "@/components/layout/ProgressiveBlur";
 import { HotBotChat } from "@/components/chat/HotBotChat";
 import { FormModal } from "@/components/forms/FormModal";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hotbotstudios.com";
 // G-5CNWV5X1KC is the production GA4 property — override via NEXT_PUBLIC_GA_ID if needed
@@ -151,15 +152,17 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <div className="min-h-screen relative">
-          <AnimatedGrid />
-          <Navbar />
-          <main className="relative">{children}</main>
-          <Footer />
-        </div>
-        <ProgressiveBlur />
-        <FormModal />
-        <HotBotChat />
+        <SessionProvider>
+          <div className="min-h-screen relative">
+            <AnimatedGrid />
+            <Navbar />
+            <main className="relative">{children}</main>
+            <Footer />
+          </div>
+          <ProgressiveBlur />
+          <FormModal />
+          <HotBotChat />
+        </SessionProvider>
       </body>
     </html>
   );
