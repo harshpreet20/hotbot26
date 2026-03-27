@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getUserById, updateUser } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 
-// Get single user
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -14,20 +13,15 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data: user } = await supabase
-    .from("users")
-    .select("id, username, email, role, display_name, is_active, last_login_at, created_at, updated_at")
-    .eq("id", params.id)
-    .single();
-
+  const user = await getUserById(params.id);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ user });
+  const { password_hash: _, ...safeUser } = user;
+  return NextResponse.json({ user: safeUser });
 }
 
-// Update user
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -39,23 +33,13 @@ export async function PATCH(
 
   try {
     const body = await req.json();
+    const updates: Record<string, unknown> = {};
     const allowedFields = ["email", "role", "display_name", "is_active"];
-    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
     for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field];
-      }
+      if (body[field] !== undefined) updates[field] = body[field];
     }
 
-    const { data: user, error } = await supabase
-      .from("users")
-      .update(updates)
-      .eq("id", params.id)
-      .select("id, username, email, role, display_name, is_active, last_login_at, created_at, updated_at")
-      .single();
-
-    if (error) throw error;
+    const user = await updateUser(params.id, updates);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -63,17 +47,17 @@ export async function PATCH(
     await logActivity({
       userId: session.user.id,
       action: "user_updated",
-      details: { targetUserId: params.id, updates: Object.keys(updates).filter(k => k !== "updated_at") },
+      details: { targetUserId: params.id, updates: Object.keys(updates) },
     });
 
-    return NextResponse.json({ user });
+    const { password_hash: _, ...safeUser } = user;
+    return NextResponse.json({ user: safeUser });
   } catch (error) {
     console.error("Update user error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// Deactivate user (soft delete)
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
@@ -83,19 +67,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Prevent self-deactivation
   if (params.id === session.user.id) {
     return NextResponse.json({ error: "Cannot deactivate your own account" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("users")
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq("id", params.id);
-
-  if (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+  await updateUser(params.id, { is_active: false });
 
   await logActivity({
     userId: session.user.id,

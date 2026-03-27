@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { addActivityLog } from "./db";
 
 export async function logActivity(params: {
   userId: string | null;
@@ -7,12 +7,7 @@ export async function logActivity(params: {
   ipAddress?: string;
 }): Promise<void> {
   try {
-    await supabase.from("activity_logs").insert({
-      user_id: params.userId,
-      action: params.action,
-      details: params.details || {},
-      ip_address: params.ipAddress || null,
-    });
+    await addActivityLog(params);
   } catch (error) {
     console.error("Failed to log activity:", error);
   }

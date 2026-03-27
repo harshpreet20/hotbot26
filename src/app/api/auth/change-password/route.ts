@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getUserById, updateUser } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 
 export async function POST(req: Request) {
@@ -21,13 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
     }
 
-    // Verify current password
-    const { data: user } = await supabase
-      .from("users")
-      .select("id, password_hash")
-      .eq("id", session.user.id)
-      .single();
-
+    const user = await getUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -37,12 +31,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
     }
 
-    // Update password
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await supabase
-      .from("users")
-      .update({ password_hash: passwordHash, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
+    await updateUser(user.id, { password_hash: passwordHash });
 
     await logActivity({
       userId: user.id,

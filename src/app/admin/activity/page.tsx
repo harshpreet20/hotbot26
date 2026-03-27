@@ -10,7 +10,8 @@ interface ActivityLog {
   details: Record<string, unknown>;
   ip_address: string | null;
   created_at: string;
-  users: { username: string; display_name: string } | null;
+  username: string | null;
+  display_name: string | null;
 }
 
 export default function ActivityPage() {
@@ -101,7 +102,7 @@ export default function ActivityPage() {
                 {logs.map((log) => (
                   <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02]">
                     <td className="p-4 text-white">
-                      {log.users?.display_name || log.users?.username || "System"}
+                      {log.display_name || log.username || "System"}
                     </td>
                     <td className="p-4">
                       <span className="px-2 py-1 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400">

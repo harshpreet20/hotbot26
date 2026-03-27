@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { supabase } from "./supabase";
+import { getUserByUsername, updateUser } from "./db";
 import { logActivity } from "./activity";
 
 export const authOptions: NextAuthOptions = {
@@ -15,28 +15,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const { data: user, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("username", credentials.username)
-          .eq("is_active", true)
-          .single();
+        const user = await getUserByUsername(credentials.username);
+        if (!user) return null;
 
-        if (error || !user) return null;
-
-        const valid = await bcrypt.compare(
-          credentials.password,
-          user.password_hash
-        );
+        const valid = await bcrypt.compare(credentials.password, user.password_hash);
         if (!valid) return null;
 
-        // Update last login
-        await supabase
-          .from("users")
-          .update({ last_login_at: new Date().toISOString() })
-          .eq("id", user.id);
+        await updateUser(user.id, { last_login_at: new Date().toISOString() });
 
-        // Log login activity
         await logActivity({
           userId: user.id,
           action: "login",
@@ -47,8 +33,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           username: user.username,
           email: user.email,
-          role: user.role,
-          displayName: user.display_name,
+          role: user.role as "super_admin" | "admin",
+          displayName: user.display_name || undefined,
         };
       },
     }),

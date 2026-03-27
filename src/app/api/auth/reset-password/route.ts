@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { supabase } from "@/lib/supabase";
+import { getResetToken, updateUser, markTokenUsed } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 
 export async function POST(req: Request) {
@@ -14,31 +14,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    // Find valid token
-    const { data: resetToken } = await supabase
-      .from("password_reset_tokens")
-      .select("*")
-      .eq("token", token)
-      .eq("used", false)
-      .gt("expires_at", new Date().toISOString())
-      .single();
-
+    const resetToken = await getResetToken(token);
     if (!resetToken) {
       return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 400 });
     }
 
-    // Update password
     const passwordHash = await bcrypt.hash(password, 12);
-    await supabase
-      .from("users")
-      .update({ password_hash: passwordHash, updated_at: new Date().toISOString() })
-      .eq("id", resetToken.user_id);
-
-    // Mark token as used
-    await supabase
-      .from("password_reset_tokens")
-      .update({ used: true })
-      .eq("id", resetToken.id);
+    await updateUser(resetToken.user_id, { password_hash: passwordHash });
+    await markTokenUsed(resetToken.id);
 
     await logActivity({
       userId: resetToken.user_id,

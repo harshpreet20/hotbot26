@@ -13,7 +13,8 @@ interface Stats {
     created_at: string;
     ip_address: string | null;
     details: Record<string, unknown>;
-    users: { username: string; display_name: string } | null;
+    username: string | null;
+    display_name: string | null;
   }>;
 }
 
@@ -80,7 +81,7 @@ export default function DashboardPage() {
               >
                 <div>
                   <span className="text-sm font-medium text-white">
-                    {log.users?.display_name || log.users?.username || "System"}
+                    {log.display_name || log.username || "System"}
                   </span>
                   <span className="text-sm text-slate-400 ml-2">
                     {log.action.replace(/_/g, " ")}

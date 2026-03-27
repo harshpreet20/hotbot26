@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { supabase } from "@/lib/supabase";
+import { getUserByEmail, addResetToken } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { logActivity } from "@/lib/activity";
 
@@ -11,31 +11,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Always return success to prevent user enumeration
     const successResponse = NextResponse.json({
       message: "If an account with that email exists, a reset link has been sent.",
     });
 
-    const { data: user } = await supabase
-      .from("users")
-      .select("id, email")
-      .eq("email", email)
-      .eq("is_active", true)
-      .single();
-
+    const user = await getUserByEmail(email);
     if (!user) return successResponse;
 
-    // Generate token
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-    await supabase.from("password_reset_tokens").insert({
-      user_id: user.id,
-      token,
-      expires_at: expiresAt,
-    });
+    await addResetToken(user.id, token, expiresAt);
 
-    // Send email
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
     const resetUrl = `${siteUrl}/reset-password?token=${token}`;
     await sendPasswordResetEmail(user.email!, resetUrl);

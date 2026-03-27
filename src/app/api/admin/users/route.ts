@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getUsers, createUser } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 
-// List all users
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user || session.user.role !== "super_admin") {
@@ -15,18 +14,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
   const limit = Number(searchParams.get("limit")) || 50;
-  const offset = (page - 1) * limit;
 
-  const { data: users, count } = await supabase
-    .from("users")
-    .select("id, username, email, role, display_name, is_active, last_login_at, created_at", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  return NextResponse.json({ users: users || [], total: count || 0, page, limit });
+  const result = await getUsers(page, limit);
+  return NextResponse.json({ ...result, page, limit });
 }
 
-// Create a new user
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user || session.user.role !== "super_admin") {
@@ -39,7 +31,6 @@ export async function POST(req: Request) {
     if (!username || !password) {
       return NextResponse.json({ error: "Username and password are required" }, { status: 400 });
     }
-
     if (password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
@@ -50,25 +41,13 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-
-    const { data: user, error } = await supabase
-      .from("users")
-      .insert({
-        username,
-        email: email || null,
-        password_hash: passwordHash,
-        role: role || "admin",
-        display_name: displayName || username,
-      })
-      .select("id, username, email, role, display_name, is_active, created_at")
-      .single();
-
-    if (error) {
-      if (error.code === "23505") {
-        return NextResponse.json({ error: "Username or email already exists" }, { status: 409 });
-      }
-      throw error;
-    }
+    const user = await createUser({
+      username,
+      email: email || null,
+      password_hash: passwordHash,
+      role: role || "admin",
+      display_name: displayName || username,
+    });
 
     await logActivity({
       userId: session.user.id,
@@ -77,7 +56,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ user }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("unique") || message.includes("duplicate")) {
+      return NextResponse.json({ error: "Username or email already exists" }, { status: 409 });
+    }
     console.error("Create user error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
