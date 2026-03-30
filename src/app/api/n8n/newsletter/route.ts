@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
+import { saveLeadToSupabase } from "@/lib/saveLeadToSupabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +10,21 @@ export async function POST(req: NextRequest) {
     if (!email?.trim()) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
+
+    // Save subscriber to Supabase
+    saveLeadToSupabase(
+      {
+        first_name: name?.trim() || "Subscriber",
+        email: email.trim(),
+        source: "newsletter",
+        status: "lead",
+        tags: ["newsletter"],
+      },
+      {
+        type: "form",
+        subject: "Newsletter signup",
+      }
+    );
 
     // n8n workflow handles:
     // 1. Brevo/Mailchimp: Add subscriber

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
+import { saveLeadToSupabase } from "@/lib/saveLeadToSupabase";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN_SCORE = 0.4; // 0.0 = bot, 1.0 = human
@@ -42,6 +43,26 @@ export async function POST(req: NextRequest) {
     if (!isHuman) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
+
+    // Save to Supabase (non-blocking — n8n is still the primary pipeline)
+    const nameParts = name.trim().split(/\s+/);
+    saveLeadToSupabase(
+      {
+        first_name: nameParts[0],
+        last_name: nameParts.slice(1).join(" ") || null,
+        email: email.trim(),
+        phone: phone || null,
+        company: company || null,
+        source: formType || "form",
+        status: "lead",
+        notes: [service, budget, message].filter(Boolean).join(" | ") || null,
+      },
+      {
+        type: "form",
+        subject: `Form: ${formType || "get-started"} from ${page || "unknown"}`,
+        body: message || null,
+      }
+    );
 
     const data = await triggerN8n<Record<string, string>>("leads", {
       name,

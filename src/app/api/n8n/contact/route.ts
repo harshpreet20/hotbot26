@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
+import { saveLeadToSupabase } from "@/lib/saveLeadToSupabase";
 
 // Contact page form — routes through the same unified leads webhook as all other forms.
 export async function POST(req: NextRequest) {
@@ -10,6 +11,25 @@ export async function POST(req: NextRequest) {
     if (!name?.trim() || !email?.trim()) {
       return NextResponse.json({ error: "Name and email required" }, { status: 400 });
     }
+
+    // Save to Supabase
+    const nameParts = name.trim().split(/\s+/);
+    saveLeadToSupabase(
+      {
+        first_name: nameParts[0],
+        last_name: nameParts.slice(1).join(" ") || null,
+        email: email.trim(),
+        phone: phone || null,
+        source: "contact",
+        status: "lead",
+        notes: subject || null,
+      },
+      {
+        type: "form",
+        subject: `Contact: ${subject || "General inquiry"}`,
+        body: message || null,
+      }
+    );
 
     const data = await triggerN8n<Record<string, string>>("leads", {
       name,
