@@ -126,7 +126,7 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
 
 export async function deleteSession(token: string): Promise<void> {
   if (isSupabaseEnabled()) {
-    await sb().from("sessions").delete().eq("token", token).catch(() => {});
+    await Promise.resolve(sb().from("sessions").delete().eq("token", token)).catch(() => {});
   }
   // Always clean filesystem too — session may have been stored there as fallback.
   _fsWrite("sessions", fsActive().filter((s) => s.token !== token));
