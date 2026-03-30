@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
 type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
+type Invoice = Database['public']['Tables']['invoices']['Row']
 type InvoiceItemInsert = Database['public']['Tables']['invoice_items']['Insert']
 
 // GET /api/invoices
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  if (status) query = query.eq('status', status)
+  if (status) query = query.eq('status', status as Invoice['status'])
   if (customerId) query = query.eq('customer_id', customerId)
 
   const { data, error } = await query

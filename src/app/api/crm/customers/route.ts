@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
 type CustomerInsert = Database['public']['Tables']['customers']['Insert']
+type Customer = Database['public']['Tables']['customers']['Row']
 
 // GET /api/crm/customers
 export async function GET(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  if (status) query = query.eq('status', status)
+  if (status) query = query.eq('status', status as Customer['status'])
   if (search) {
     query = query.or(
       `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`

@@ -2,7 +2,7 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -23,11 +23,14 @@ export interface Database {
           updated_at?: string
         }
         Update: {
+          id?: string
           full_name?: string | null
           role?: 'admin' | 'editor' | 'user'
           avatar_url?: string | null
+          created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       blog_posts: {
         Row: {
@@ -59,6 +62,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
+          id?: string
           author_id?: string | null
           title?: string
           slug?: string
@@ -68,8 +72,18 @@ export interface Database {
           tags?: string[]
           status?: 'draft' | 'published' | 'archived'
           published_at?: string | null
+          created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'blog_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
       }
       customers: {
         Row: {
@@ -105,6 +119,8 @@ export interface Database {
           updated_at?: string
         }
         Update: {
+          id?: string
+          created_by?: string | null
           first_name?: string
           last_name?: string | null
           email?: string | null
@@ -115,8 +131,18 @@ export interface Database {
           status?: 'lead' | 'prospect' | 'active' | 'churned'
           tags?: string[]
           notes?: string | null
+          created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'customers_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
       }
       customer_interactions: {
         Row: {
@@ -138,10 +164,23 @@ export interface Database {
           created_at?: string
         }
         Update: {
+          id?: string
+          customer_id?: string
+          created_by?: string | null
           type?: 'email' | 'call' | 'meeting' | 'note' | 'form' | 'chat'
           subject?: string | null
           body?: string | null
+          created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'customer_interactions_customer_id_fkey'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          }
+        ]
       }
       invoices: {
         Row: {
@@ -179,7 +218,9 @@ export interface Database {
           updated_at?: string
         }
         Update: {
+          id?: string
           customer_id?: string | null
+          created_by?: string | null
           invoice_number?: string
           status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
           issue_date?: string
@@ -189,8 +230,18 @@ export interface Database {
           tax_rate?: number
           notes?: string | null
           paid_at?: string | null
+          created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_customer_id_fkey'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          }
+        ]
       }
       invoice_items: {
         Row: {
@@ -211,19 +262,33 @@ export interface Database {
           sort_order?: number
         }
         Update: {
+          id?: string
+          invoice_id?: string
           description?: string
           quantity?: number
           unit_price?: number
           sort_order?: number
         }
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_items_invoice_id_fkey'
+            columns: ['invoice_id']
+            isOneToOne: false
+            referencedRelation: 'invoices'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
+    Views: Record<string, never>
     Functions: {
       next_invoice_number: {
         Args: Record<string, never>
         Returns: string
       }
     }
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
