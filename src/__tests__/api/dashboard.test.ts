@@ -17,10 +17,10 @@ vi.mock("@/lib/dashboardAuth", () => ({
 }));
 
 vi.mock("@/lib/store", () => ({
-  readAll:  vi.fn(),
-  writeAll: vi.fn(),
-  prepend:  vi.fn(),
-  newId:    vi.fn().mockReturnValue("test-id"),
+  readAll:    vi.fn().mockResolvedValue([]),
+  updateById: vi.fn().mockResolvedValue(undefined),
+  insert:     vi.fn().mockResolvedValue(undefined),
+  newId:      vi.fn().mockReturnValue("test-id"),
 }));
 
 vi.mock("@/lib/postsStore", () => ({
@@ -28,7 +28,7 @@ vi.mock("@/lib/postsStore", () => ({
 }));
 
 import { extractToken, authorizeData, isAuthorized } from "@/lib/dashboardAuth";
-import { readAll, writeAll } from "@/lib/store";
+import { readAll, updateById } from "@/lib/store";
 import { readPosts } from "@/lib/postsStore";
 
 import { GET as getOverview }    from "@/app/api/dashboard/overview/route";
@@ -60,7 +60,7 @@ describe("Dashboard routes — auth guard", () => {
     vi.mocked(extractToken).mockReturnValue(null);
     vi.mocked(authorizeData).mockReturnValue(false);
     vi.mocked(isAuthorized).mockReturnValue(false);
-    vi.mocked(readAll).mockReturnValue([]);
+    vi.mocked(readAll).mockResolvedValue([]);
     vi.mocked(readPosts).mockReturnValue({ posts: [] });
   });
 
@@ -91,12 +91,12 @@ describe("GET /api/dashboard/overview", () => {
     vi.mocked(authorizeData).mockReturnValue(true);
     vi.mocked(readAll).mockImplementation((collection) => {
       switch (collection) {
-        case "leads":      return [LEAD, LEAD, LEAD];
-        case "contacts":   return [CONTACT, CONTACT];
-        case "newsletter": return [NEWSLETTER];
-        case "callbacks":  return [CALLBACK];
-        case "chats":      return [CHAT];
-        default:           return [];
+        case "leads":      return Promise.resolve([LEAD, LEAD, LEAD]);
+        case "contacts":   return Promise.resolve([CONTACT, CONTACT]);
+        case "newsletter": return Promise.resolve([NEWSLETTER]);
+        case "callbacks":  return Promise.resolve([CALLBACK]);
+        case "chats":      return Promise.resolve([CHAT]);
+        default:           return Promise.resolve([]);
       }
     });
     vi.mocked(readPosts).mockReturnValue({ posts: [{ id: "p1" }, { id: "p2" }] as never });
@@ -134,7 +134,7 @@ describe("GET /api/dashboard/overview", () => {
   });
 
   it("returns 0 counts when store is empty", async () => {
-    vi.mocked(readAll).mockReturnValue([]);
+    vi.mocked(readAll).mockResolvedValue([]);
     vi.mocked(readPosts).mockReturnValue({ posts: [] });
     const res  = await getOverview(makeReq("http://localhost/api/dashboard/overview", "admin-token"));
     const body = await res.json() as Record<string, unknown>;
@@ -163,7 +163,7 @@ describe("GET /api/dashboard/leads", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(authorizeData).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([LEAD]);
+    vi.mocked(readAll).mockResolvedValue([LEAD]);
   });
 
   it("returns leads array", async () => {
@@ -175,7 +175,7 @@ describe("GET /api/dashboard/leads", () => {
   });
 
   it("returns empty array when no leads exist", async () => {
-    vi.mocked(readAll).mockReturnValue([]);
+    vi.mocked(readAll).mockResolvedValue([]);
     const res  = await getLeads(makeReq("http://localhost/api/dashboard/leads", "admin-token"));
     const body = await res.json() as Record<string, unknown>;
     expect((body.leads as unknown[]).length).toBe(0);
@@ -188,7 +188,7 @@ describe("GET /api/dashboard/contacts", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(authorizeData).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([CONTACT]);
+    vi.mocked(readAll).mockResolvedValue([CONTACT]);
   });
 
   it("returns contacts array", async () => {
@@ -205,7 +205,7 @@ describe("GET /api/dashboard/newsletter", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(authorizeData).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([NEWSLETTER]);
+    vi.mocked(readAll).mockResolvedValue([NEWSLETTER]);
   });
 
   it("returns subscribers array", async () => {
@@ -224,7 +224,7 @@ describe("GET /api/dashboard/callbacks", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(authorizeData).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([CALLBACK]);
+    vi.mocked(readAll).mockResolvedValue([CALLBACK]);
   });
 
   it("returns callbacks array", async () => {
@@ -239,7 +239,7 @@ describe("PATCH /api/dashboard/callbacks — mark as called", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(authorizeData).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([{ ...CALLBACK }]);
+    vi.mocked(readAll).mockResolvedValue([{ ...CALLBACK }]);
   });
 
   it("marks a callback as called and returns success", async () => {
@@ -252,7 +252,7 @@ describe("PATCH /api/dashboard/callbacks — mark as called", () => {
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(writeAll).toHaveBeenCalled();
+    expect(updateById).toHaveBeenCalled();
   });
 
   it("returns 404 for unknown callback id", async () => {
@@ -283,7 +283,7 @@ describe("GET /api/dashboard/chats", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
     vi.mocked(isAuthorized).mockReturnValue(true);
-    vi.mocked(readAll).mockReturnValue([CHAT]);
+    vi.mocked(readAll).mockResolvedValue([CHAT]);
   });
 
   it("returns sessions array", async () => {

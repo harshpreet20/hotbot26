@@ -160,3 +160,17 @@ export function _fsRead<T>(store: string): T[] {
 export function _fsWrite<T>(store: string, items: T[]): void {
   fsWrite(store, items);
 }
+
+// ── Sync filesystem wrappers (for backwards-compatible usage) ─────────────────
+
+/** Synchronous write — replaces entire store with given items array. */
+export function writeAll<T>(store: string, items: T[]): void {
+  fsWrite(store, items);
+}
+
+/** Synchronous prepend — inserts item at the front of the filesystem store. */
+export function prepend<T>(store: string, item: T): void {
+  const items = fsRead<T>(store);
+  items.unshift(item);
+  fsWrite(store, items);
+}

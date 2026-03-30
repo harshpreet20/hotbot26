@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     restoreMocks: true,
+    exclude: ["**/node_modules/**", "**/hotbot-studios/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

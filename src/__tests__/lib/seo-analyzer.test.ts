@@ -116,13 +116,13 @@ describe("analyzeSeo()", () => {
     expect(checks.find((c) => c.id === "seo-meta-title")?.status).toBe("error");
   });
 
-  it("marks meta title as improvement when too short (<50 chars)", () => {
-    const checks = analyzeSeo(baseInput({ metaTitle: "Short" }));
+  it("marks meta title as improvement when too short (45-54 chars)", () => {
+    const checks = analyzeSeo(baseInput({ metaTitle: "A".repeat(48) }));
     expect(checks.find((c) => c.id === "seo-meta-title")?.status).toBe("improvement");
   });
 
-  it("marks meta title as improvement when too long (>60 chars)", () => {
-    const checks = analyzeSeo(baseInput({ metaTitle: "A".repeat(75) }));
+  it("marks meta title as improvement when too long (61-65 chars)", () => {
+    const checks = analyzeSeo(baseInput({ metaTitle: "A".repeat(63) }));
     expect(checks.find((c) => c.id === "seo-meta-title")?.status).toBe("improvement");
   });
 
@@ -147,8 +147,8 @@ describe("analyzeSeo()", () => {
     expect(checks.find((c) => c.id === "seo-length")?.status).toBe("error");
   });
 
-  it("marks H2 headings as good when present", () => {
-    const checks = analyzeSeo(baseInput({ content: "<h2>Section</h2><p>content</p>" }));
+  it("marks H2 headings as good when 2+ present", () => {
+    const checks = analyzeSeo(baseInput({ content: "<h2>Section One</h2><p>content</p><h2>Section Two</h2><p>more</p>" }));
     expect(checks.find((c) => c.id === "seo-headings")?.status).toBe("good");
   });
 
@@ -192,8 +192,8 @@ describe("analyzeAeo()", () => {
     expect(c.find((x) => x.id === "aeo-faq")?.status).toBe("good");
   });
 
-  it("detects structured lists with 3+ items", () => {
-    const c = analyzeAeo(baseInput({ content: "<ul><li>a</li><li>b</li><li>c</li></ul>" }));
+  it("detects structured lists with 4+ items", () => {
+    const c = analyzeAeo(baseInput({ content: "<ul><li>a</li><li>b</li><li>c</li><li>d</li></ul>" }));
     expect(c.find((x) => x.id === "aeo-lists")?.status).toBe("good");
   });
 
@@ -228,13 +228,13 @@ describe("analyzeGeo()", () => {
     expect(c.find((x) => x.id === "geo-citations")?.status).toBe("good");
   });
 
-  it("marks depth as good when 1500+ words", () => {
-    const c = analyzeGeo(baseInput({ content: "<p>" + "word ".repeat(1600) + "</p>" }));
+  it("marks depth as good when 1800+ words", () => {
+    const c = analyzeGeo(baseInput({ content: "<p>" + "word ".repeat(1900) + "</p>" }));
     expect(c.find((x) => x.id === "geo-depth")?.status).toBe("good");
   });
 
-  it("marks depth as improvement at 800–1499 words", () => {
-    const c = analyzeGeo(baseInput({ content: "<p>" + "word ".repeat(900) + "</p>" }));
+  it("marks depth as improvement at 1000–1799 words", () => {
+    const c = analyzeGeo(baseInput({ content: "<p>" + "word ".repeat(1100) + "</p>" }));
     expect(c.find((x) => x.id === "geo-depth")?.status).toBe("improvement");
   });
 

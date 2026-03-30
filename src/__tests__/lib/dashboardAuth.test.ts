@@ -89,122 +89,122 @@ describe("extractToken()", () => {
 // ── isAuthorized ──────────────────────────────────────────────────────────────
 
 describe("isAuthorized()", () => {
-  it("returns true for a valid session token", () => {
+  it("returns true for a valid session token", async () => {
     vi.mocked(getSession).mockReturnValue(adminSession());
-    expect(isAuthorized("valid-token")).toBe(true);
+    expect(await isAuthorized("valid-token")).toBe(true);
   });
 
-  it("returns true for a matching publish secret", () => {
+  it("returns true for a matching publish secret", async () => {
     vi.mocked(getSession).mockReturnValue(null);
     vi.mocked(getPublishSecret).mockReturnValue("my-secret");
-    expect(isAuthorized("my-secret")).toBe(true);
+    expect(await isAuthorized("my-secret")).toBe(true);
   });
 
-  it("returns false for an invalid session token and wrong secret", () => {
+  it("returns false for an invalid session token and wrong secret", async () => {
     vi.mocked(getSession).mockReturnValue(null);
     vi.mocked(getPublishSecret).mockReturnValue("correct-secret");
-    expect(isAuthorized("wrong-secret")).toBe(false);
+    expect(await isAuthorized("wrong-secret")).toBe(false);
   });
 
-  it("returns false for null token", () => {
-    expect(isAuthorized(null)).toBe(false);
+  it("returns false for null token", async () => {
+    expect(await isAuthorized(null)).toBe(false);
   });
 
-  it("returns false for undefined token", () => {
-    expect(isAuthorized(undefined)).toBe(false);
+  it("returns false for undefined token", async () => {
+    expect(await isAuthorized(undefined)).toBe(false);
   });
 
-  it("returns false for empty string", () => {
-    expect(isAuthorized("")).toBe(false);
+  it("returns false for empty string", async () => {
+    expect(await isAuthorized("")).toBe(false);
   });
 });
 
 // ── authorizeRole ─────────────────────────────────────────────────────────────
 
 describe("authorizeRole()", () => {
-  it("returns session info when role matches", () => {
+  it("returns session info when role matches", async () => {
     vi.mocked(getSession).mockReturnValue(adminSession());
-    const result = authorizeRole("token", "admin");
+    const result = await authorizeRole("token", "admin");
     expect(result).toEqual(adminSession());
   });
 
-  it("returns session info when role is in list of allowed roles", () => {
+  it("returns session info when role is in list of allowed roles", async () => {
     vi.mocked(getSession).mockReturnValue(managerSession());
-    const result = authorizeRole("token", "admin", "manager");
+    const result = await authorizeRole("token", "admin", "manager");
     expect(result).toEqual(managerSession());
   });
 
-  it("returns null when role is NOT in allowed list", () => {
+  it("returns null when role is NOT in allowed list", async () => {
     vi.mocked(getSession).mockReturnValue(agentSession());
-    const result = authorizeRole("token", "admin", "manager");
+    const result = await authorizeRole("token", "admin", "manager");
     expect(result).toBeNull();
   });
 
-  it("returns null for invalid token", () => {
+  it("returns null for invalid token", async () => {
     vi.mocked(getSession).mockReturnValue(null);
-    expect(authorizeRole("bad-token", "admin")).toBeNull();
+    expect(await authorizeRole("bad-token", "admin")).toBeNull();
   });
 
-  it("returns null for null token", () => {
-    expect(authorizeRole(null, "admin")).toBeNull();
+  it("returns null for null token", async () => {
+    expect(await authorizeRole(null, "admin")).toBeNull();
   });
 });
 
 // ── authorizeAny ──────────────────────────────────────────────────────────────
 
 describe("authorizeAny()", () => {
-  it("returns session for admin", () => {
+  it("returns session for admin", async () => {
     vi.mocked(getSession).mockReturnValue(adminSession());
-    expect(authorizeAny("t")).toEqual(adminSession());
+    expect(await authorizeAny("t")).toEqual(adminSession());
   });
 
-  it("returns session for manager", () => {
+  it("returns session for manager", async () => {
     vi.mocked(getSession).mockReturnValue(managerSession());
-    expect(authorizeAny("t")).toEqual(managerSession());
+    expect(await authorizeAny("t")).toEqual(managerSession());
   });
 
-  it("returns session for agent", () => {
+  it("returns session for agent", async () => {
     vi.mocked(getSession).mockReturnValue(agentSession());
-    expect(authorizeAny("t")).toEqual(agentSession());
+    expect(await authorizeAny("t")).toEqual(agentSession());
   });
 
-  it("returns null for invalid token", () => {
+  it("returns null for invalid token", async () => {
     vi.mocked(getSession).mockReturnValue(null);
-    expect(authorizeAny("bad")).toBeNull();
+    expect(await authorizeAny("bad")).toBeNull();
   });
 });
 
 // ── authorizeData ─────────────────────────────────────────────────────────────
 
 describe("authorizeData()", () => {
-  it("returns true for admin session", () => {
+  it("returns true for admin session", async () => {
     vi.mocked(getSession).mockReturnValue(adminSession());
-    expect(authorizeData("token")).toBe(true);
+    expect(await authorizeData("token")).toBe(true);
   });
 
-  it("returns true for manager session", () => {
+  it("returns true for manager session", async () => {
     vi.mocked(getSession).mockReturnValue(managerSession());
-    expect(authorizeData("token")).toBe(true);
+    expect(await authorizeData("token")).toBe(true);
   });
 
-  it("returns false for agent session (not authorized for data routes)", () => {
+  it("returns false for agent session (not authorized for data routes)", async () => {
     vi.mocked(getSession).mockReturnValue(agentSession());
-    expect(authorizeData("token")).toBe(false);
+    expect(await authorizeData("token")).toBe(false);
   });
 
-  it("returns true for matching publish secret (N8N / legacy)", () => {
+  it("returns true for matching publish secret (N8N / legacy)", async () => {
     vi.mocked(getSession).mockReturnValue(null);
     vi.mocked(getPublishSecret).mockReturnValue("pub-secret");
-    expect(authorizeData("pub-secret")).toBe(true);
+    expect(await authorizeData("pub-secret")).toBe(true);
   });
 
-  it("returns false for wrong publish secret", () => {
+  it("returns false for wrong publish secret", async () => {
     vi.mocked(getSession).mockReturnValue(null);
     vi.mocked(getPublishSecret).mockReturnValue("real-secret");
-    expect(authorizeData("wrong-secret")).toBe(false);
+    expect(await authorizeData("wrong-secret")).toBe(false);
   });
 
-  it("returns false for null token", () => {
-    expect(authorizeData(null)).toBe(false);
+  it("returns false for null token", async () => {
+    expect(await authorizeData(null)).toBe(false);
   });
 });

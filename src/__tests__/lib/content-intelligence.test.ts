@@ -174,9 +174,9 @@ describe("computeLocalIntelligence() — context_expansion_suggestions", () => {
     expect(hasComparison).toBe(true);
   });
 
-  it("suggests expanding word count when under 1500 words", () => {
+  it("suggests expanding word count when under 1800 words", () => {
     const { result } = runIntelligence({ content: "<p>" + "word ".repeat(200) + "</p>" });
-    const hasDepth = result.context_expansion_suggestions.some((s) => s.includes("1,500+"));
+    const hasDepth = result.context_expansion_suggestions.some((s) => s.includes("1,800+"));
     expect(hasDepth).toBe(true);
   });
 });

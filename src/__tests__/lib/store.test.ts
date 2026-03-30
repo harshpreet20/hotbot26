@@ -22,37 +22,37 @@ describe("store — readAll()", () => {
   it("returns parsed array from valid JSON file", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify([{ id: "1", name: "Alice" }]));
     const { readAll } = await getStore();
-    expect(readAll("leads")).toEqual([{ id: "1", name: "Alice" }]);
+    expect(await readAll("leads")).toEqual([{ id: "1", name: "Alice" }]);
   });
 
   it("returns [] when file does not exist (ENOENT)", async () => {
     vi.mocked(fs.readFileSync).mockImplementation(() => { throw Object.assign(new Error("ENOENT"), { code: "ENOENT" }); });
     const { readAll } = await getStore();
-    expect(readAll("leads")).toEqual([]);
+    expect(await readAll("leads")).toEqual([]);
   });
 
   it("returns [] when file contains invalid JSON", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue("not-valid-json{{");
     const { readAll } = await getStore();
-    expect(readAll("sessions")).toEqual([]);
+    expect(await readAll("sessions")).toEqual([]);
   });
 
   it("returns [] when JSON is an object, not an array", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ key: "value" }));
     const { readAll } = await getStore();
-    expect(readAll("sessions")).toEqual([]);
+    expect(await readAll("sessions")).toEqual([]);
   });
 
   it("returns [] when JSON is null", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue("null");
     const { readAll } = await getStore();
-    expect(readAll("sessions")).toEqual([]);
+    expect(await readAll("sessions")).toEqual([]);
   });
 
   it("returns [] when file is empty", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue("");
     const { readAll } = await getStore();
-    expect(readAll("any")).toEqual([]);
+    expect(await readAll("any")).toEqual([]);
   });
 });
 

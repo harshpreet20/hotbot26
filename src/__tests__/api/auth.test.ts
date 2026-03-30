@@ -1,12 +1,26 @@
 /**
- * Integration tests — POST /api/blog/auth (login + setup + logout)
+ * Integration tests — POST /api/blog/auth (login + logout)
  *
- * Tests: login success/failure, first-run setup, rate limiting,
- *        cookie management, session creation, setup guard,
+ * Tests: login success/failure, rate limiting,
+ *        cookie management, session creation,
  *        password/username validation, env-var fallback user
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+
+// In-memory rate limiter mock (avoids disk I/O in tests)
+vi.mock("@/lib/rateLimit", () => {
+  const callCounts: Record<string, number> = {};
+  return {
+    rateLimit: vi.fn().mockImplementation((identifier: string, bucket: string, options: { limit?: number } = {}) => {
+      const key = `${bucket}:${identifier}`;
+      callCounts[key] = (callCounts[key] ?? 0) + 1;
+      const limit = options?.limit ?? 30;
+      const allowed = callCounts[key] <= limit;
+      return { allowed, remaining: Math.max(0, limit - callCounts[key]), resetAt: Date.now() + 60000 };
+    }),
+  };
+});
 
 // Mock all external dependencies
 vi.mock("bcryptjs", () => ({
@@ -16,21 +30,20 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 vi.mock("@/lib/sessions", () => ({
-  createSession: vi.fn().mockReturnValue("new-session-token-abc"),
-  getSession:    vi.fn(),
-  deleteSession: vi.fn(),
+  createSession: vi.fn().mockResolvedValue("new-session-token-abc"),
+  getSession:    vi.fn().mockResolvedValue(null),
+  deleteSession: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/adminStore", () => ({
-  readAdminStore:    vi.fn(),
-  writeAdminStore:   vi.fn(),
-  isSetupNeeded:     vi.fn(),
-  getPublishSecret:  vi.fn(),
+  getUserByUsername:  vi.fn(),
   getEnvFallbackUser: vi.fn().mockReturnValue(null),
+  isSetupNeeded:      vi.fn().mockResolvedValue(false),
+  getPublishSecret:   vi.fn().mockReturnValue(null),
 }));
 
 import bcrypt from "bcryptjs";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import { readAdminStore, writeAdminStore, isSetupNeeded, getEnvFallbackUser } from "@/lib/adminStore";
+import { getUserByUsername, getEnvFallbackUser } from "@/lib/adminStore";
 import { GET, POST, DELETE } from "@/app/api/blog/auth/route";
 
 const ADMIN_USER = {
@@ -40,10 +53,6 @@ const ADMIN_USER = {
   role:         "admin" as const,
   createdAt:    new Date().toISOString(),
 };
-
-function makeStore(users = [ADMIN_USER]) {
-  return { publishSecret: "pub-secret", users };
-}
 
 function postReq(body: unknown, ip = "1.2.3.4") {
   return new NextRequest("http://localhost/api/blog/auth", {
@@ -68,9 +77,8 @@ function deleteReq(cookie?: string) {
 
 beforeEach(() => {
   vi.resetModules();
-  vi.mocked(isSetupNeeded).mockReturnValue(false);
-  vi.mocked(readAdminStore).mockReturnValue(makeStore());
-  vi.mocked(getSession).mockReturnValue(null);
+  vi.mocked(getUserByUsername).mockResolvedValue(ADMIN_USER);
+  vi.mocked(getSession).mockResolvedValue(null);
   vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
   vi.mocked(getEnvFallbackUser).mockReturnValue(null);
 });
@@ -79,7 +87,7 @@ beforeEach(() => {
 
 describe("GET /api/blog/auth", () => {
   it("returns authenticated:true when cookie has a valid session", async () => {
-    vi.mocked(getSession).mockReturnValue({ userId: "uid-1", username: "admin", role: "admin" });
+    vi.mocked(getSession).mockResolvedValue({ userId: "uid-1", username: "admin", role: "admin" });
     const res  = await GET(getReq("valid-token"));
     const body = await res.json() as Record<string, unknown>;
     expect(body.authenticated).toBe(true);
@@ -89,28 +97,19 @@ describe("GET /api/blog/auth", () => {
     expect(body.needsSetup).toBe(false);
   });
 
-  it("returns authenticated:false and needsSetup:false when cookie exists but session is gone (cold-start scenario)", async () => {
-    vi.mocked(getSession).mockReturnValue(null); // session wiped
+  it("returns authenticated:false when cookie exists but session is gone (cold-start scenario)", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
     const res  = await GET(getReq("stale-token"));
     const body = await res.json() as Record<string, unknown>;
     expect(body.authenticated).toBe(false);
-    expect(body.needsSetup).toBe(false); // must NOT show setup form
-  });
-
-  it("returns needsSetup:true when no cookie and setup is needed", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    const res  = await GET(getReq());
-    const body = await res.json() as Record<string, unknown>;
-    expect(body.authenticated).toBe(false);
-    expect(body.needsSetup).toBe(true);
-  });
-
-  it("returns needsSetup:false when no cookie and setup is complete", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
-    const res  = await GET(getReq());
-    const body = await res.json() as Record<string, unknown>;
     expect(body.needsSetup).toBe(false);
+  });
+
+  it("returns authenticated:false when no cookie present", async () => {
+    const res  = await GET(getReq());
+    const body = await res.json() as Record<string, unknown>;
     expect(body.authenticated).toBe(false);
+    expect(body.needsSetup).toBe(false);
   });
 });
 
@@ -119,8 +118,7 @@ describe("GET /api/blog/auth", () => {
 describe("POST /api/blog/auth — login", () => {
   it("returns 200 + token on successful login", async () => {
     vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
-    vi.mocked(readAdminStore).mockReturnValue(makeStore());
+    vi.mocked(getUserByUsername).mockResolvedValue(ADMIN_USER);
     const res  = await POST(postReq({ username: "admin", password: "correct-pass" }));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
@@ -147,8 +145,8 @@ describe("POST /api/blog/auth — login", () => {
     expect(body.token).toBeUndefined();
   });
 
-  it("returns 401 for unknown username (timing-safe: always runs bcrypt)", async () => {
-    vi.mocked(readAdminStore).mockReturnValue(makeStore());
+  it("returns 401 for unknown username", async () => {
+    vi.mocked(getUserByUsername).mockResolvedValue(null);
     vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
     const res  = await POST(postReq({ username: "nobody", password: "anypass" }));
     const body = await res.json() as Record<string, unknown>;
@@ -178,8 +176,8 @@ describe("POST /api/blog/auth — login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("uses env-var fallback user when no file-based users exist", async () => {
-    vi.mocked(readAdminStore).mockReturnValue({ publishSecret: "s", users: [] });
+  it("uses env-var fallback user when getUserByUsername returns null", async () => {
+    vi.mocked(getUserByUsername).mockResolvedValue(null);
     vi.mocked(getEnvFallbackUser).mockReturnValue({
       id: "env-user", username: "admin", passwordHash: "$2b$12$envhash", role: "admin", createdAt: "",
     });
@@ -199,49 +197,6 @@ describe("POST /api/blog/auth — login", () => {
     }
     const res  = await POST(postReq({ username: "admin", password: "wrong" }, ip));
     expect(res.status).toBe(429);
-  });
-});
-
-// ── POST — first-run setup ────────────────────────────────────────────────────
-
-describe("POST /api/blog/auth — first-run setup", () => {
-  it("creates admin account on valid setup request", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    vi.mocked(writeAdminStore).mockReturnValue(undefined);
-    const res  = await POST(postReq({ setup: true, username: "admin", password: "strongpass1", confirmPassword: "strongpass1" }, "10.0.0.1"));
-    const body = await res.json() as Record<string, unknown>;
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.token).toBe("new-session-token-abc");
-    expect(writeAdminStore).toHaveBeenCalled();
-  });
-
-  it("returns 409 when setup is attempted but account already exists", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
-    const res  = await POST(postReq({ setup: true, username: "admin", password: "pass12345", confirmPassword: "pass12345" }, "10.0.0.2"));
-    const body = await res.json() as Record<string, unknown>;
-    expect(res.status).toBe(409);
-    expect(body.success).toBe(false);
-  });
-
-  it("returns 400 when passwords do not match", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    const res  = await POST(postReq({ setup: true, username: "admin", password: "pass12345", confirmPassword: "different" }, "10.0.0.3"));
-    const body = await res.json() as Record<string, unknown>;
-    expect(res.status).toBe(400);
-    expect(body.error).toMatch(/match/i);
-  });
-
-  it("returns 400 when password is under 8 characters", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    const res  = await POST(postReq({ setup: true, username: "admin", password: "short", confirmPassword: "short" }, "10.0.0.4"));
-    expect(res.status).toBe(400);
-  });
-
-  it("returns 400 when username is under 3 characters", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    const res  = await POST(postReq({ setup: true, username: "ab", password: "validpassword", confirmPassword: "validpassword" }, "10.0.0.5"));
-    expect(res.status).toBe(400);
   });
 });
 

@@ -130,13 +130,13 @@ describe("isSetupNeeded()", () => {
   it("returns false when admin file has users", async () => {
     vi.mocked(fs.readFileSync).mockReturnValue(adminStoreJson());
     const { isSetupNeeded } = await getAdminStore();
-    expect(isSetupNeeded()).toBe(false);
+    expect(await isSetupNeeded()).toBe(false);
   });
 
   it("returns true when admin file is missing and no env vars set", async () => {
     vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
     const { isSetupNeeded } = await getAdminStore();
-    expect(isSetupNeeded()).toBe(true);
+    expect(await isSetupNeeded()).toBe(true);
   });
 
   it("returns false when admin file is missing BUT env vars are set", async () => {
@@ -144,7 +144,7 @@ describe("isSetupNeeded()", () => {
     process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hashvalue";
     process.env.BLOG_PUBLISH_SECRET      = "my-publish-secret";
     const { isSetupNeeded } = await getAdminStore();
-    expect(isSetupNeeded()).toBe(false);
+    expect(await isSetupNeeded()).toBe(false);
   });
 
   it("returns true when admin file exists but has no users", async () => {
@@ -152,7 +152,7 @@ describe("isSetupNeeded()", () => {
       JSON.stringify({ publishSecret: "s", users: [] })
     );
     const { isSetupNeeded } = await getAdminStore();
-    expect(isSetupNeeded()).toBe(true);
+    expect(await isSetupNeeded()).toBe(true);
   });
 
   it("requires BOTH env vars to be set (not just one)", async () => {
@@ -160,21 +160,20 @@ describe("isSetupNeeded()", () => {
     process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hashvalue";
     // BLOG_PUBLISH_SECRET not set
     const { isSetupNeeded } = await getAdminStore();
-    expect(isSetupNeeded()).toBe(true);
+    expect(await isSetupNeeded()).toBe(true);
   });
 });
 
 // ── getPublishSecret ──────────────────────────────────────────────────────────
 
 describe("getPublishSecret()", () => {
-  it("returns publishSecret from admin file", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(adminStoreJson());
+  it("returns publishSecret from env var", async () => {
+    process.env.BLOG_PUBLISH_SECRET = "pub-secret-abc";
     const { getPublishSecret } = await getAdminStore();
     expect(getPublishSecret()).toBe("pub-secret-abc");
   });
 
-  it("falls back to env var when file is missing", async () => {
-    vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
+  it("returns env var secret", async () => {
     process.env.BLOG_PUBLISH_SECRET = "env-secret-xyz";
     const { getPublishSecret } = await getAdminStore();
     expect(getPublishSecret()).toBe("env-secret-xyz");

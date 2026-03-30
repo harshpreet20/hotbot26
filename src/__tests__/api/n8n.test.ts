@@ -12,10 +12,14 @@ import { NextRequest } from "next/server";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimitResponse: vi.fn().mockReturnValue(null),
+}));
+
 vi.mock("@/lib/store", () => ({
-  prepend: vi.fn(),
+  insert:  vi.fn().mockResolvedValue(undefined),
   newId:   vi.fn().mockReturnValue("generated-id"),
-  readAll: vi.fn().mockReturnValue([]),
+  readAll: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@anthropic-ai/sdk", () => ({
@@ -28,7 +32,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
   },
 }));
 
-import { prepend, newId, readAll } from "@/lib/store";
+import { insert, newId, readAll } from "@/lib/store";
 import { POST as postForm }       from "@/app/api/n8n/form/route";
 import { POST as postNewsletter } from "@/app/api/n8n/newsletter/route";
 import { POST as postCallback }   from "@/app/api/n8n/callback/route";
@@ -47,7 +51,7 @@ function jsonReq(url: string, body: unknown) {
 
 describe("POST /api/n8n/form — lead capture", () => {
   beforeEach(() => {
-    vi.mocked(prepend).mockClear();
+    vi.mocked(insert).mockClear();
   });
 
   it("returns 200 and saves lead for valid input", async () => {
@@ -58,7 +62,7 @@ describe("POST /api/n8n/form — lead capture", () => {
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.leadId).toBeDefined();
-    expect(prepend).toHaveBeenCalledWith("leads", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("leads", expect.objectContaining({
       name:  "Alice",
       email: "alice@example.com",
     }));
@@ -101,7 +105,7 @@ describe("POST /api/n8n/form — lead capture", () => {
       formType: "strategy-call",
       page:     "homepage",
     }));
-    expect(prepend).toHaveBeenCalledWith("leads", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("leads", expect.objectContaining({
       phone:   "+1 555 0100",
       company: "Acme Corp",
       service: "AI Automation",
@@ -112,7 +116,7 @@ describe("POST /api/n8n/form — lead capture", () => {
     await postForm(jsonReq("http://localhost/api/n8n/form", {
       name: "Carol", email: "carol@example.com",
     }));
-    expect(prepend).toHaveBeenCalledWith("leads", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("leads", expect.objectContaining({
       formType: "get-started",
     }));
   });
@@ -121,7 +125,7 @@ describe("POST /api/n8n/form — lead capture", () => {
     await postForm(jsonReq("http://localhost/api/n8n/form", {
       name: "  Dave  ", email: "  dave@example.com  ",
     }));
-    expect(prepend).toHaveBeenCalledWith("leads", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("leads", expect.objectContaining({
       name:  "Dave",
       email: "dave@example.com",
     }));
@@ -132,8 +136,8 @@ describe("POST /api/n8n/form — lead capture", () => {
 
 describe("POST /api/n8n/newsletter — newsletter subscription", () => {
   beforeEach(() => {
-    vi.mocked(readAll).mockReturnValue([]);
-    vi.mocked(prepend).mockClear();
+    vi.mocked(readAll).mockResolvedValue([]);
+    vi.mocked(insert).mockClear();
   });
 
   it("subscribes a new user and returns success", async () => {
@@ -143,7 +147,7 @@ describe("POST /api/n8n/newsletter — newsletter subscription", () => {
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(prepend).toHaveBeenCalledWith("newsletter", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("newsletter", expect.objectContaining({
       email: "sub@example.com",
     }));
   });
@@ -163,7 +167,7 @@ describe("POST /api/n8n/newsletter — newsletter subscription", () => {
   });
 
   it("returns success (already subscribed) for duplicate email", async () => {
-    vi.mocked(readAll).mockReturnValue([
+    vi.mocked(readAll).mockResolvedValue([
       { id: "n1", email: "dup@example.com", name: "", source: "newsletter-signup", createdAt: "" },
     ] as never);
     const res  = await postNewsletter(jsonReq("http://localhost/api/n8n/newsletter", {
@@ -173,11 +177,11 @@ describe("POST /api/n8n/newsletter — newsletter subscription", () => {
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.message).toMatch(/already/i);
-    expect(prepend).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("deduplication is case-insensitive", async () => {
-    vi.mocked(readAll).mockReturnValue([
+    vi.mocked(readAll).mockResolvedValue([
       { id: "n1", email: "DUP@EXAMPLE.COM", name: "", source: "newsletter-signup", createdAt: "" },
     ] as never);
     const res  = await postNewsletter(jsonReq("http://localhost/api/n8n/newsletter", {
@@ -185,14 +189,14 @@ describe("POST /api/n8n/newsletter — newsletter subscription", () => {
     }));
     const body = await res.json() as Record<string, unknown>;
     expect(body.message).toMatch(/already/i);
-    expect(prepend).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 });
 
 // ── /api/n8n/callback — callback request ─────────────────────────────────────
 
 describe("POST /api/n8n/callback — callback request", () => {
-  beforeEach(() => { vi.mocked(prepend).mockClear(); });
+  beforeEach(() => { vi.mocked(insert).mockClear(); });
 
   it("saves callback and returns success", async () => {
     const res  = await postCallback(jsonReq("http://localhost/api/n8n/callback", {
@@ -201,7 +205,7 @@ describe("POST /api/n8n/callback — callback request", () => {
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(prepend).toHaveBeenCalledWith("callbacks", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("callbacks", expect.objectContaining({
       name:   "Eve",
       phone:  "+44 7911 123456",
       status: "pending",
@@ -228,7 +232,7 @@ describe("POST /api/n8n/callback — callback request", () => {
     await postCallback(jsonReq("http://localhost/api/n8n/callback", {
       name: "  Grace  ", phone: "  555-9999  ",
     }));
-    expect(prepend).toHaveBeenCalledWith("callbacks", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("callbacks", expect.objectContaining({
       name:  "Grace",
       phone: "555-9999",
     }));
@@ -238,7 +242,7 @@ describe("POST /api/n8n/callback — callback request", () => {
 // ── /api/n8n/contact — contact form ──────────────────────────────────────────
 
 describe("POST /api/n8n/contact — contact form", () => {
-  beforeEach(() => { vi.mocked(prepend).mockClear(); });
+  beforeEach(() => { vi.mocked(insert).mockClear(); });
 
   it("saves contact and returns success", async () => {
     const res  = await postContact(jsonReq("http://localhost/api/n8n/contact", {
@@ -247,7 +251,7 @@ describe("POST /api/n8n/contact — contact form", () => {
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(prepend).toHaveBeenCalledWith("contacts", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("contacts", expect.objectContaining({
       name:    "Hank",
       email:   "hank@example.com",
       subject: "Pricing",
@@ -281,7 +285,7 @@ describe("POST /api/n8n/contact — contact form", () => {
     await postContact(jsonReq("http://localhost/api/n8n/contact", {
       name: "Jan", email: "jan@example.com",
     }));
-    expect(prepend).toHaveBeenCalledWith("contacts", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("contacts", expect.objectContaining({
       phone:   "",
       subject: "",
       message: "",
@@ -292,7 +296,7 @@ describe("POST /api/n8n/contact — contact form", () => {
 // ── /api/n8n/chat — AI chatbot ────────────────────────────────────────────────
 
 describe("POST /api/n8n/chat — AI chatbot", () => {
-  beforeEach(() => { vi.mocked(prepend).mockClear(); });
+  beforeEach(() => { vi.mocked(insert).mockClear(); });
 
   it("returns 200 with bot reply and sessionId", async () => {
     const res  = await postChat(jsonReq("http://localhost/api/n8n/chat", {
@@ -335,7 +339,7 @@ describe("POST /api/n8n/chat — AI chatbot", () => {
 
   it("saves chat session to store", async () => {
     await postChat(jsonReq("http://localhost/api/n8n/chat", { message: "Hello" }));
-    expect(prepend).toHaveBeenCalledWith("chats", expect.objectContaining({
+    expect(insert).toHaveBeenCalledWith("chats", expect.objectContaining({
       messages: expect.any(Array),
       ip:       "5.6.7.8",
     }));
