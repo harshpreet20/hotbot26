@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
+type InvoiceItemInsert = Database['public']['Tables']['invoice_items']['Insert']
 
 // GET /api/invoices
 export async function GET(req: NextRequest) {
@@ -26,26 +30,27 @@ export async function GET(req: NextRequest) {
 // POST /api/invoices
 export async function POST(req: NextRequest) {
   const admin = createAdminClient()
-  const { items, ...invoiceBody } = await req.json()
+  const raw = await req.json() as InvoiceInsert & { items?: InvoiceItemInsert[] }
+  const { items, ...invoiceBody } = raw
 
   // Auto-generate invoice number if not provided
   if (!invoiceBody.invoice_number) {
     const { data: numData } = await admin.rpc('next_invoice_number')
-    invoiceBody.invoice_number = numData
+    invoiceBody.invoice_number = numData as string
   }
 
   // Compute subtotal from items
   if (Array.isArray(items) && items.length > 0) {
     invoiceBody.subtotal = items.reduce(
-      (sum: number, item: { quantity: number; unit_price: number }) =>
-        sum + item.quantity * item.unit_price,
+      (sum: number, item: InvoiceItemInsert) =>
+        sum + (item.quantity ?? 1) * item.unit_price,
       0
     )
   }
 
   const { data: invoice, error: invErr } = await admin
     .from('invoices')
-    .insert(invoiceBody)
+    .insert(invoiceBody as InvoiceInsert)
     .select()
     .single()
 

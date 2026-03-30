@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type InteractionInsert = Database['public']['Tables']['customer_interactions']['Insert']
 
 // GET /api/crm/customers/[id]/interactions
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -18,11 +21,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // POST /api/crm/customers/[id]/interactions
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const admin = createAdminClient()
-  const body = await req.json()
+  const body = await req.json() as Omit<InteractionInsert, 'customer_id'>
 
   const { data, error } = await admin
     .from('customer_interactions')
-    .insert({ ...body, customer_id: params.id })
+    .insert({ ...body, customer_id: params.id } as InteractionInsert)
     .select()
     .single()
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type CustomerInsert = Database['public']['Tables']['customers']['Insert']
 
 // GET /api/crm/customers
 export async function GET(req: NextRequest) {
@@ -30,7 +33,7 @@ export async function GET(req: NextRequest) {
 // POST /api/crm/customers — upsert by email
 export async function POST(req: NextRequest) {
   const admin = createAdminClient()
-  const body = await req.json()
+  const body = await req.json() as CustomerInsert
 
   const { data, error } = await admin
     .from('customers')

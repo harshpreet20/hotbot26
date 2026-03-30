@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type InvoiceUpdate = Database['public']['Tables']['invoices']['Update']
+type InvoiceItemInsert = Database['public']['Tables']['invoice_items']['Insert']
 
 // GET /api/invoices/[id]
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -18,18 +22,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // PATCH /api/invoices/[id]
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const admin = createAdminClient()
-  const { items, ...body } = await req.json()
+  const raw = await req.json() as InvoiceUpdate & { items?: InvoiceItemInsert[] }
+  const { items, ...body } = raw
 
   // Recompute subtotal if items are updated
   if (Array.isArray(items)) {
     body.subtotal = items.reduce(
-      (sum: number, item: { quantity: number; unit_price: number }) =>
-        sum + item.quantity * item.unit_price,
+      (sum: number, item: InvoiceItemInsert) =>
+        sum + (item.quantity ?? 1) * item.unit_price,
       0
     )
     // Replace all line items
     await admin.from('invoice_items').delete().eq('invoice_id', params.id)
-    const lineItems = items.map((item, i) => ({
+    const lineItems: InvoiceItemInsert[] = items.map((item, i) => ({
       ...item,
       invoice_id: params.id,
       sort_order: i,
@@ -44,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { data, error } = await admin
     .from('invoices')
-    .update(body)
+    .update(body as InvoiceUpdate)
     .eq('id', params.id)
     .select()
     .single()

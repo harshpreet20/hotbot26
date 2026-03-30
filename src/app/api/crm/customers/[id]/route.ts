@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type CustomerUpdate = Database['public']['Tables']['customers']['Update']
 
 // GET /api/crm/customers/[id]
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -18,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // PATCH /api/crm/customers/[id]
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const admin = createAdminClient()
-  const body = await req.json()
+  const body = await req.json() as CustomerUpdate
 
   const { data, error } = await admin
     .from('customers')

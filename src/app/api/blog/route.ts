@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { createAdminClient } from '@/lib/supabase'
+import { supabase, createAdminClient } from '@/lib/supabase'
+import type { Database } from '@/types/database'
+
+type BlogPostInsert = Database['public']['Tables']['blog_posts']['Insert']
 
 // GET /api/blog — list published posts (public)
 // GET /api/blog?all=1 — list all posts (admin only)
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/blog — create post (admin/editor)
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  const body = await req.json() as BlogPostInsert
   const admin = createAdminClient()
 
   // Auto-generate slug if not provided
