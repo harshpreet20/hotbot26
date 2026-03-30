@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type CustomerInsert = Database['public']['Tables']['customers']['Insert']
@@ -7,6 +8,7 @@ type Customer = Database['public']['Tables']['customers']['Row']
 
 // GET /api/crm/customers
 export async function GET(req: NextRequest) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const status = req.nextUrl.searchParams.get('status')
   const search = req.nextUrl.searchParams.get('q')
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/crm/customers — upsert by email
 export async function POST(req: NextRequest) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const body = await req.json() as CustomerInsert
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type BlogPostInsert = Database['public']['Tables']['blog_posts']['Insert']
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/blog — create post (admin/editor)
 export async function POST(req: NextRequest) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const body = await req.json() as BlogPostInsert
   const admin = createAdminClient()
 

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type InteractionInsert = Database['public']['Tables']['customer_interactions']['Insert']
 
 // GET /api/crm/customers/[id]/interactions
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
 
   const { data, error } = await admin
@@ -20,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 // POST /api/crm/customers/[id]/interactions
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const body = await req.json() as Omit<InteractionInsert, 'customer_id'>
 

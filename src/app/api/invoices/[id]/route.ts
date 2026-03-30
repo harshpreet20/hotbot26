@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type InvoiceUpdate = Database['public']['Tables']['invoices']['Update']
@@ -7,6 +8,7 @@ type InvoiceItemInsert = Database['public']['Tables']['invoice_items']['Insert']
 
 // GET /api/invoices/[id]
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
 
   const { data, error } = await admin
@@ -21,6 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 // PATCH /api/invoices/[id]
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const raw = await req.json() as InvoiceUpdate & { items?: InvoiceItemInsert[] }
   const { items, ...body } = raw
@@ -60,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 // DELETE /api/invoices/[id]
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
 
   const { error } = await admin.from('invoices').delete().eq('id', params.id)

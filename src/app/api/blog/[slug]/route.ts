@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type BlogPostUpdate = Database['public']['Tables']['blog_posts']['Update']
@@ -18,6 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
 
 // PATCH /api/blog/[slug]
 export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const body = await req.json() as BlogPostUpdate
   const admin = createAdminClient()
 
@@ -34,6 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
 
 // DELETE /api/blog/[slug]
 export async function DELETE(_req: NextRequest, { params }: { params: { slug: string } }) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
 
   const { error } = await admin

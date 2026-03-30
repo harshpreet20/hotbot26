@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
@@ -8,6 +9,7 @@ type InvoiceItemInsert = Database['public']['Tables']['invoice_items']['Insert']
 
 // GET /api/invoices
 export async function GET(req: NextRequest) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const status = req.nextUrl.searchParams.get('status')
   const customerId = req.nextUrl.searchParams.get('customer_id')
@@ -30,6 +32,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/invoices
 export async function POST(req: NextRequest) {
+  try { await requireAuth() } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const admin = createAdminClient()
   const raw = await req.json() as InvoiceInsert & { items?: InvoiceItemInsert[] }
   const { items, ...invoiceBody } = raw

@@ -279,6 +279,73 @@ export type Database = {
           }
         ]
       }
+      admin_users: {
+        Row: {
+          id: string
+          username: string
+          password_hash: string
+          full_name: string | null
+          role: 'super_admin' | 'admin' | 'editor' | 'finance'
+          is_active: boolean
+          last_login: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          username: string
+          password_hash: string
+          full_name?: string | null
+          role?: 'super_admin' | 'admin' | 'editor' | 'finance'
+          is_active?: boolean
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          username?: string
+          password_hash?: string
+          full_name?: string | null
+          role?: 'super_admin' | 'admin' | 'editor' | 'finance'
+          is_active?: boolean
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          id: string
+          user_id: string
+          token: string
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token: string
+          expires_at: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          token?: string
+          expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sessions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'admin_users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -299,3 +366,5 @@ export type Customer = Database['public']['Tables']['customers']['Row']
 export type CustomerInteraction = Database['public']['Tables']['customer_interactions']['Row']
 export type Invoice = Database['public']['Tables']['invoices']['Row']
 export type InvoiceItem = Database['public']['Tables']['invoice_items']['Row']
+export type AdminUser = Database['public']['Tables']['admin_users']['Row']
+export type Session = Database['public']['Tables']['sessions']['Row']
