@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
+import { upsertAndLog } from "@/lib/crm";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { message, history } = body;
+    const body = await req.json() as { message?: string; history?: unknown[]; email?: string };
+    const { message, history, email } = body;
 
     if (!message?.trim()) {
       return NextResponse.json({ error: "Message required" }, { status: 400 });
+    }
+
+    // Log chat interaction if email is known (non-blocking)
+    if (email?.trim()) {
+      upsertAndLog(
+        { name: email.trim(), email: email.trim(), source: "chat" },
+        { type: "chat", summary: message.trim().slice(0, 200) }
+      ).catch(() => {});
     }
 
     const data = await triggerN8n<Record<string, string>>("chat", {

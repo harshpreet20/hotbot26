@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { triggerN8n } from "@/lib/n8n";
+import { upsertAndLog } from "@/lib/crm";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN_SCORE = 0.4; // 0.0 = bot, 1.0 = human
@@ -25,7 +26,11 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
 // n8n handles: → Google Sheets (primary store) → Telegram notification → AI Sensy WhatsApp follow-up
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as {
+      name?: string; email?: string; phone?: string; company?: string;
+      service?: string; budget?: string; message?: string; formType?: string;
+      page?: string; recaptchaToken?: string;
+    };
     const { name, email, phone, company, service, budget, message, formType, page, recaptchaToken } = body;
 
     if (!name?.trim() || !email?.trim()) {
@@ -42,6 +47,12 @@ export async function POST(req: NextRequest) {
     if (!isHuman) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
+
+    // Persist to Supabase (non-blocking — n8n pipeline continues regardless)
+    upsertAndLog(
+      { name: name!.trim(), email: email!.trim(), phone, company, source: page || "form" },
+      { type: "form", summary: `Form: ${formType || "get-started"}`, details: { service, budget, message, formType, page } }
+    ).catch(() => {});
 
     const data = await triggerN8n<Record<string, string>>("leads", {
       name,
