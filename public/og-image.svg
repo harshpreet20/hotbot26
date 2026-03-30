@@ -24,7 +24,7 @@
   <!-- Title -->
   <text x="600" y="270" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="900" text-anchor="middle" fill="white">HotBot Studios</text>
   <!-- Tagline -->
-  <text x="600" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="400" text-anchor="middle" fill="rgba(148,163,184,0.9)">Full-Service Growth Infrastructure for UK Businesses</text>
+  <text x="600" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="400" text-anchor="middle" fill="rgba(148,163,184,0.9)">Full-Service Growth Infrastructure for US Businesses</text>
   <!-- Pills -->
   <rect x="248" y="375" width="152" height="36" rx="18" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
   <text x="324" y="398" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#93c5fd">AI Automation</text>

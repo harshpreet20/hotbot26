@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { triggerN8n } from "@/lib/n8n";
-import { upsertAndLog } from "@/lib/crm";
+import { insert, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import type { Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
-const RECAPTCHA_MIN_SCORE = 0.4; // 0.0 = bot, 1.0 = human
+const RECAPTCHA_MIN    = 0.4;
 
 async function verifyRecaptcha(token: string | null): Promise<boolean> {
-  if (!RECAPTCHA_SECRET) return true; // Skip if not configured
+  if (!RECAPTCHA_SECRET) return true;
   if (!token) return false;
   try {
     const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
@@ -14,65 +15,67 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `secret=${RECAPTCHA_SECRET}&response=${token}`,
     });
-    const data = await res.json() as { success: boolean; score: number; action: string };
-    return data.success && data.score >= RECAPTCHA_MIN_SCORE;
+    const d = await res.json() as { success: boolean; score: number };
+    return d.success && d.score >= RECAPTCHA_MIN;
   } catch {
-    return true; // Fail open — don't block legitimate users on reCAPTCHA outage
+    return true;
   }
 }
 
-// Unified lead capture endpoint.
-// All forms (get-started, strategy-call, consultation, contact) POST here.
-// n8n handles: → Google Sheets (primary store) → Telegram notification → AI Sensy WhatsApp follow-up
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
+  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 });
+  if (limited) return limited;
+
   try {
-    const body = await req.json() as {
-      name?: string; email?: string; phone?: string; company?: string;
-      service?: string; budget?: string; message?: string; formType?: string;
-      page?: string; recaptchaToken?: string;
-    };
+    const body = await req.json() as Record<string, string>;
     const { name, email, phone, company, service, budget, message, formType, page, recaptchaToken } = body;
 
     if (!name?.trim() || !email?.trim()) {
       return NextResponse.json({ error: "Name and email required" }, { status: 400 });
     }
-
-    // Basic email format check server-side
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
-    // reCAPTCHA verification
     const isHuman = await verifyRecaptcha(recaptchaToken || null);
     if (!isHuman) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
 
-    // Persist to Supabase (non-blocking — n8n pipeline continues regardless)
-    upsertAndLog(
-      { name: name!.trim(), email: email!.trim(), phone, company, source: page || "form" },
-      { type: "form", summary: `Form: ${formType || "get-started"}`, details: { service, budget, message, formType, page } }
-    ).catch(() => {});
+    const lead: Lead = {
+      id:        newId(),
+      name:      name.trim(),
+      email:     email.trim(),
+      phone:     phone    || "",
+      company:   company  || "",
+      service:   service  || "",
+      budget:    budget   || "",
+      message:   message  || "",
+      formType:  formType || "get-started",
+      source:    page     || "unknown",
+      ip,
+      createdAt: new Date().toISOString(),
+      status:    "new",
+    };
 
-    const data = await triggerN8n<Record<string, string>>("leads", {
-      name,
-      email,
-      phone: phone || "",
-      company: company || "",
-      service: service || "",
-      budget: budget || "",
-      message: message || "",
-      formType: formType || "get-started",
-      source: page || "unknown",
-    });
+    // Save to Supabase (or filesystem fallback) — primary write
+    await insert<Lead>("leads", lead);
 
-    return NextResponse.json({
-      success: true,
-      leadId: data?.leadId || data?.id || null,
-      message: data?.message || "We'll be in touch within 24 hours!",
-    });
+    // Forward to N8N Forms workflow (Telegram alert + Google Sheets) — fire-and-forget
+    const n8nUrl = process.env.N8N_WEBHOOK_FORMS || "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-forms";
+    fetch(n8nUrl, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ ...lead, type: "lead" }),
+    }).catch((err) => console.error("[N8N] form forward error:", err));
+
+    return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
-    console.error("Form pipeline error:", error);
+    console.error("[form] error:", error);
     return NextResponse.json({ success: true, message: "Thank you! We'll be in touch shortly." });
   }
 }

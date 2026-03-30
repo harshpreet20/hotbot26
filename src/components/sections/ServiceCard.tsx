@@ -101,7 +101,11 @@ export function ServiceCard({
   const icon = ICONS[type] || ICONS.code;
 
   return (
-    <Link href={href}>
+    <Link
+      href={href}
+      className="block h-full"
+      style={{ gridColumn: featured ? "span 2" : undefined }}
+    >
       <div
         ref={cardRef}
         onMouseMove={handleMove}
@@ -114,7 +118,6 @@ export function ServiceCard({
         style={{
           perspective: "800px",
           animationDelay: `${index * 0.08}s`,
-          gridColumn: featured ? "span 2" : undefined,
         }}
       >
         <div

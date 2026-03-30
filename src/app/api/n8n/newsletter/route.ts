@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { triggerN8n } from "@/lib/n8n";
-import { upsertCustomer } from "@/lib/crm";
+import { insert, newId, readAll } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import type { NewsletterSubscriber } from "@/types/dashboard";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const limited = rateLimitResponse(ip, "newsletter", { limit: 3, windowMs: 10 * 60_000 });
+  if (limited) return limited;
+
   try {
     const body = await req.json() as { email?: string; name?: string };
     const { email, name } = body;
@@ -10,33 +15,28 @@ export async function POST(req: NextRequest) {
     if (!email?.trim()) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
 
-    // Persist to Supabase (non-blocking)
-    upsertCustomer({
-      name: name?.trim() || email.trim(),
-      email: email.trim(),
-      source: "newsletter",
-      tags: ["newsletter"],
-    }).catch(() => {});
+    // Deduplicate by email
+    const existing = await readAll<NewsletterSubscriber>("newsletter");
+    if (existing.some((s) => s.email.toLowerCase() === email.trim().toLowerCase())) {
+      return NextResponse.json({ success: true, message: "You're already subscribed!" });
+    }
 
-    // n8n workflow handles:
-    // 1. Brevo/Mailchimp: Add subscriber
-    // 2. Send welcome email
-    // 3. Telegram notification
-    const data = await triggerN8n<Record<string, string>>("newsletter", {
-      email: email.trim(),
-      name: name?.trim() || "",
-    });
+    const subscriber: NewsletterSubscriber = {
+      id:        newId(),
+      name:      name?.trim() || "",
+      email:     email.trim(),
+      source:    "newsletter-signup",
+      createdAt: new Date().toISOString(),
+    };
+    await insert<NewsletterSubscriber>("newsletter", subscriber);
 
-    return NextResponse.json({
-      success: true,
-      message: data?.message || "You're subscribed! Check your inbox for a welcome email.",
-    });
+    return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
-    console.error("Newsletter pipeline error:", error);
-    return NextResponse.json({
-      success: true,
-      message: "Thanks for subscribing!",
-    });
+    console.error("Newsletter error:", error);
+    return NextResponse.json({ success: true, message: "Thanks for subscribing!" });
   }
 }

@@ -1,45 +1,48 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
+/**
+ * Supabase server-side client — uses the service role key (bypasses RLS).
+ * Only ever imported from API routes / lib files (server-side).
+ * Falls back gracefully when env vars are not set (uses filesystem store instead).
+ */
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Lazy-initialized Supabase clients — avoids build-time crashes when env vars are absent.
+let _client: SupabaseClient | null = null;
 
-let _supabase: SupabaseClient<Database> | null = null
-let _supabaseAdmin: SupabaseClient<Database> | null = null
-
-// Public client (anon key — respects RLS)
-export function getSupabase(): SupabaseClient<Database> {
-  if (!_supabase) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key) throw new Error('Supabase URL and anon key are required')
-    _supabase = createClient<Database>(url, key)
+export function sb(): SupabaseClient {
+  if (!_client) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error(
+        "Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+      );
+    }
+    _client = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   }
-  return _supabase
+  return _client;
 }
 
-// Admin client (service role key — bypasses RLS, server-side only)
-export function getSupabaseAdmin(): SupabaseClient<Database> {
-  if (!_supabaseAdmin) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !key) throw new Error('Supabase URL and service role key are required')
-    _supabaseAdmin = createClient<Database>(url, key, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-  }
-  return _supabaseAdmin
+export function isSupabaseEnabled(): boolean {
+  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-// Named exports for convenience — call the getters on each use so env vars are
-// read lazily (safe during Next.js build time when vars may not be set).
-export const supabaseAdmin = new Proxy({} as SupabaseClient<Database>, {
-  get(_t, prop: string | symbol) {
-    return Reflect.get(getSupabaseAdmin(), prop)
-  },
-})
+// ── Case transformers (camelCase JS ↔ snake_case Postgres) ────────────────────
 
-export const supabase = new Proxy({} as SupabaseClient<Database>, {
-  get(_t, prop: string | symbol) {
-    return Reflect.get(getSupabase(), prop)
-  },
-})
+/** Convert all top-level object keys from camelCase to snake_case for DB writes. */
+export function toSnake(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    out[k.replace(/([A-Z])/g, "_$1").toLowerCase()] = v;
+  }
+  return out;
+}
+
+/** Convert all top-level row keys from snake_case back to camelCase for JS. */
+export function toCamel<T>(row: Record<string, unknown>): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    out[k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())] = v;
+  }
+  return out as T;
+}

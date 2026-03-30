@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Runtime data — credentials and user submissions (never commit)
+/data/admin.json
+/data/leads.json
+/data/contacts.json
+/data/newsletter.json
+/data/callbacks.json
+/data/chats.json
+/data/sessions.json

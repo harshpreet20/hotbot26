@@ -7,9 +7,10 @@ Disallow: /api/
 # Block Next.js internals
 Disallow: /_next/
 
-# Block common bot traps
+# Block common bot traps and internal admin tools
 Disallow: /admin/
 Disallow: /dashboard/
+Disallow: /enter/backdrop/
 
 # Crawl budget — let Google index key pages first
 Crawl-delay: 1

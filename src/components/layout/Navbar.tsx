@@ -42,15 +42,16 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity shrink-0"
         >
           <Image
-            src="/logo.png"
-            alt="HotBot Studios"
-            width={160}
-            height={40}
-            className="h-9 w-auto object-contain"
+            src="/logos/hotbot-logo.svg"
+            alt="HotBot Studios — AI Automation & Digital Marketing Agency"
+            width={200}
+            height={48}
+            className="h-10 w-auto object-contain"
             priority
+            unoptimized
           />
         </Link>
 
@@ -60,7 +61,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium transition-colors duration-200"
+              className="text-sm font-medium transition-colors duration-200 whitespace-nowrap"
               style={{
                 color: pathname === link.href ? "#93c5fd" : "rgba(148,163,184,0.9)",
               }}
@@ -71,7 +72,17 @@ export function Navbar() {
         </div>
 
         {/* CTA + Mobile Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/tickets"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+            </svg>
+            Raise a Ticket
+          </Link>
           <button
             onClick={() => openForm("get-started", pathname)}
             className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/20"
@@ -83,7 +94,7 @@ export function Navbar() {
           </button>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Toggle mobile menu"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -111,6 +122,13 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/tickets"
+              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
+            >
+              Raise a Ticket
+            </Link>
             <button
               onClick={() => openForm("get-started", pathname)}
               className="mt-2 px-4 py-3 rounded-xl text-sm font-semibold text-white text-center"
