@@ -2,231 +2,280 @@
 -- Run this in the Supabase SQL Editor for project wsucqpunleplgyrrroae
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- ── Users (custom bcrypt auth — queried by src/lib/adminStore.ts) ─────────────
+-- Columns must match exactly: id, username, password_hash, role, created_at
 
--- ── Enums ─────────────────────────────────────────────────────────────────────
-
-create type user_role as enum ('super_admin', 'admin', 'editor', 'finance');
-create type customer_status as enum ('lead', 'prospect', 'active', 'inactive', 'churned');
-create type blog_status as enum ('draft', 'published', 'archived');
-create type invoice_status as enum ('draft', 'sent', 'paid', 'overdue', 'cancelled');
-create type interaction_type as enum ('email', 'call', 'meeting', 'note', 'form', 'chat');
-
--- ── Profiles (extends Supabase Auth) ─────────────────────────────────────────
-
-create table profiles (
-  id          uuid primary key references auth.users on delete cascade,
-  created_at  timestamptz default now() not null,
-  updated_at  timestamptz default now() not null,
-  email       text,
-  full_name   text,
-  avatar_url  text,
-  role        user_role default 'editor' not null
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  username      TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role          TEXT NOT NULL DEFAULT 'admin' CHECK (role IN (
+    'admin','manager','sales','crm_operator','finance','editor','contributor','agent'
+  )),
+  created_at    TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-alter table profiles enable row level security;
+-- Seed default admin: username=admin / password=Hotbotstudios (bcrypt cost 12)
+-- Regenerate hash: node -e "require('bcryptjs').hash('YourPassword',12).then(console.log)"
+INSERT INTO users (id, username, password_hash, role)
+VALUES (
+  'admin-seed',
+  'admin',
+  '$2b$12$nMk6oS00R.r9/qLpZbClSODAXxibghu4SBa7fv.QqVFUUJqay6Qiu',
+  'admin'
+)
+ON CONFLICT (username) DO NOTHING;
 
-create policy "Users can read own profile"
-  on profiles for select using (auth.uid() = id);
+-- ── Sessions (queried by src/lib/sessions.ts) ─────────────────────────────────
 
-create policy "Users can update own profile"
-  on profiles for update using (auth.uid() = id);
-
--- Auto-create profile on signup
-create or replace function handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into profiles (id, email, full_name)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name');
-  return new;
-end;
-$$;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure handle_new_user();
-
--- ── Admin Users (custom bcrypt auth) ─────────────────────────────────────────
-
-create table admin_users (
-  id            uuid primary key default uuid_generate_v4(),
-  created_at    timestamptz default now() not null,
-  updated_at    timestamptz default now() not null,
-  username      text unique not null,
-  password_hash text not null,
-  role          user_role default 'editor' not null,
-  email         text,
-  is_active     boolean default true not null
+CREATE TABLE IF NOT EXISTS sessions (
+  token          TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  username       TEXT NOT NULL,
+  role           TEXT NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  expires_at     TIMESTAMPTZ NOT NULL,
+  last_access_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-alter table admin_users enable row level security;
+CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
 
--- Service role only (no RLS policies — accessed via service key from server)
+-- ── Pending Users (registration requests) ────────────────────────────────────
 
--- ── Sessions ──────────────────────────────────────────────────────────────────
-
-create table sessions (
-  id          uuid primary key default uuid_generate_v4(),
-  created_at  timestamptz default now() not null,
-  user_id     uuid not null references admin_users(id) on delete cascade,
-  token       text unique not null,
-  expires_at  timestamptz not null
+CREATE TABLE IF NOT EXISTS pending_users (
+  id             TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  username       TEXT NOT NULL,
+  email          TEXT NOT NULL,
+  requested_role TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  created_at     TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-alter table sessions enable row level security;
+-- ── CRM — Leads ───────────────────────────────────────────────────────────────
 
-create index sessions_token_idx on sessions(token);
-create index sessions_expires_at_idx on sessions(expires_at);
-
--- ── Blog Posts ────────────────────────────────────────────────────────────────
-
-create table blog_posts (
-  id              uuid primary key default uuid_generate_v4(),
-  created_at      timestamptz default now() not null,
-  updated_at      timestamptz default now() not null,
-  title           text not null,
-  slug            text unique not null,
-  content         text,
-  excerpt         text,
-  cover_image     text,
-  tags            text[] default '{}' not null,
-  status          blog_status default 'draft' not null,
-  author_id       uuid references admin_users(id) on delete set null,
-  published_at    timestamptz,
-  seo_title       text,
-  seo_description text
+CREATE TABLE IF NOT EXISTS leads (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name            TEXT NOT NULL DEFAULT '',
+  email           TEXT NOT NULL DEFAULT '',
+  phone           TEXT NOT NULL DEFAULT '',
+  company         TEXT NOT NULL DEFAULT '',
+  service         TEXT NOT NULL DEFAULT '',
+  budget          TEXT NOT NULL DEFAULT '',
+  message         TEXT NOT NULL DEFAULT '',
+  form_type       TEXT NOT NULL DEFAULT '',
+  source          TEXT NOT NULL DEFAULT '',
+  ip              TEXT NOT NULL DEFAULT '',
+  status          TEXT NOT NULL DEFAULT 'new' CHECK (status IN (
+    'new','contacted','qualified','proposal','negotiation','won','lost'
+  )),
+  assigned_to     TEXT,
+  notes           TEXT,
+  tags            TEXT[],
+  created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  last_updated_at TIMESTAMPTZ,
+  last_updated_by TEXT
 );
 
-alter table blog_posts enable row level security;
+CREATE INDEX IF NOT EXISTS leads_status_idx ON leads(status);
+CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads(created_at DESC);
 
-create policy "Anyone can read published posts"
-  on blog_posts for select using (status = 'published');
+-- ── CRM — Contacts ────────────────────────────────────────────────────────────
 
-create index blog_posts_slug_idx on blog_posts(slug);
-create index blog_posts_status_idx on blog_posts(status);
-create index blog_posts_published_at_idx on blog_posts(published_at desc);
-
--- ── Customers (CRM) ───────────────────────────────────────────────────────────
-
-create table customers (
-  id          uuid primary key default uuid_generate_v4(),
-  created_at  timestamptz default now() not null,
-  updated_at  timestamptz default now() not null,
-  name        text not null,
-  email       text unique not null,
-  phone       text,
-  company     text,
-  status      customer_status default 'lead' not null,
-  source      text,
-  tags        text[] default '{}' not null,
-  notes       text,
-  assigned_to uuid references admin_users(id) on delete set null
+CREATE TABLE IF NOT EXISTS contacts (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name       TEXT NOT NULL DEFAULT '',
+  email      TEXT NOT NULL DEFAULT '',
+  phone      TEXT NOT NULL DEFAULT '',
+  subject    TEXT NOT NULL DEFAULT '',
+  message    TEXT NOT NULL DEFAULT '',
+  source     TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-alter table customers enable row level security;
+-- ── CRM — Newsletter ──────────────────────────────────────────────────────────
 
-create index customers_email_idx on customers(email);
-create index customers_status_idx on customers(status);
-
--- ── Customer Interactions ─────────────────────────────────────────────────────
-
-create table customer_interactions (
-  id          uuid primary key default uuid_generate_v4(),
-  created_at  timestamptz default now() not null,
-  customer_id uuid not null references customers(id) on delete cascade,
-  type        interaction_type not null,
-  summary     text,
-  details     jsonb,
-  created_by  uuid references admin_users(id) on delete set null
+CREATE TABLE IF NOT EXISTS newsletter (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name       TEXT NOT NULL DEFAULT '',
+  email      TEXT NOT NULL,
+  source     TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE (email)
 );
 
-alter table customer_interactions enable row level security;
+-- ── CRM — Callbacks ───────────────────────────────────────────────────────────
 
-create index customer_interactions_customer_idx on customer_interactions(customer_id);
-create index customer_interactions_created_at_idx on customer_interactions(created_at desc);
+CREATE TABLE IF NOT EXISTS callbacks (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name       TEXT NOT NULL DEFAULT '',
+  phone      TEXT NOT NULL DEFAULT '',
+  source     TEXT NOT NULL DEFAULT '',
+  status     TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','called')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ── CRM — Chats ───────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS chats (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  messages        JSONB NOT NULL DEFAULT '[]',
+  ip              TEXT NOT NULL DEFAULT '',
+  started_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  last_message_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
 
 -- ── Invoices ──────────────────────────────────────────────────────────────────
 
-create table invoices (
-  id             uuid primary key default uuid_generate_v4(),
-  created_at     timestamptz default now() not null,
-  updated_at     timestamptz default now() not null,
-  invoice_number text unique not null,
-  customer_id    uuid not null references customers(id) on delete restrict,
-  status         invoice_status default 'draft' not null,
-  due_date       date,
-  paid_at        timestamptz,
-  subtotal       numeric(12,2) default 0 not null,
-  tax_rate       numeric(5,4) default 0.18 not null,  -- 18% GST
-  tax_amount     numeric(12,2) default 0 not null,
-  total          numeric(12,2) default 0 not null,
-  notes          text,
-  created_by     uuid references admin_users(id) on delete set null
+CREATE TABLE IF NOT EXISTS invoices (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  invoice_number  TEXT UNIQUE NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'draft' CHECK (status IN (
+    'draft','sent','viewed','paid','overdue','cancelled'
+  )),
+  client_name     TEXT NOT NULL DEFAULT '',
+  client_email    TEXT NOT NULL DEFAULT '',
+  client_phone    TEXT,
+  client_company  TEXT,
+  client_address  TEXT,
+  line_items      JSONB NOT NULL DEFAULT '[]',
+  subtotal        NUMERIC(14,2) NOT NULL DEFAULT 0,
+  tax_rate        NUMERIC(6,2)  NOT NULL DEFAULT 18,
+  tax_amount      NUMERIC(14,2) NOT NULL DEFAULT 0,
+  discount        NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total           NUMERIC(14,2) NOT NULL DEFAULT 0,
+  currency        TEXT NOT NULL DEFAULT 'INR',
+  issued_date     TEXT NOT NULL DEFAULT '',
+  due_date        TEXT NOT NULL DEFAULT '',
+  paid_date       TEXT,
+  notes           TEXT,
+  terms           TEXT,
+  lead_id         TEXT REFERENCES leads(id) ON DELETE SET NULL,
+  created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  created_by      TEXT NOT NULL DEFAULT '',
+  last_updated_at TIMESTAMPTZ,
+  last_updated_by TEXT
 );
 
-alter table invoices enable row level security;
+CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices(status);
+CREATE INDEX IF NOT EXISTS invoices_created_at_idx ON invoices(created_at DESC);
 
-create index invoices_customer_idx on invoices(customer_id);
-create index invoices_status_idx on invoices(status);
-create index invoices_created_at_idx on invoices(created_at desc);
+-- ── CRM Tasks ─────────────────────────────────────────────────────────────────
 
--- ── Invoice Items ─────────────────────────────────────────────────────────────
-
-create table invoice_items (
-  id          uuid primary key default uuid_generate_v4(),
-  created_at  timestamptz default now() not null,
-  invoice_id  uuid not null references invoices(id) on delete cascade,
-  description text not null,
-  quantity    numeric(10,2) default 1 not null,
-  unit_price  numeric(12,2) not null,
-  amount      numeric(12,2) not null,  -- quantity * unit_price
-  sort_order  integer default 0 not null
+CREATE TABLE IF NOT EXISTS crm_tasks (
+  id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  title        TEXT NOT NULL,
+  description  TEXT,
+  priority     TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
+  status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','in_progress','done','cancelled')),
+  assigned_to  TEXT,
+  created_by   TEXT NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  due_date     TEXT,
+  completed_at TIMESTAMPTZ,
+  lead_id      TEXT REFERENCES leads(id) ON DELETE SET NULL,
+  invoice_id   TEXT REFERENCES invoices(id) ON DELETE SET NULL
 );
 
-alter table invoice_items enable row level security;
+-- ── CRM Updates (activity log) ────────────────────────────────────────────────
 
-create index invoice_items_invoice_idx on invoice_items(invoice_id);
+CREATE TABLE IF NOT EXISTS crm_updates (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  lead_id    TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  type       TEXT NOT NULL CHECK (type IN (
+    'note','call','email','meeting','status_change','assignment','task_linked','invoice_linked'
+  )),
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  created_by TEXT NOT NULL,
+  metadata   JSONB
+);
 
--- ── Auto-updated_at triggers ──────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS crm_updates_lead_id_idx ON crm_updates(lead_id);
 
-create or replace function set_updated_at()
-returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
+-- ── Support Tickets ───────────────────────────────────────────────────────────
 
-create trigger profiles_updated_at before update on profiles
-  for each row execute procedure set_updated_at();
+CREATE TABLE IF NOT EXISTS tickets (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  ticket_number   TEXT UNIQUE NOT NULL,
+  title           TEXT NOT NULL,
+  description     TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'open' CHECK (status IN (
+    'open','in_progress','waiting','resolved','closed'
+  )),
+  priority        TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','critical')),
+  category        TEXT NOT NULL DEFAULT 'general' CHECK (category IN (
+    'bug','feature','support','billing','general'
+  )),
+  requester_name  TEXT NOT NULL DEFAULT '',
+  requester_email TEXT NOT NULL DEFAULT '',
+  assigned_to     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  resolved_at     TIMESTAMPTZ,
+  ip              TEXT,
+  comments        JSONB NOT NULL DEFAULT '[]'
+);
 
-create trigger admin_users_updated_at before update on admin_users
-  for each row execute procedure set_updated_at();
+-- ── Team Chat ─────────────────────────────────────────────────────────────────
 
-create trigger blog_posts_updated_at before update on blog_posts
-  for each row execute procedure set_updated_at();
+CREATE TABLE IF NOT EXISTS team_channels (
+  id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name        TEXT UNIQUE NOT NULL,
+  description TEXT,
+  created_by  TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
 
-create trigger customers_updated_at before update on customers
-  for each row execute procedure set_updated_at();
+CREATE TABLE IF NOT EXISTS team_messages (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  channel_id TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  edited_at  TIMESTAMPTZ,
+  reply_to   TEXT REFERENCES team_messages(id) ON DELETE SET NULL
+);
 
-create trigger invoices_updated_at before update on invoices
-  for each row execute procedure set_updated_at();
+CREATE INDEX IF NOT EXISTS team_messages_channel_idx ON team_messages(channel_id);
+CREATE INDEX IF NOT EXISTS team_messages_created_at_idx ON team_messages(created_at DESC);
 
--- ── Seed default admin user ───────────────────────────────────────────────────
--- Password: Hotbotstudios (bcrypt hash — 10 rounds)
--- IMPORTANT: Change this password immediately after first login!
--- Generate a new hash with: node -e "const b=require('bcryptjs'); b.hash('YourPassword',10).then(console.log)"
+-- ── Blog Posts (stored in Supabase as backup to GitHub/filesystem) ────────────
 
-insert into admin_users (username, password_hash, role, is_active)
-values (
-  'admin',
-  '$2a$10$placeholder_run_seedAdminUser_from_api_instead',
-  'super_admin',
-  true
-)
-on conflict (username) do nothing;
+CREATE TABLE IF NOT EXISTS posts (
+  id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  slug        TEXT UNIQUE NOT NULL,
+  title       TEXT NOT NULL,
+  content     TEXT,
+  excerpt     TEXT,
+  cover_image TEXT,
+  tags        TEXT[],
+  status      TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published','archived')),
+  author      TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  published_at TIMESTAMPTZ
+);
 
--- NOTE: The actual bcrypt hash is generated at runtime by the seedAdminUser()
--- function in src/lib/auth.ts. Call POST /api/auth/seed (if you add that route)
--- or run the seed function on first app startup.
+CREATE INDEX IF NOT EXISTS posts_slug_idx ON posts(slug);
+CREATE INDEX IF NOT EXISTS posts_status_idx ON posts(status);
+
+-- ── RLS: Disable for all tables (service role key bypasses anyway) ─────────────
+-- All tables are accessed server-side via SUPABASE_SERVICE_ROLE_KEY.
+-- Enable RLS + policies only if you add client-side Supabase access.
+
+ALTER TABLE users          DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions       DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pending_users  DISABLE ROW LEVEL SECURITY;
+ALTER TABLE leads          DISABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts       DISABLE ROW LEVEL SECURITY;
+ALTER TABLE newsletter     DISABLE ROW LEVEL SECURITY;
+ALTER TABLE callbacks      DISABLE ROW LEVEL SECURITY;
+ALTER TABLE chats          DISABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices       DISABLE ROW LEVEL SECURITY;
+ALTER TABLE crm_tasks      DISABLE ROW LEVEL SECURITY;
+ALTER TABLE crm_updates    DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets        DISABLE ROW LEVEL SECURITY;
+ALTER TABLE team_channels  DISABLE ROW LEVEL SECURITY;
+ALTER TABLE team_messages  DISABLE ROW LEVEL SECURITY;
+ALTER TABLE posts          DISABLE ROW LEVEL SECURITY;
