@@ -55,7 +55,14 @@ export async function createSession(
 
   if (isSupabaseEnabled()) {
     const { error } = await sb().from("sessions").insert(session);
-    if (error) throw new Error(`Session create failed: ${error.message}`);
+    if (error) {
+      // Supabase insert failed (e.g. schema not yet applied, FK violation for
+      // env-fallback user, or table missing) — silently fall back to filesystem.
+      console.warn("[sessions] Supabase insert failed, using filesystem fallback:", error.message);
+      const sessions = fsActive();
+      sessions.push(session);
+      _fsWrite("sessions", sessions);
+    }
   } else {
     const sessions = fsActive();
     sessions.push(session);
@@ -76,23 +83,26 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
       .gt("expires_at", new Date().toISOString())
       .single();
 
-    if (error || !data) return null;
-
-    const session = data as StoredSession;
-    const now = Date.now();
-    if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
-      await Promise.resolve(
-        sb()
-          .from("sessions")
-          .update({
-            expires_at:     new Date(now + TTL_MS).toISOString(),
-            last_access_at: new Date(now).toISOString(),
-          })
-          .eq("token", token)
-      ).catch(() => {});
+    if (!error && data) {
+      const session = data as StoredSession;
+      const now = Date.now();
+      if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
+        await Promise.resolve(
+          sb()
+            .from("sessions")
+            .update({
+              expires_at:     new Date(now + TTL_MS).toISOString(),
+              last_access_at: new Date(now).toISOString(),
+            })
+            .eq("token", token)
+        ).catch(() => {});
+      }
+      return { userId: session.user_id, username: session.username, role: session.role };
     }
 
-    return { userId: session.user_id, username: session.username, role: session.role };
+    // Token not found in Supabase — also check filesystem fallback.
+    // This handles the case where the session was created via filesystem
+    // (e.g. because schema wasn't applied yet or FK constraint failed).
   }
 
   // Filesystem fallback
@@ -116,9 +126,9 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
 
 export async function deleteSession(token: string): Promise<void> {
   if (isSupabaseEnabled()) {
-    await sb().from("sessions").delete().eq("token", token);
-    return;
+    await sb().from("sessions").delete().eq("token", token).catch(() => {});
   }
+  // Always clean filesystem too — session may have been stored there as fallback.
   _fsWrite("sessions", fsActive().filter((s) => s.token !== token));
 }
 
