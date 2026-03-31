@@ -1,0 +1,12 @@
+{
+  "publishSecret": "d4fb0c403a1a5a909ab66027443b0a66c03f400cc7647be2059c4682654cb841",
+  "users": [
+    {
+      "id": "admin-seed",
+      "username": "admin",
+      "passwordHash": "$2b$12$nMk6oS00R.r9/qLpZbClSODAXxibghu4SBa7fv.QqVFUUJqay6Qiu",
+      "role": "admin",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

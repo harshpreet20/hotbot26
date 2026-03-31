@@ -155,12 +155,12 @@ describe("isSetupNeeded()", () => {
     expect(await isSetupNeeded()).toBe(true);
   });
 
-  it("requires BOTH env vars to be set (not just one)", async () => {
+  it("returns false when BLOG_ADMIN_PASSWORD_HASH is set (BLOG_PUBLISH_SECRET not required)", async () => {
     vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
     process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hashvalue";
-    // BLOG_PUBLISH_SECRET not set
+    // BLOG_PUBLISH_SECRET intentionally not set — only password hash is required
     const { isSetupNeeded } = await getAdminStore();
-    expect(await isSetupNeeded()).toBe(true);
+    expect(await isSetupNeeded()).toBe(false);
   });
 });
 
@@ -216,10 +216,12 @@ describe("getEnvFallbackUser()", () => {
     expect(getEnvFallbackUser()).toBeNull();
   });
 
-  it("returns null when BLOG_PUBLISH_SECRET is missing", async () => {
+  it("returns fallback user when only BLOG_ADMIN_PASSWORD_HASH is set (BLOG_PUBLISH_SECRET not required)", async () => {
     process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hash";
     const { getEnvFallbackUser } = await getAdminStore();
-    expect(getEnvFallbackUser()).toBeNull();
+    const user = getEnvFallbackUser();
+    expect(user).not.toBeNull();
+    expect(user!.username).toBe("admin");
   });
 
   it("returns null when neither env var is set", async () => {

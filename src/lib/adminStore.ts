@@ -15,6 +15,10 @@ const ADMIN_FILE = process.env.VERCEL
   ? "/tmp/hotbot-data/admin.json"
   : path.join(process.cwd(), "data", "admin.json");
 
+// Bundled read-only defaults (committed to repo, always available in the
+// deployed build). Used as last-resort fallback when no writable store exists.
+const ADMIN_DEFAULTS_FILE = path.join(process.cwd(), "data", "admin.defaults.json");
+
 interface LegacyAdminCreds {
   username: string;
   passwordHash: string;
@@ -27,9 +31,8 @@ function ensureAdminDir() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function fsReadAdmin(): AdminStore | null {
+function parseAdminStore(raw: string, writeable: boolean): AdminStore | null {
   try {
-    const raw  = fs.readFileSync(ADMIN_FILE, "utf-8");
     const data = JSON.parse(raw) as Record<string, unknown>;
     // Migrate legacy single-user format
     if (typeof data.username === "string" && !Array.isArray(data.users)) {
@@ -44,13 +47,30 @@ function fsReadAdmin(): AdminStore | null {
           createdAt:    legacy.createdAt || new Date().toISOString(),
         }],
       };
-      fsWriteAdmin(migrated);
+      if (writeable) fsWriteAdmin(migrated);
       return migrated;
     }
     return data as unknown as AdminStore;
   } catch {
     return null;
   }
+}
+
+function fsReadAdmin(): AdminStore | null {
+  // 1. Try the writable store (dev: data/admin.json, Vercel: /tmp/…)
+  try {
+    const raw = fs.readFileSync(ADMIN_FILE, "utf-8");
+    const store = parseAdminStore(raw, true);
+    if (store) return store;
+  } catch { /* not found — fall through */ }
+
+  // 2. Fall back to the bundled read-only defaults (always present in the deployment)
+  try {
+    const raw = fs.readFileSync(ADMIN_DEFAULTS_FILE, "utf-8");
+    return parseAdminStore(raw, false);
+  } catch { /* defaults file missing */ }
+
+  return null;
 }
 
 function fsWriteAdmin(store: AdminStore): void {
@@ -155,14 +175,13 @@ export async function isSetupNeeded(): Promise<boolean> {
   }
   const store = fsReadAdmin();
   if (store && store.users.length > 0) return false;
-  return !(process.env.BLOG_ADMIN_PASSWORD_HASH && process.env.BLOG_PUBLISH_SECRET);
+  return !process.env.BLOG_ADMIN_PASSWORD_HASH;
 }
 
 /** Env-var fallback user for when no DB is set up yet. */
 export function getEnvFallbackUser(): UserRecord | null {
-  const hash   = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
-  const secret = process.env.BLOG_PUBLISH_SECRET || "";
-  if (!hash || !secret) return null;
+  const hash = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
+  if (!hash) return null;
   return {
     id:           "env-user",
     username:     process.env.BLOG_ADMIN_USERNAME || "admin",
