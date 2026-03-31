@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
+  // Ensure data/admin.defaults.json is bundled in Vercel serverless functions.
+  outputFileTracingIncludes: {
+    "/api/blog/auth": ["./data/admin.defaults.json"],
+    "/api/blog/users": ["./data/admin.defaults.json"],
+  },
   images: {
     domains: ['hotbotstudios.com'],
   },

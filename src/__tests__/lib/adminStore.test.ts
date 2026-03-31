@@ -133,32 +133,8 @@ describe("isSetupNeeded()", () => {
     expect(await isSetupNeeded()).toBe(false);
   });
 
-  it("returns true when admin file is missing and no env vars set", async () => {
+  it("always returns false — bootstrap user ensures setup is never needed", async () => {
     vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
-    const { isSetupNeeded } = await getAdminStore();
-    expect(await isSetupNeeded()).toBe(true);
-  });
-
-  it("returns false when admin file is missing BUT env vars are set", async () => {
-    vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
-    process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hashvalue";
-    process.env.BLOG_PUBLISH_SECRET      = "my-publish-secret";
-    const { isSetupNeeded } = await getAdminStore();
-    expect(await isSetupNeeded()).toBe(false);
-  });
-
-  it("returns true when admin file exists but has no users", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(
-      JSON.stringify({ publishSecret: "s", users: [] })
-    );
-    const { isSetupNeeded } = await getAdminStore();
-    expect(await isSetupNeeded()).toBe(true);
-  });
-
-  it("returns false when BLOG_ADMIN_PASSWORD_HASH is set (BLOG_PUBLISH_SECRET not required)", async () => {
-    vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
-    process.env.BLOG_ADMIN_PASSWORD_HASH = "$2b$12$hashvalue";
-    // BLOG_PUBLISH_SECRET intentionally not set — only password hash is required
     const { isSetupNeeded } = await getAdminStore();
     expect(await isSetupNeeded()).toBe(false);
   });
