@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Invoice, InvoiceLineItem } from "@/types/dashboard";
+
+function getIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 function getNextInvoiceNumber(invoices: Invoice[]): string {
   const nums = invoices
@@ -28,6 +35,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["admin", "manager", "finance"].includes(session.role)) {
@@ -80,6 +90,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["admin", "manager", "finance"].includes(session.role)) {
@@ -129,6 +142,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "admin") {

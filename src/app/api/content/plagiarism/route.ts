@@ -29,7 +29,7 @@ const MAX_CONTENT_LENGTH = 60_000;
 export async function POST(req: NextRequest) {
   // ── Auth ────────────────────────────────────────────────────────────────────
   const token = extractToken(req);
-  if (!authorizeAny(token)) {
+  if (!await authorizeAny(token)) {
     return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
   }
 

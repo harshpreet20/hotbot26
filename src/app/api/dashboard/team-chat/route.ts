@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import type { TeamMessage, TeamChannel } from "@/types/dashboard";
+
+function getIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 const DEFAULT_CHANNELS: TeamChannel[] = [
   { id: "general", name: "general",  description: "Company-wide announcements and discussion", createdBy: "system", createdAt: new Date(0).toISOString() },
@@ -36,6 +43,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 120, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -92,6 +102,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 120, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -114,6 +127,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 120, windowMs: 60_000 });
+  if (limited) return limited;
+
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
