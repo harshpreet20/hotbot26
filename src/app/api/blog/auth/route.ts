@@ -63,9 +63,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Look up user from Supabase or filesystem, with env-var fallback
-  let user = await getUserByUsername(username);
-  if (!user) user = getEnvFallbackUser();
+  // Env-var credentials take priority — allows recovery when Supabase has wrong/unknown hash.
+  // If BLOG_ADMIN_PASSWORD_HASH (+ optional BLOG_ADMIN_USERNAME) are set in Vercel env and
+  // the username matches, skip all other stores and use those credentials directly.
+  const envUser = getEnvFallbackUser();
+  let user = (envUser && envUser.username.toLowerCase() === username.toLowerCase())
+    ? envUser
+    : await getUserByUsername(username);
   if (!user || user.username.toLowerCase() !== username.toLowerCase()) {
     return NextResponse.json(
       { success: false, error: "Invalid username or password." },
