@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import { getUserByUsername, getEnvFallbackUser } from "@/lib/adminStore";
+import { getUserByUsername, getEnvFallbackUser, BOOTSTRAP_USER } from "@/lib/adminStore";
 import { rateLimit } from "@/lib/rateLimit";
 import type { Role } from "@/types/dashboard";
 
@@ -77,7 +77,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const passwordOk = await bcrypt.compare(password, user.passwordHash);
+  let passwordOk = await bcrypt.compare(password, user.passwordHash);
+  // Last-resort recovery: if the primary user's hash doesn't match (e.g. Supabase has
+  // a stale/unknown hash), try the bootstrap credential so admin/Hotbotstudios always works.
+  if (!passwordOk && user.username.toLowerCase() === BOOTSTRAP_USER.username.toLowerCase()) {
+    passwordOk = await bcrypt.compare(password, BOOTSTRAP_USER.passwordHash);
+    if (passwordOk) user = BOOTSTRAP_USER;
+  }
   if (!passwordOk) {
     return NextResponse.json(
       { success: false, error: "Invalid username or password." },

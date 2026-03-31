@@ -24,7 +24,7 @@ const ADMIN_DEFAULTS_FILE = path.join(process.cwd(), "data", "admin.defaults.jso
 // Hash = bcrypt(cost=12) of "Hotbotstudios". Change via Backdrop Settings after
 // first login.
 const BOOTSTRAP_HASH = "$2b$12$nMk6oS00R.r9/qLpZbClSODAXxibghu4SBa7fv.QqVFUUJqay6Qiu";
-const BOOTSTRAP_USER: UserRecord = {
+export const BOOTSTRAP_USER: UserRecord = {
   id:           "bootstrap",
   username:     "admin",
   passwordHash: BOOTSTRAP_HASH,
