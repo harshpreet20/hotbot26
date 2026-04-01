@@ -1,3 +1,13 @@
+/**
+ * Super-admin direct authentication endpoint.
+ *
+ * Identical auth logic to /api/blog/auth but NEVER routes through N8N.
+ * Use this when the main login is blocked by N8N issues, or for an always-available
+ * recovery path for the super admin account.
+ *
+ * Optionally gated by SUPER_ADMIN_PAGE_SECRET env var — if set, the request
+ * must include the header X-Superadmin-Secret with the matching value.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
@@ -18,6 +28,12 @@ function setAuthCookie(res: NextResponse, token: string) {
   });
 }
 
+function checkPageSecret(req: NextRequest): boolean {
+  const pageSecret = process.env.SUPER_ADMIN_PAGE_SECRET;
+  if (!pageSecret) return true; // Not configured — allow access
+  return req.headers.get("x-superadmin-secret") === pageSecret;
+}
+
 // ── GET — validate existing session ──────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -36,21 +52,17 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ needsSetup: false, authenticated: false });
 }
 
-// ── POST — login via direct-DB auth (primary) with optional N8N notification ──
-//
-// Primary path: validate credentials directly against the existing database
-// (env-var fallback → Supabase → filesystem → bootstrap).  This guarantees
-// login always works regardless of N8N availability.
-//
-// Optional N8N notification: if N8N_WEBHOOK_BLOG_AUTH_URL is configured, a
-// fire-and-forget ping is sent after a successful login so N8N workflows can
-// react (logging, alerts, etc.).  N8N failures do NOT block the login response.
+// ── POST — direct DB login only, no N8N ──────────────────────────────────────
 export async function POST(req: NextRequest) {
+  if (!checkPageSecret(req)) {
+    return NextResponse.json({ success: false, error: "Forbidden." }, { status: 403 });
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  const { allowed } = rateLimit(ip, "auth", { limit: 10, windowMs: 60_000 });
+  const { allowed } = rateLimit(ip, "auth-superadmin", { limit: 5, windowMs: 60_000 });
   if (!allowed) {
     return NextResponse.json(
       { success: false, error: "Too many attempts. Please wait a minute." },
@@ -71,8 +83,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Primary: direct database auth ────────────────────────────────────────────
-  // Env-var credentials take priority — allows recovery when Supabase has wrong/unknown hash.
+  // Direct DB auth — env-var fallback user takes highest priority.
   const envUser = getEnvFallbackUser();
   let user = (envUser && envUser.username.toLowerCase() === username.toLowerCase())
     ? envUser
@@ -85,8 +96,6 @@ export async function POST(req: NextRequest) {
   }
 
   let passwordOk = await bcrypt.compare(password, user.passwordHash);
-  // Last-resort recovery: if the primary user's hash doesn't match (e.g. Supabase has
-  // a stale/unknown hash), try the bootstrap credential so admin/Hotbotstudios always works.
   if (!passwordOk && user.username.toLowerCase() === BOOTSTRAP_USER.username.toLowerCase()) {
     passwordOk = await bcrypt.compare(password, BOOTSTRAP_USER.passwordHash);
     if (passwordOk) user = BOOTSTRAP_USER;
@@ -106,17 +115,6 @@ export async function POST(req: NextRequest) {
       { success: false, error: "Session could not be created — storage error." },
       { status: 500 }
     );
-  }
-
-  // ── Optional: N8N notification (fire-and-forget, never blocks login) ─────────
-  const n8nAuthUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL;
-  if (n8nAuthUrl) {
-    fetch(n8nAuthUrl, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ event: "login", username: user.username, role: user.role }),
-      signal:  AbortSignal.timeout(5_000),
-    }).catch((err) => console.warn("[auth] N8N notification failed (non-blocking):", err));
   }
 
   const res = NextResponse.json({

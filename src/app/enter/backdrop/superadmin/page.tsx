@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-export default function BackdropLoginPage() {
+export default function SuperAdminLoginPage() {
   const router = useRouter();
   const [username, setUsername]   = useState("");
   const [password, setPassword]   = useState("");
@@ -12,14 +12,14 @@ export default function BackdropLoginPage() {
   const [checking, setChecking]   = useState(true);
   const userRef = useRef<HTMLInputElement>(null);
 
-  // Restore session from cookie if still valid, otherwise show login form.
+  // Restore session from cookie if still valid.
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem("backdrop_secret")) {
       router.replace("/enter/backdrop/dashboard");
       return;
     }
 
-    fetch("/api/blog/auth")
+    fetch("/api/blog/auth/superadmin")
       .then((r) => r.json() as Promise<{
         authenticated?: boolean;
         token?: string;
@@ -54,7 +54,7 @@ export default function BackdropLoginPage() {
 
     setLoading(true);
     try {
-      const res  = await fetch("/api/blog/auth", {
+      const res = await fetch("/api/blog/auth/superadmin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), password: password.trim() }),
@@ -91,13 +91,13 @@ export default function BackdropLoginPage() {
     outline: "none",
     transition: "border-color 0.15s",
   };
-  const focusStyle = { borderColor: "rgba(99,102,241,0.6)" };
+  const focusStyle = { borderColor: "rgba(234,179,8,0.6)" };
   const blurStyle  = { borderColor: "rgba(255,255,255,0.12)" };
 
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0e1a" }}>
-        <svg className="animate-spin h-7 w-7 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin h-7 w-7 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
         </svg>
@@ -108,13 +108,13 @@ export default function BackdropLoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.12) 0%, transparent 70%), #0a0e1a" }}
+      style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(234,179,8,0.10) 0%, transparent 70%), #0a0e1a" }}
     >
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none" aria-hidden>
         <div
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)", filter: "blur(60px)" }}
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-15"
+          style={{ background: "radial-gradient(circle, #ca8a04 0%, transparent 70%)", filter: "blur(60px)" }}
         />
       </div>
 
@@ -124,7 +124,7 @@ export default function BackdropLoginPage() {
         <div className="text-center mb-5">
           <div
             className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3 mx-auto"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(234,179,8,0.20)" }}
           >
             <Image
               src="/logos/hotbot-logo.svg"
@@ -135,7 +135,16 @@ export default function BackdropLoginPage() {
             />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Backdrop</h1>
-          <p className="text-slate-500 text-xs mt-0.5">HotBot Studios · Blog Admin</p>
+          <p className="text-slate-500 text-xs mt-0.5">Super Admin · Direct Access</p>
+          <div
+            className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs text-yellow-600"
+            style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.20)" }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Bypasses external auth
+          </div>
         </div>
 
         {/* Card */}
@@ -143,7 +152,7 @@ export default function BackdropLoginPage() {
           onSubmit={handleSubmit}
           noValidate
           className="rounded-2xl p-6 space-y-4"
-          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(234,179,8,0.12)", backdropFilter: "blur(16px)" }}
         >
           {/* Username */}
           <div>
@@ -203,8 +212,8 @@ export default function BackdropLoginPage() {
             disabled={loading}
             className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 hover:-translate-y-0.5 active:translate-y-0"
             style={{
-              background: loading ? "#4f46e5" : "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-              boxShadow: "0 4px 24px rgba(99,102,241,0.3)",
+              background: loading ? "#92400e" : "linear-gradient(135deg, #d97706, #ca8a04)",
+              boxShadow: "0 4px 24px rgba(202,138,4,0.25)",
             }}
           >
             {loading ? (
@@ -220,10 +229,7 @@ export default function BackdropLoginPage() {
         </form>
 
         <p className="text-center text-slate-700 text-xs mt-4">
-          Private access only ·{" "}
-          <a href="/enter/backdrop/register" className="text-slate-600 hover:text-slate-400 transition-colors">Request access</a>
-          {" "}·{" "}
-          <a href="/enter/backdrop/superadmin" className="text-slate-700 hover:text-slate-500 transition-colors">Super admin</a>
+          <a href="/enter/backdrop" className="text-slate-600 hover:text-slate-400 transition-colors">Back to standard login</a>
         </p>
       </div>
     </div>
