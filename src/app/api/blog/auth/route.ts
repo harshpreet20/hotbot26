@@ -36,7 +36,17 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ needsSetup: false, authenticated: false });
 }
 
-// ── POST — login (direct Supabase / file auth, no N8N dependency) ─────────────
+// ── POST — login via N8N REST (primary) with direct-DB fallback ───────────────
+//
+// Primary path: forward credentials to the N8N blog-auth webhook, which calls
+// /api/blog/auth/validate to check against the existing database (Supabase /
+// filesystem).  N8N returns { valid, userId, username, role }; this route then
+// creates the session in the existing database so all sub-accounts share the
+// same session store.
+//
+// Fallback path: if N8N_WEBHOOK_BLOG_AUTH_URL is not set or N8N is unreachable,
+// validate credentials directly against the existing database (same logic as
+// /api/blog/auth/validate) so the super admin and all sub-accounts can still log in.
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("x-real-ip")
@@ -63,9 +73,58 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // ── Primary: N8N REST auth (validates against existing DB via /validate) ──
+  const n8nAuthUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL;
+  if (n8nAuthUrl) {
+    try {
+      const n8nRes = await fetch(n8nAuthUrl, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ username, password }),
+        signal:  AbortSignal.timeout(8_000),
+      });
+
+      if (n8nRes.ok) {
+        type N8NAuthResult = { valid?: boolean; userId?: string; username?: string; role?: Role };
+        const n8nData = await n8nRes.json() as N8NAuthResult;
+
+        if (n8nData.valid && n8nData.userId && n8nData.username && n8nData.role) {
+          // N8N confirmed credentials via the existing database — create session locally.
+          let sessionToken: string;
+          try {
+            sessionToken = await createSession(n8nData.userId, n8nData.username, n8nData.role);
+          } catch {
+            return NextResponse.json(
+              { success: false, error: "Session could not be created — storage error." },
+              { status: 500 }
+            );
+          }
+          const res = NextResponse.json({
+            success:  true,
+            token:    sessionToken,
+            role:     n8nData.role,
+            username: n8nData.username,
+          });
+          setAuthCookie(res, sessionToken);
+          return res;
+        }
+
+        if (n8nData.valid === false) {
+          return NextResponse.json(
+            { success: false, error: "Invalid username or password." },
+            { status: 401 }
+          );
+        }
+      }
+      // N8N returned a non-OK status or unexpected body — fall through to direct auth.
+    } catch (err) {
+      console.warn("[auth] N8N unavailable, falling back to direct DB auth:", err);
+      // Fall through to direct auth below.
+    }
+  }
+
+  // ── Fallback: direct database auth (same resolution order as /validate) ────
   // Env-var credentials take priority — allows recovery when Supabase has wrong/unknown hash.
-  // If BLOG_ADMIN_PASSWORD_HASH (+ optional BLOG_ADMIN_USERNAME) are set in Vercel env and
-  // the username matches, skip all other stores and use those credentials directly.
   const envUser = getEnvFallbackUser();
   let user = (envUser && envUser.username.toLowerCase() === username.toLowerCase())
     ? envUser

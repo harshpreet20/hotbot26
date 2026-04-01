@@ -1,16 +1,13 @@
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
-  "name": "HotBot \u2014 08 Blog Auth",
+  "name": "HotBot — 08 Blog Auth",
   "nodes": [
     {
       "id": "node-webhook-auth",
-      "name": "Webhook \u2014 Blog Auth",
+      "name": "Webhook — Blog Auth",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        240,
-        300
-      ],
+      "position": [240, 300],
       "parameters": {
         "httpMethod": "POST",
         "path": "hotbotstudios-blog-auth",
@@ -21,27 +18,56 @@
       }
     },
     {
-      "id": "node-validate-creds",
-      "name": "Validate Credentials",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        480,
-        300
-      ],
+      "id": "node-validate-against-db",
+      "name": "Validate Against DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 300],
       "parameters": {
-        "jsCode": "// \u2500\u2500\u2500 CONFIGURE THESE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Set your admin credentials in n8n environment variables:\n//   ADMIN_USERNAME  \u2192  your chosen admin username\n//   ADMIN_PASSWORD  \u2192  your strong admin password\n//   ADMIN_TOKEN     \u2192  a long random secret string (the session token)\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst body = $input.first().json.body || $input.first().json;\nconst username = (body.username || '').trim();\nconst password = (body.password || '').trim();\n\nconst ADMIN_USERNAME = $env.ADMIN_USERNAME || 'admin';\nconst ADMIN_PASSWORD = $env.ADMIN_PASSWORD || 'changeme-set-in-n8n-env';\nconst ADMIN_TOKEN    = $env.ADMIN_TOKEN    || 'hotbot-admin-token-2026';\n\nif (!username || !password) {\n  return [{ json: { success: false, error: 'Username and password are required.' } }];\n}\n\nif (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {\n  return [{ json: { success: false, error: 'Invalid credentials.' } }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    token: ADMIN_TOKEN,\n    user: username,\n    expiresAt: new Date(Date.now() + 86400000 * 30).toISOString()\n  }\n}];"
+        "method": "POST",
+        "url": "={{ $env.SITE_URL }}/api/blog/auth/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Secret",
+              "value": "={{ $env.N8N_AUTH_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "username",
+              "value": "={{ ($input.first().json.body || $input.first().json).username }}"
+            },
+            {
+              "name": "password",
+              "value": "={{ ($input.first().json.body || $input.first().json).password }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
       }
     },
     {
-      "id": "node-if-auth",
-      "name": "IF \u2014 Auth Successful?",
+      "id": "node-if-valid",
+      "name": "IF — Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        720,
-        300
-      ],
+      "position": [720, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -51,8 +77,8 @@
           },
           "conditions": [
             {
-              "id": "cond-success",
-              "leftValue": "={{ $json.success }}",
+              "id": "cond-valid",
+              "leftValue": "={{ $json.valid }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -66,28 +92,19 @@
     },
     {
       "id": "node-respond-success",
-      "name": "Respond \u2014 Success",
+      "name": "Respond — Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        960,
-        200
-      ],
+      "position": [960, 200],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, token: $json.token, user: $json.user, expiresAt: $json.expiresAt }) }}",
+        "responseBody": "={{ JSON.stringify({ valid: true, userId: $json.userId, username: $json.username, role: $json.role }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
             ]
           }
         }
@@ -95,28 +112,19 @@
     },
     {
       "id": "node-respond-error",
-      "name": "Respond \u2014 Unauthorized",
+      "name": "Respond — Unauthorized",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        960,
-        420
-      ],
+      "position": [960, 420],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: $json.error || 'Invalid credentials.' }) }}",
+        "responseBody": "={{ JSON.stringify({ valid: false, error: 'Invalid username or password.' }) }}",
         "options": {
           "responseCode": 401,
           "responseHeaders": {
             "entries": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
             ]
           }
         }
@@ -124,40 +132,40 @@
     }
   ],
   "connections": {
-    "Webhook \u2014 Blog Auth": {
+    "Webhook — Blog Auth": {
       "main": [
         [
           {
-            "node": "Validate Credentials",
+            "node": "Validate Against DB",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Validate Credentials": {
+    "Validate Against DB": {
       "main": [
         [
           {
-            "node": "IF \u2014 Auth Successful?",
+            "node": "IF — Valid?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IF \u2014 Auth Successful?": {
+    "IF — Valid?": {
       "main": [
         [
           {
-            "node": "Respond \u2014 Success",
+            "node": "Respond — Success",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Respond \u2014 Unauthorized",
+            "node": "Respond — Unauthorized",
             "type": "main",
             "index": 0
           }
@@ -172,12 +180,8 @@
     "errorWorkflow": ""
   },
   "meta": {
-    "description": "Authenticates admin.hotbotstudios.com login requests. Validates username/password from env vars and returns a session token.",
-    "tags": [
-      "blog",
-      "auth",
-      "admin"
-    ]
+    "description": "Authenticates Backdrop login requests for super admin and all sub-accounts. Validates credentials against the existing Supabase/filesystem database via /api/blog/auth/validate, then returns { valid, userId, username, role } so the Next.js auth route can create a session in the existing database. N8N env vars required: SITE_URL (e.g. https://hotbotstudios.com), N8N_AUTH_SECRET (shared secret matching the app env var).",
+    "tags": ["blog", "auth", "admin", "supabase"]
   },
   "active": true
 }
