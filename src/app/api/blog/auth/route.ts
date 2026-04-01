@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Primary: N8N REST auth (validates against existing DB via /validate) ──
-  const n8nAuthUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL;
+  const n8nAuthUrl = process.env.N8N_WEBHOOK_BLOG_AUTH_URL
+    ?? "https://hotbotst.app.n8n.cloud/webhook/hotbotstudios-blog-auth";
   if (n8nAuthUrl) {
     try {
       const n8nRes = await fetch(n8nAuthUrl, {
