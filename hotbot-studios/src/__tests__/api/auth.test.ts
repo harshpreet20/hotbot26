@@ -21,16 +21,16 @@ vi.mock("@/lib/sessions", () => ({
   deleteSession: vi.fn(),
 }));
 vi.mock("@/lib/adminStore", () => ({
-  readAdminStore:    vi.fn(),
-  writeAdminStore:   vi.fn(),
-  isSetupNeeded:     vi.fn(),
-  getPublishSecret:  vi.fn(),
+  getUserByUsername:  vi.fn(),
+  createUser:         vi.fn(),
+  isSetupNeeded:      vi.fn(),
+  getPublishSecret:   vi.fn(),
   getEnvFallbackUser: vi.fn().mockReturnValue(null),
 }));
 
 import bcrypt from "bcryptjs";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import { readAdminStore, writeAdminStore, isSetupNeeded, getEnvFallbackUser } from "@/lib/adminStore";
+import { getUserByUsername, createUser, isSetupNeeded, getEnvFallbackUser } from "@/lib/adminStore";
 import { GET, POST, DELETE } from "@/app/api/blog/auth/route";
 
 const ADMIN_USER = {
@@ -40,10 +40,6 @@ const ADMIN_USER = {
   role:         "admin" as const,
   createdAt:    new Date().toISOString(),
 };
-
-function makeStore(users = [ADMIN_USER]) {
-  return { publishSecret: "pub-secret", users };
-}
 
 function postReq(body: unknown, ip = "1.2.3.4") {
   return new NextRequest("http://localhost/api/blog/auth", {
@@ -68,8 +64,9 @@ function deleteReq(cookie?: string) {
 
 beforeEach(() => {
   vi.resetModules();
-  vi.mocked(isSetupNeeded).mockReturnValue(false);
-  vi.mocked(readAdminStore).mockReturnValue(makeStore());
+  vi.mocked(isSetupNeeded).mockResolvedValue(false);
+  vi.mocked(getUserByUsername).mockResolvedValue(ADMIN_USER);
+  vi.mocked(createUser).mockResolvedValue(undefined);
   vi.mocked(getSession).mockReturnValue(null);
   vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
   vi.mocked(getEnvFallbackUser).mockReturnValue(null);
@@ -98,7 +95,7 @@ describe("GET /api/blog/auth", () => {
   });
 
   it("returns needsSetup:true when no cookie and setup is needed", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
+    vi.mocked(isSetupNeeded).mockResolvedValue(true);
     const res  = await GET(getReq());
     const body = await res.json() as Record<string, unknown>;
     expect(body.authenticated).toBe(false);
@@ -106,7 +103,7 @@ describe("GET /api/blog/auth", () => {
   });
 
   it("returns needsSetup:false when no cookie and setup is complete", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
+    vi.mocked(isSetupNeeded).mockResolvedValue(false);
     const res  = await GET(getReq());
     const body = await res.json() as Record<string, unknown>;
     expect(body.needsSetup).toBe(false);
@@ -119,8 +116,8 @@ describe("GET /api/blog/auth", () => {
 describe("POST /api/blog/auth — login", () => {
   it("returns 200 + token on successful login", async () => {
     vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
-    vi.mocked(readAdminStore).mockReturnValue(makeStore());
+    vi.mocked(isSetupNeeded).mockResolvedValue(false);
+    vi.mocked(getUserByUsername).mockResolvedValue(ADMIN_USER);
     const res  = await POST(postReq({ username: "admin", password: "correct-pass" }));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
@@ -147,9 +144,9 @@ describe("POST /api/blog/auth — login", () => {
     expect(body.token).toBeUndefined();
   });
 
-  it("returns 401 for unknown username (timing-safe: always runs bcrypt)", async () => {
-    vi.mocked(readAdminStore).mockReturnValue(makeStore());
-    vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+  it("returns 401 for unknown username", async () => {
+    vi.mocked(getUserByUsername).mockResolvedValue(null);
+    vi.mocked(getEnvFallbackUser).mockReturnValue(null);
     const res  = await POST(postReq({ username: "nobody", password: "anypass" }));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(401);
@@ -178,8 +175,8 @@ describe("POST /api/blog/auth — login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("uses env-var fallback user when no file-based users exist", async () => {
-    vi.mocked(readAdminStore).mockReturnValue({ publishSecret: "s", users: [] });
+  it("uses env-var fallback user when no DB-based users exist", async () => {
+    vi.mocked(getUserByUsername).mockResolvedValue(null);
     vi.mocked(getEnvFallbackUser).mockReturnValue({
       id: "env-user", username: "admin", passwordHash: "$2b$12$envhash", role: "admin", createdAt: "",
     });
@@ -206,18 +203,18 @@ describe("POST /api/blog/auth — login", () => {
 
 describe("POST /api/blog/auth — first-run setup", () => {
   it("creates admin account on valid setup request", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
-    vi.mocked(writeAdminStore).mockReturnValue(undefined);
+    vi.mocked(isSetupNeeded).mockResolvedValue(true);
+    vi.mocked(createUser).mockResolvedValue(undefined);
     const res  = await POST(postReq({ setup: true, username: "admin", password: "strongpass1", confirmPassword: "strongpass1" }, "10.0.0.1"));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.token).toBe("new-session-token-abc");
-    expect(writeAdminStore).toHaveBeenCalled();
+    expect(createUser).toHaveBeenCalled();
   });
 
   it("returns 409 when setup is attempted but account already exists", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(false);
+    vi.mocked(isSetupNeeded).mockResolvedValue(false);
     const res  = await POST(postReq({ setup: true, username: "admin", password: "pass12345", confirmPassword: "pass12345" }, "10.0.0.2"));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(409);
@@ -225,7 +222,7 @@ describe("POST /api/blog/auth — first-run setup", () => {
   });
 
   it("returns 400 when passwords do not match", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
+    vi.mocked(isSetupNeeded).mockResolvedValue(true);
     const res  = await POST(postReq({ setup: true, username: "admin", password: "pass12345", confirmPassword: "different" }, "10.0.0.3"));
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(400);
@@ -233,13 +230,13 @@ describe("POST /api/blog/auth — first-run setup", () => {
   });
 
   it("returns 400 when password is under 8 characters", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
+    vi.mocked(isSetupNeeded).mockResolvedValue(true);
     const res  = await POST(postReq({ setup: true, username: "admin", password: "short", confirmPassword: "short" }, "10.0.0.4"));
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when username is under 3 characters", async () => {
-    vi.mocked(isSetupNeeded).mockReturnValue(true);
+    vi.mocked(isSetupNeeded).mockResolvedValue(true);
     const res  = await POST(postReq({ setup: true, username: "ab", password: "validpassword", confirmPassword: "validpassword" }, "10.0.0.5"));
     expect(res.status).toBe(400);
   });

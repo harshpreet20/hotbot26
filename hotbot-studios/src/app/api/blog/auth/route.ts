@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import { getUserByUsername, getEnvFallbackUser } from "@/lib/adminStore";
+import { getUserByUsername, getEnvFallbackUser, createUser, isSetupNeeded } from "@/lib/adminStore";
 import { rateLimit } from "@/lib/rateLimit";
-import type { Role } from "@/types/dashboard";
+import type { Role, UserRecord } from "@/types/dashboard";
 
 const COOKIE_NAME  = "backdrop_auth";
 const COOKIE_MAX_S = 60 * 60 * 24 * 30;
@@ -33,7 +34,8 @@ export async function GET(req: NextRequest) {
       });
     }
   }
-  return NextResponse.json({ needsSetup: false, authenticated: false });
+  const needsSetup = await isSetupNeeded();
+  return NextResponse.json({ needsSetup, authenticated: false });
 }
 
 // ── POST — login (direct Supabase / file auth, no N8N dependency) ─────────────
@@ -50,10 +52,79 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { username?: string; password?: string };
+  let body: {
+    username?: string;
+    password?: string;
+    setup?: boolean;
+    confirmPassword?: string;
+  };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 }); }
 
+  // ── First-run setup ───────────────────────────────────────────────────────
+  if (body.setup) {
+    const needsSetup = await isSetupNeeded();
+    if (!needsSetup) {
+      return NextResponse.json(
+        { success: false, error: "Setup already completed." },
+        { status: 409 }
+      );
+    }
+
+    const setupUsername = (body.username || "").trim();
+    const setupPassword = (body.password || "").trim();
+    const confirmPassword = (body.confirmPassword || "").trim();
+
+    if (!setupUsername || setupUsername.length < 3) {
+      return NextResponse.json(
+        { success: false, error: "Username must be at least 3 characters." },
+        { status: 400 }
+      );
+    }
+    if (!setupPassword || setupPassword.length < 8) {
+      return NextResponse.json(
+        { success: false, error: "Password must be at least 8 characters." },
+        { status: 400 }
+      );
+    }
+    if (setupPassword !== confirmPassword) {
+      return NextResponse.json(
+        { success: false, error: "Passwords do not match." },
+        { status: 400 }
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(setupPassword, 12);
+    const newUser: UserRecord = {
+      id:           `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`,
+      username:     setupUsername,
+      passwordHash,
+      role:         "admin",
+      createdAt:    new Date().toISOString(),
+    };
+    await createUser(newUser);
+
+    let sessionToken: string;
+    try {
+      sessionToken = await createSession(newUser.id, newUser.username, newUser.role as Role);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Session could not be created — storage error." },
+        { status: 500 }
+      );
+    }
+
+    const setupRes = NextResponse.json({
+      success:  true,
+      token:    sessionToken,
+      role:     newUser.role,
+      username: newUser.username,
+    });
+    setAuthCookie(setupRes, sessionToken);
+    return setupRes;
+  }
+
+  // ── Login ─────────────────────────────────────────────────────────────────
   const username = (body.username || "").trim();
   const password = (body.password || "").trim();
   if (!username || !password) {
