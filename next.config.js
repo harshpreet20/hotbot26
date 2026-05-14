@@ -19,8 +19,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   ...(process.env.VERCEL ? {} : { output: "standalone" }),
-  serverExternalPackages: ["firebase-admin"],
   experimental: {
+    serverComponentsExternalPackages: ["firebase-admin"],
     outputFileTracingIncludes: {
       "/api/blog/auth": ["./data/admin.defaults.json"],
       "/api/blog/users": ["./data/admin.defaults.json"],
