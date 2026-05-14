@@ -11,10 +11,10 @@ interface CTASectionProps {
 }
 
 export function CTASection({
-  title = "Ready to Scale Your Business?",
-  subtitle = "Join 42+ US businesses using HotBot Studios to grow faster with AI-powered marketing, automation, and creative services.",
-  primaryCTA = "Start Your Project",
-  secondaryCTA = "Book Strategy Call",
+  title = "Stop Burning Budget. Start Scaling Revenue.",
+  subtitle = "Join 42+ US brands that replaced fragmented agencies with one integrated team. We have 5 spots open this month - claim yours before they're gone.",
+  primaryCTA = "Get My Free Growth Audit",
+  secondaryCTA = "Book a Strategy Call",
   formType = "get-started",
 }: CTASectionProps) {
   const openForm = useAppStore((s) => s.openForm);
@@ -38,7 +38,7 @@ export function CTASection({
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-widest mb-6"
                 style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "#93c5fd" }}
               >
-                🚀 Let&apos;s Build Together
+                ⚡ Limited Availability - 5 Spots / Month
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{title}</h2>
               <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">{subtitle}</p>

@@ -14,7 +14,7 @@ export function FormStep2({ form, update, onBack, onNext }: FormStep2Props) {
 
   return (
     <div className="animate-form-step-in">
-      <p className="text-slate-400 text-sm mb-4">Step 2 of 3 — Service & Budget</p>
+      <p className="text-slate-400 text-sm mb-4">Step 2 of 3 - Service & Budget</p>
 
       <div className="mb-5">
         <label className="block text-slate-400 text-[12px] font-medium mb-3">

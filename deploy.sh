@@ -12,7 +12,7 @@ MODE=${1:-pm2}
 echo "🚀 HotBot Studios — Deploying ($MODE)..."
 
 # Pull latest
-git pull origin main
+git pull origin master
 
 # Install dependencies
 echo "📦 Installing dependencies..."

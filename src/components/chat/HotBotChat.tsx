@@ -62,7 +62,7 @@ function WhatsAppTab() {
       <div className="text-center">
         <p className="text-white font-semibold text-base mb-1">Chat on WhatsApp</p>
         <p className="text-slate-400 text-sm leading-relaxed max-w-[240px]">
-          Get instant replies from our AI assistant — powered by AI Sensy on WhatsApp Business.
+          Get instant replies from our AI assistant - powered by AI Sensy on WhatsApp Business.
         </p>
       </div>
 
@@ -97,7 +97,7 @@ function CallTab() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/n8n/callback", {
+      const res = await fetch("/api/forms/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
@@ -113,7 +113,7 @@ function CallTab() {
         setError(data.error || "Something went wrong. Please try again.");
       }
     } catch {
-      // Network error — still confirm so user isn't stuck
+      // Network error - still confirm so user isn't stuck
       setDone(true);
     } finally {
       setLoading(false);
@@ -216,7 +216,7 @@ export function HotBotChat() {
   const [msgs, setMsgs] = useState<Message[]>([
     {
       role: "bot",
-      text: "Hey! I'm HotBot — your AI assistant. Ask me anything about our services, pricing, or how we can help your business grow.",
+      text: "Hey! I'm HotBot - your AI assistant. Ask me anything about our services, pricing, or how we can help your business grow.",
       ts: Date.now(),
     },
   ]);
@@ -244,7 +244,7 @@ export function HotBotChat() {
     setTyping(true);
     const controller = new AbortController();
     try {
-      const res = await fetch("/api/n8n/chat", {
+      const res = await fetch("/api/forms/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -358,7 +358,7 @@ export function HotBotChat() {
               <p className="text-white font-semibold text-sm">HotBot Studios</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                <p className="text-slate-400 text-[11px]">Online — choose how to connect</p>
+                <p className="text-slate-400 text-[11px]">Online - choose how to connect</p>
               </div>
             </div>
           </div>

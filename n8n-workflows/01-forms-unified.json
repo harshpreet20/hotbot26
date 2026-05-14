@@ -1,0 +1,621 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234560001",
+  "name": "HotBot \u2014 01 Forms (Leads \u00b7 Newsletter \u00b7 Contact \u00b7 Analytics)",
+  "nodes": [
+    {
+      "id": "webhook-forms",
+      "name": "Webhook \u2014 Forms Gateway",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        400
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotbotstudios-forms",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "extract-body",
+      "name": "Extract & Normalise Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const raw  = $input.first().json;\nconst body = raw.body || raw;\n\nreturn [{ json: {\n  id:        body.id        || '',\n  type:      (body.type || body.formType || 'lead').toLowerCase().trim(),\n  name:      (body.name      || '').trim(),\n  email:     (body.email     || '').trim().toLowerCase(),\n  phone:     (body.phone     || '').trim(),\n  company:   (body.company   || '').trim(),\n  service:   (body.service   || '').trim(),\n  budget:    (body.budget    || '').trim(),\n  message:   (body.message   || '').trim(),\n  subject:   (body.subject   || '').trim(),\n  formType:  (body.formType  || body.type || 'general').trim(),\n  source:    (body.source    || 'website').trim(),\n  ip:        (body.ip        || 'unknown').trim(),\n  event:      body.event      || '',\n  properties: body.properties || {},\n  page:       body.page       || '',\n  sessionId:  body.sessionId  || '',\n  referrer:   body.referrer   || '',\n  receivedAt: body.createdAt  || new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "switch-type",
+      "name": "Switch \u2014 Form Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        720,
+        400
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "newsletter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "newsletter"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "contact",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "contact"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "analytics",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "analytics"
+            }
+          ]
+        },
+        "fallbackOutput": "extra"
+      }
+    },
+    {
+      "id": "sheets-leads",
+      "name": "Sheets \u2014 Append Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        980,
+        100
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.SHEETS_DOC_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "receivedAt": "={{ $json.receivedAt }}",
+            "name": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "company": "={{ $json.company }}",
+            "service": "={{ $json.service }}",
+            "budget": "={{ $json.budget }}",
+            "message": "={{ $json.message }}",
+            "formType": "={{ $json.formType }}",
+            "source": "={{ $json.source }}",
+            "ip": "={{ $json.ip }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-cred",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "id": "telegram-lead",
+      "name": "Telegram \u2014 New Lead Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        980,
+        240
+      ],
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ '\ud83d\udd25 New Lead\\n\\nName: ' + $json.name + '\\nEmail: ' + $json.email + '\\nPhone: ' + ($json.phone || 'n/a') + '\\nCompany: ' + ($json.company || 'n/a') + '\\nService: ' + ($json.service || 'n/a') + '\\nBudget: ' + ($json.budget || 'n/a') + '\\nSource: ' + $json.source + '\\nForm: ' + $json.formType + '\\nTime: ' + $json.receivedAt }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-cred",
+          "name": "Telegram Account"
+        }
+      }
+    },
+    {
+      "id": "supabase-upsert-lead",
+      "name": "Supabase \u2014 Confirm Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        980,
+        360
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.id || ($json.email + '-' + Date.now()), name: $json.name, email: $json.email, phone: $json.phone, company: $json.company, service: $json.service, budget: $json.budget, message: $json.message, form_type: $json.formType, source: $json.source, ip: $json.ip, status: 'new', created_at: $json.receivedAt }) }}",
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sheets-newsletter",
+      "name": "Sheets \u2014 Append Newsletter",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        980,
+        500
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.SHEETS_DOC_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Newsletter",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "subscribedAt": "={{ $json.receivedAt }}",
+            "name": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
+            "source": "={{ $json.source }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-cred",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "id": "supabase-upsert-newsletter",
+      "name": "Supabase \u2014 Upsert Newsletter Subscriber",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        980,
+        620
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/newsletter",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.email.replace('@','-').replace('.','_') + '-nl', name: $json.name, email: $json.email, source: $json.source, created_at: $json.receivedAt }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "sheets-contact",
+      "name": "Sheets \u2014 Append Contact",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        980,
+        760
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.SHEETS_DOC_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Contact",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "receivedAt": "={{ $json.receivedAt }}",
+            "name": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "subject": "={{ $json.subject }}",
+            "message": "={{ $json.message }}",
+            "source": "={{ $json.source }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-cred",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "id": "telegram-contact",
+      "name": "Telegram \u2014 Contact Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        980,
+        880
+      ],
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ '\ud83d\udce9 Contact Page Message\\n\\nFrom: ' + $json.name + ' &lt;' + $json.email + '&gt;\\nSubject: ' + ($json.subject || 'n/a') + '\\n\\n' + $json.message }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-cred",
+          "name": "Telegram Account"
+        }
+      }
+    },
+    {
+      "id": "supabase-insert-contact",
+      "name": "Supabase \u2014 Insert Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        980,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "body": "={{ JSON.stringify({ id: $json.email + '-' + Date.now(), name: $json.name, email: $json.email, phone: $json.phone, subject: $json.subject, message: $json.message, source: $json.source, created_at: $json.receivedAt }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "sheets-analytics",
+      "name": "Sheets \u2014 Append Analytics Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        980,
+        1140
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.SHEETS_DOC_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Analytics",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "values": {
+            "timestamp": "={{ $json.receivedAt }}",
+            "event": "={{ $json.event }}",
+            "page": "={{ $json.page }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "referrer": "={{ $json.referrer }}",
+            "properties": "={{ JSON.stringify($json.properties) }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-cred",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "id": "respond-ok",
+      "name": "Respond \u2014 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"success\": true, \"message\": \"Received\" }"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook \u2014 Forms Gateway": {
+      "main": [
+        [
+          {
+            "node": "Extract & Normalise Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Normalise Body": {
+      "main": [
+        [
+          {
+            "node": "Switch \u2014 Form Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch \u2014 Form Type": {
+      "main": [
+        [
+          {
+            "node": "Sheets \u2014 Append Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram \u2014 New Lead Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase \u2014 Confirm Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets \u2014 Append Newsletter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase \u2014 Upsert Newsletter Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets \u2014 Append Contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram \u2014 Contact Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase \u2014 Insert Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets \u2014 Append Analytics Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets \u2014 Append Lead": {
+      "main": [
+        [
+          {
+            "node": "Respond \u2014 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets \u2014 Append Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Respond \u2014 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets \u2014 Append Contact": {
+      "main": [
+        [
+          {
+            "node": "Respond \u2014 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets \u2014 Append Analytics Event": {
+      "main": [
+        [
+          {
+            "node": "Respond \u2014 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "hotbot-01-forms-unified",
+    "templateCreatedBy": "HotBot Studios"
+  },
+  "__setup_notes__": {
+    "webhook_path": "hotbotstudios-forms",
+    "env_var": "N8N_WEBHOOK_FORMS=https://your-n8n.app.n8n.cloud/webhook/hotbotstudios-forms",
+    "supabase_env": {
+      "SUPABASE_URL": "Your Supabase project URL (e.g. https://xxx.supabase.co)",
+      "SUPABASE_SERVICE_ROLE_KEY": "Your service_role key (Settings \u2192 API)"
+    },
+    "type_field": "The 'type' field controls routing: 'lead' | 'newsletter' | 'contact' | 'analytics'. Fallback = lead.",
+    "google_sheets": "One spreadsheet (SHEETS_DOC_ID) with 4 tabs: Leads | Newsletter | Contact | Analytics",
+    "credentials": "Replace 'google-sheets-cred' and 'telegram-cred' with your actual n8n credential IDs."
+  },
+  "active": true
+}

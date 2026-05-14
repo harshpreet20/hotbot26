@@ -1,55 +1,63 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { AnimatedGrid } from "@/components/layout/AnimatedGrid";
-import { ProgressiveBlur } from "@/components/layout/ProgressiveBlur";
-import { HotBotChat } from "@/components/chat/HotBotChat";
-import { FormModal } from "@/components/forms/FormModal";
+
+const jakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-primary",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hotbotstudios.com";
-// G-5CNWV5X1KC is the production GA4 property — override via NEXT_PUBLIC_GA_ID if needed
+// G-5CNWV5X1KC is the production GA4 property - override via NEXT_PUBLIC_GA_ID if needed
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-5CNWV5X1KC";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
+    default: "AI Automation & Digital Marketing Agency for US Businesses | HotBot Studios",
     template: "%s | HotBot Studios",
   },
   description:
-    "HotBot Studios is a full-service AI automation and digital marketing agency helping US businesses grow with chatbots, SEO, content, software development, PR, and UI/UX design.",
+    "HotBot Studios is America's full-stack growth agency - custom AI agents, n8n automation, SEO, Google Ads, content production, software development, PR, and UI/UX design for US businesses. 42+ clients. Trusted by US SMBs and scale-ups.",
   keywords: [
     "AI automation agency USA",
-    "digital marketing agency US",
-    "chatbot development",
+    "digital marketing agency USA",
+    "custom AI agents for business",
+    "n8n workflow automation",
     "SEO agency USA",
-    "n8n automation",
-    "AI chatbot for business",
-    "marketing agency New York",
-    "software development agency",
+    "AI chatbot development USA",
+    "growth agency US businesses",
+    "software development agency USA",
     "content production agency",
     "public relations agency USA",
+    "UI UX design agency",
+    "fractional CMO USA",
+    "marketing consulting USA",
+    "voice AI business USA",
+    "HotBot Studios",
   ],
   authors: [{ name: "HotBot Studios", url: SITE_URL }],
   creator: "HotBot Studios",
   publisher: "HotBot Studios",
-  category: "Digital Marketing & AI Automation",
+  category: "AI Automation & Digital Marketing Agency",
   openGraph: {
     type: "website",
     locale: "en_US",
     title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
     description:
-      "Full-service growth infrastructure for US businesses — AI, marketing, content, software, PR, and design in one team.",
+      "Full-service growth infrastructure for US businesses - AI, marketing, content, software, PR, and design in one team.",
     url: SITE_URL,
     siteName: "HotBot Studios",
     images: [
       {
-        url: "/og-image.svg",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "HotBot Studios — AI Automation & Digital Marketing Agency",
+        alt: "HotBot Studios - AI Automation & Digital Marketing Agency",
       },
     ],
   },
@@ -57,8 +65,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
     description:
-      "Full-service growth infrastructure for US businesses — AI, marketing, content, software, PR, and design in one team.",
-    images: ["/og-image.svg"],
+      "Full-service growth infrastructure for US businesses - AI, marketing, content, software, PR, and design in one team.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -71,20 +79,31 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "yARlP-A-QY90Nn3j4wuITug9wXMXUb08AIzTXYWrk1I",
+  },
   alternates: {
     canonical: SITE_URL,
   },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
-// JSON-LD: Organization schema
+// JSON-LD: Organization schema (E-E-A-T signals for Google + LLMs)
 const orgSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "HotBot Studios",
   url: SITE_URL,
   logo: `${SITE_URL}/logos/hotbot-logo.svg`,
+  image: `${SITE_URL}/og-image.png`,
   description:
-    "Full-service AI automation and digital marketing agency for US businesses.",
+    "HotBot Studios is America's full-stack growth agency - custom AI agents, n8n workflow automation, SEO, Google Ads, content production, software development, PR, and UI/UX design for US businesses. 42+ clients.",
+  foundingDate: "2023",
+  numberOfEmployees: { "@type": "QuantitativeValue", minValue: 10, maxValue: 50 },
+  areaServed: { "@type": "Country", name: "United States" },
   address: {
     "@type": "PostalAddress",
     addressLocality: "New York",
@@ -97,6 +116,19 @@ const orgSchema = {
     contactType: "customer service",
     email: "hello@hotbotstudios.com",
     availableLanguage: "English",
+  },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "HotBot Studios Services",
+    itemListElement: [
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "AI Automation", url: `${SITE_URL}/ai-automation` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Digital Marketing", url: `${SITE_URL}/digital-marketing` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Content Production", url: `${SITE_URL}/content-studio` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Software Development", url: `${SITE_URL}/software-development` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Public Relations", url: `${SITE_URL}/public-relations` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "UI/UX Design", url: `${SITE_URL}/ui-ux-design` } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Marketing Consulting", url: `${SITE_URL}/marketing-consulting` } },
+    ],
   },
   sameAs: [],
 };
@@ -123,9 +155,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={jakartaSans.variable}>
       <head>
-        {/* Google Analytics 4 — G-5CNWV5X1KC */}
+        <meta name="theme-color" content="#0a0e1a" />
+        <meta name="color-scheme" content="dark" />
+
+        {/* Performance: DNS prefetch & preconnect for third-party origins */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+
+        {/* LCP font preload - Plus Jakarta Sans primary weight */}
+        <link
+          rel="preload"
+          as="font"
+          href="https://fonts.gstatic.com/s/plusjakartasans/v8/LDIoaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_KU7NSg.woff2"
+          crossOrigin="anonymous"
+        />
+
+        {/* Google Analytics 4 */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
           strategy="afterInteractive"
@@ -135,31 +183,24 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '${GA_ID}', { page_path: window.location.pathname });
+            gtag('config', '${GA_ID}', { page_path: window.location.pathname, anonymize_ip: true });
           `}
         </Script>
 
-        {/* Structured Data — Organization */}
+        {/* Structured Data - Organization */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
         />
-        {/* Structured Data — WebSite */}
+        {/* Structured Data - WebSite */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
       </head>
-      <body>
-        <div className="min-h-screen relative">
-          <AnimatedGrid />
-          <Navbar />
-          <main className="relative">{children}</main>
-          <Footer />
-        </div>
-        <ProgressiveBlur />
-        <FormModal />
-        <HotBotChat />
+      <body style={{ backgroundColor: "#0a0e1a" }}>
+        {children}
+        <Analytics />
       </body>
     </html>
   );
