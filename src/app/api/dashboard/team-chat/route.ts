@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   // Create channel
   if (body.type === "channel") {
-    if (!["admin", "manager"].includes(session.role)) {
+    if (!["super_admin", "admin", "manager"].includes(session.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     if (!body.name) return NextResponse.json({ error: "name required" }, { status: 400 });
@@ -117,7 +117,7 @@ export async function PATCH(req: NextRequest) {
   const msg = messages.find((m) => m.id === body.id);
   if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (msg.createdBy !== session.username && session.role !== "admin") {
+  if (msg.createdBy !== session.username && !["super_admin", "admin"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -140,7 +140,7 @@ export async function DELETE(req: NextRequest) {
   const msg = messages.find((m) => m.id === id);
   if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (msg.createdBy !== session.username && session.role !== "admin") {
+  if (msg.createdBy !== session.username && !["super_admin", "admin"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

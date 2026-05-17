@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import { isFirebaseEnabled, verifyFirebasePassword } from "@/lib/firebase";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { getUserByUsername, getEnvFallbackUser, BOOTSTRAP_USER } from "@/lib/adminStore";
 import { rateLimit } from "@/lib/rateLimit";
 import type { Role } from "@/types/dashboard";
@@ -83,36 +83,43 @@ export async function POST(req: NextRequest) {
   let resolvedUsername: string;
   let role: Role;
 
-  if (isFirebaseEnabled()) {
-    const result = await verifyFirebasePassword(username, password);
+  if (isSupabaseEnabled()) {
+    const { data: authData, error: authError } = await sb().auth.signInWithPassword({
+      email: username, password,
+    });
 
-    if (!result.ok) {
-      const message =
-        result.code === "USER_DISABLED"      ? "This account has been disabled." :
-        result.code === "TOO_MANY_ATTEMPTS"  ? "Account temporarily locked. Please wait or reset your password." :
-        result.code === "NO_API_KEY"         ? "Firebase API key not configured. Contact your administrator." :
-        result.code === "API_KEY_INVALID"    ? "Firebase API key is invalid. Contact your administrator." :
-        result.code === "TIMEOUT"            ? "Authentication server timed out. Try again." :
-        result.code === "NETWORK_ERROR"      ? "Unable to reach authentication server. Check your connection." :
-                                               "Invalid email or password.";
-      const status =
-        result.code === "TOO_MANY_ATTEMPTS" ? 429 :
-        result.code === "USER_DISABLED"     ? 403 : 401;
-      return NextResponse.json({ success: false, error: message }, { status });
+    if (authError || !authData?.user) {
+      return NextResponse.json(
+        { success: false, error: "Invalid email or password." },
+        { status: 401 },
+      );
     }
 
-    // Allow super_admin AND admin — both can use this endpoint
+    const { data: userRow } = await sb()
+      .from("backdrop_users")
+      .select("id, email, username, role, status")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (!userRow || userRow.status !== "approved") {
+      return NextResponse.json(
+        { success: false, error: "Account not approved or not found." },
+        { status: 403 },
+      );
+    }
+
+    // This endpoint is restricted to admin and super_admin only
     const adminRoles: Role[] = ["super_admin", "admin"];
-    if (!adminRoles.includes(result.role)) {
+    if (!adminRoles.includes(userRow.role as Role)) {
       return NextResponse.json(
         { success: false, error: "Admin or super-admin access required." },
         { status: 403 },
       );
     }
 
-    userId           = result.uid;
-    resolvedUsername = result.email;   // keep full email — consistent with main auth route
-    role             = result.role;
+    userId           = userRow.id as string;
+    resolvedUsername = (userRow.username as string) || (userRow.email as string);
+    role             = userRow.role as Role;
   } else {
     const { default: bcrypt } = await import("bcryptjs");
     const envUser = getEnvFallbackUser();

@@ -1,13 +1,12 @@
 /**
  * Auth diagnostics endpoint — protected by SETUP_SECRET.
- * Shows Firebase connectivity, user list with roles, and can test credentials.
+ * Shows Supabase connectivity, user list, and backdrop_users status.
  *
  * Usage:
  *   GET /api/blog/auth/debug?secret=YOUR_SETUP_SECRET
- *   GET /api/blog/auth/debug?secret=...&testEmail=you@gmail.com&testPass=yourpass
  */
 import { NextRequest, NextResponse } from "next/server";
-import { isFirebaseEnabled, fbAuth } from "@/lib/firebase";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   const secret = process.env.SETUP_SECRET;
@@ -16,73 +15,42 @@ export async function GET(req: NextRequest) {
   }
 
   const result: Record<string, unknown> = {
-    firebase_enabled:  isFirebaseEnabled(),
-    has_api_key:       !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    project_id:        process.env.FIREBASE_PROJECT_ID ?? "(not set)",
-    has_private_key:   !!process.env.FIREBASE_PRIVATE_KEY,
-    has_client_email:  !!process.env.FIREBASE_CLIENT_EMAIL,
+    supabase_enabled: isSupabaseEnabled(),
+    has_supabase_url: !!process.env.SUPABASE_URL,
+    has_service_key:  !!process.env.SUPABASE_SERVICE_ROLE_KEY,
   };
 
-  // ── Admin SDK check: list users ───────────────────────────────────────────
-  if (isFirebaseEnabled()) {
-    try {
-      const list = await fbAuth().listUsers(50);
-      result.admin_sdk = "ok";
-      result.users = list.users.map((u) => ({
-        uid:      u.uid,
-        email:    u.email,
-        disabled: u.disabled,
-        role:     (u.customClaims as Record<string, unknown> | null)?.role ?? "(no role — will become super_admin on first login)",
-        providers: u.providerData.map((p) => p.providerId),
-      }));
-    } catch (err) {
-      result.admin_sdk       = "error";
-      result.admin_sdk_error = err instanceof Error ? err.message : String(err);
-    }
+  if (!isSupabaseEnabled()) {
+    result.note = "Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY";
+    return NextResponse.json(result);
   }
 
-  // ── REST API test (optional) ──────────────────────────────────────────────
-  const testEmail = req.nextUrl.searchParams.get("testEmail");
-  const testPass  = req.nextUrl.searchParams.get("testPass");
-  const apiKey    = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  // List backdrop users
+  try {
+    const { data: users, error } = await sb()
+      .from("backdrop_users")
+      .select("id, email, username, role, status, created_at, approved_by, approved_at")
+      .order("created_at", { ascending: false });
 
-  if (testEmail && testPass && apiKey) {
-    try {
-      const res = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithEmailAndPassword?key=${apiKey}`,
-        {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ email: testEmail, password: testPass, returnSecureToken: true }),
-          signal:  AbortSignal.timeout(8_000),
-        },
-      );
-      const data = await res.json() as Record<string, unknown>;
-      if (res.ok) {
-        result.rest_test = "SUCCESS — credentials are correct";
-        result.rest_uid  = data.localId;
-      } else {
-        result.rest_test  = "FAILED";
-        result.rest_error = (data as { error?: { message?: string } }).error?.message ?? "unknown";
-        result.rest_hint  = getHint(result.rest_error as string);
-      }
-    } catch (err) {
-      result.rest_test  = "error";
-      result.rest_error = err instanceof Error ? err.message : String(err);
+    if (error) {
+      result.backdrop_users_error = error.message;
+    } else {
+      result.backdrop_users       = users;
+      result.backdrop_users_count = users?.length ?? 0;
     }
-  } else if (!testEmail) {
-    result.rest_test = "Add ?testEmail=your@email.com&testPass=yourpass to test credentials";
+  } catch (err) {
+    result.backdrop_users_error = err instanceof Error ? err.message : String(err);
+  }
+
+  // Test sessions table connectivity
+  try {
+    const { count, error } = await sb()
+      .from("sessions")
+      .select("*", { count: "exact", head: true });
+    result.sessions_count = error ? `error: ${error.message}` : count;
+  } catch (err) {
+    result.sessions_error = err instanceof Error ? err.message : String(err);
   }
 
   return NextResponse.json(result, { status: 200 });
-}
-
-function getHint(error: string): string {
-  if (error.includes("EMAIL_NOT_FOUND"))   return "No Firebase account with that email in this project";
-  if (error.includes("INVALID_PASSWORD"))  return "Wrong password for this account";
-  if (error.includes("USER_DISABLED"))     return "This account is disabled in Firebase Console";
-  if (error.includes("INVALID_LOGIN_CREDENTIALS")) return "Wrong email or password";
-  if (error.includes("TOO_MANY_ATTEMPTS")) return "Account temporarily locked — wait or reset password in Firebase Console";
-  if (error.includes("API_KEY_INVALID"))   return "NEXT_PUBLIC_FIREBASE_API_KEY is wrong or from a different project";
-  return "Check Firebase Console → Authentication → Users";
 }

@@ -44,7 +44,7 @@ export async function DELETE(req: NextRequest) {
   const update  = updates.find((u) => u.id === id);
   if (!update) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (update.createdBy !== session.username && session.role !== "admin") {
+  if (update.createdBy !== session.username && !["super_admin", "admin"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

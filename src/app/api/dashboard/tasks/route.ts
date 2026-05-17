@@ -89,7 +89,7 @@ export async function DELETE(req: NextRequest) {
 
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["admin", "manager"].includes(session.role)) {
+  if (!["super_admin", "admin", "manager"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
