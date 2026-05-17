@@ -3,14 +3,32 @@ import { insert, readAll, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { NewsletterSubscriber, Lead } from "@/types/dashboard";
 
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_MIN = 0.4;
+
+async function verifyRecaptcha(token: string | null): Promise<boolean> {
+  if (!RECAPTCHA_SECRET) return true;
+  if (!token) return false;
+  const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `secret=${RECAPTCHA_SECRET}&response=${token}`,
+  });
+  const d = await res.json() as { success: boolean; score: number };
+  return d.success && d.score >= RECAPTCHA_MIN;
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
   const limited = rateLimitResponse(ip, "newsletter", { limit: 1, windowMs: 60_000 });
   if (limited) return limited;
 
   try {
-    const body = await req.json() as { email?: string; name?: string; whatsapp?: string; whatsappOptIn?: boolean };
-    const { email, name, whatsapp, whatsappOptIn } = body;
+    const body = await req.json() as { email?: string; name?: string; whatsapp?: string; whatsappOptIn?: boolean; recaptchaToken?: string };
+    const { email, name, whatsapp, whatsappOptIn, recaptchaToken } = body;
+
+    const isHuman = await verifyRecaptcha(recaptchaToken || null);
+    if (!isHuman) return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
 
     if (!email?.trim()) return NextResponse.json({ error: "Email required" }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {

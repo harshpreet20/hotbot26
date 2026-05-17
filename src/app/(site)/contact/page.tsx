@@ -3,11 +3,13 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Reveal } from "@/components/shared/Reveal";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const { getToken } = useRecaptcha();
 
   const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -17,10 +19,11 @@ export default function ContactPage() {
     if (!form.name.trim() || !emailOk) return;
     setSubmitting(true);
     try {
+      const recaptchaToken = await getToken("contact_form");
       const res = await fetch("/api/forms/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, recaptchaToken }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {

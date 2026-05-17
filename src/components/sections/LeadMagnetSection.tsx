@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Reveal } from "@/components/shared/Reveal";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 const DELIVERABLES = [
   "Full marketing channel audit (where your budget is leaking)",
@@ -14,16 +15,18 @@ export function LeadMagnetSection() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { getToken } = useRecaptcha();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
     try {
+      const recaptchaToken = await getToken("newsletter_form");
       await fetch("/api/forms/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "lead-magnet-audit" }),
+        body: JSON.stringify({ email, source: "lead-magnet-audit", recaptchaToken }),
       });
     } catch {
       // best-effort

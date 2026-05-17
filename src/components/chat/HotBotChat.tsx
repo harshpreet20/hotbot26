@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessages } from "./ChatMessages";
 import { QuickReplies } from "./QuickReplies";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -90,6 +91,7 @@ function CallTab() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const { getToken } = useRecaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,10 +99,11 @@ function CallTab() {
     setLoading(true);
     setError("");
     try {
+      const recaptchaToken = await getToken("callback_form");
       const res = await fetch("/api/forms/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), recaptchaToken }),
       });
       if (!res.ok) {
         setError("Something went wrong. Please try again.");

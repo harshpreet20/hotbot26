@@ -3,11 +3,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 export function Footer() {
   const [email, setEmail] = useState("");
   const [subDone, setSubDone] = useState(false);
   const openForm = useAppStore((s) => s.openForm);
+  const { getToken } = useRecaptcha();
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,10 +17,11 @@ export function Footer() {
     if (!trimmed) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
     try {
+      const recaptchaToken = await getToken("newsletter_footer");
       const res = await fetch("/api/forms/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
+        body: JSON.stringify({ email: trimmed, recaptchaToken }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {

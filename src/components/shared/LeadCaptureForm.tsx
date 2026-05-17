@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 interface LeadCaptureFormProps {
   /** Unique identifier sent to n8n so you know which page the lead came from */
@@ -21,6 +22,7 @@ export function LeadCaptureForm({
   const [done, setDone] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { getToken } = useRecaptcha();
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -33,6 +35,7 @@ export function LeadCaptureForm({
     setSubmitting(true);
     setError(null);
     try {
+      const recaptchaToken = await getToken("lead_form");
       const res = await fetch("/api/forms/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,6 +46,7 @@ export function LeadCaptureForm({
           message: form.message.trim(),
           formType: "enquiry",
           page: sourceId,
+          recaptchaToken,
         }),
       });
       const data = await res.json().catch(() => ({})) as Record<string, unknown>;
