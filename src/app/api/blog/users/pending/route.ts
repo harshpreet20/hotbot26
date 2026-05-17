@@ -1,97 +1,106 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAll, updateById } from "@/lib/store";
-import { isFirebaseEnabled, fbAuth } from "@/lib/firebase";
-import { authorizeRole } from "@/lib/dashboardAuth";
-import type { PendingUser, Role } from "@/types/dashboard";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
+import { authorizeAdmin, extractToken } from "@/lib/dashboardAuth";
+import { log } from "@/lib/logger";
+import type { Role } from "@/types/dashboard";
 
-const COOKIE_NAME = "backdrop_auth";
-
-function getToken(req: NextRequest): string | null {
-  return (
-    req.cookies.get(COOKIE_NAME)?.value ||
-    req.headers.get("authorization")?.replace("Bearer ", "") ||
-    null
-  );
-}
-
-// GET - list pending registrations (admin only)
+// GET - list users pending approval (admin only)
 export async function GET(req: NextRequest) {
-  if (!await authorizeRole(getToken(req), "admin")) {
+  const session = await authorizeAdmin(extractToken(req));
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const pending = await readAll<PendingUser>("pending_users");
-  return NextResponse.json({ pending: pending.filter((u) => u.status === "pending") });
+
+  if (!isSupabaseEnabled()) {
+    return NextResponse.json({ pending: [] });
+  }
+
+  const { data, error } = await sb()
+    .from("backdrop_users")
+    .select("id, email, username, role, status, created_at")
+    .in("status", ["pending_email", "pending_approval"])
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to fetch pending users." }, { status: 500 });
+  }
+
+  // Normalise to the shape the dashboard UI expects
+  const pending = (data || []).map((u) => ({
+    id:            u.id,
+    name:          u.username || u.email,
+    email:         u.email,
+    requestedRole: u.role,
+    status:        u.status === "pending_approval" ? "pending" : u.status,
+    createdAt:     u.created_at,
+  }));
+
+  return NextResponse.json({ pending });
 }
 
-// PATCH - approve or reject
+// PATCH - approve or reject a pending user
 export async function PATCH(req: NextRequest) {
-  if (!await authorizeRole(getToken(req), "admin")) {
+  const session = await authorizeAdmin(extractToken(req));
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!isSupabaseEnabled()) {
+    return NextResponse.json({ error: "Supabase not configured." }, { status: 503 });
   }
 
   let body: { id?: string; action?: string; role?: string };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
 
-  const { id, action } = body;
+  const { id, action, role: roleOverride } = body;
   if (!id || !action) return NextResponse.json({ error: "id and action are required." }, { status: 400 });
 
-  const all     = await readAll<PendingUser>("pending_users");
-  const pending = all.find((u) => u.id === id);
-  if (!pending) return NextResponse.json({ error: "Pending user not found." }, { status: 404 });
+  const { data: userRow, error: fetchErr } = await sb()
+    .from("backdrop_users")
+    .select("email, role, status")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr || !userRow) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
 
   if (action === "reject") {
-    await updateById<PendingUser>("pending_users", id, { status: "rejected" });
+    const { error } = await sb().from("backdrop_users").update({
+      status:     "rejected",
+      updated_at: new Date().toISOString(),
+    }).eq("id", id);
+
+    if (error) return NextResponse.json({ error: "Failed to reject user." }, { status: 500 });
+
+    log.info("users.reject", `User rejected: "${userRow.email}" by "${session.username}"`, {
+      details: { targetId: id },
+    });
     return NextResponse.json({ success: true });
   }
 
   if (action === "approve") {
-    // Admin may override the requested role
-    const role = ((body.role as Role) || pending.requestedRole) as Role;
+    const finalRole = (roleOverride as Role) || (userRow.role as Role);
 
-    if (!isFirebaseEnabled()) {
-      return NextResponse.json(
-        { error: "Firebase not configured. Set FIREBASE_* env vars to enable user approval." },
-        { status: 503 },
-      );
-    }
+    const { error: updateErr } = await sb().from("backdrop_users").update({
+      status:      "approved",
+      role:        finalRole,
+      approved_by: session.username,
+      approved_at: new Date().toISOString(),
+      updated_at:  new Date().toISOString(),
+    }).eq("id", id);
 
-    try {
-      // Create Firebase user - password is empty so they must use the reset link to set one
-      const { randomBytes } = await import("crypto");
-      const fbUser = await fbAuth().createUser({
-        email:         pending.email,
-        displayName:   pending.name,
-        password:      randomBytes(16).toString("hex"), // temp, user resets via link
-        emailVerified: true,
-      });
-      await fbAuth().setCustomUserClaims(fbUser.uid, { role });
+    if (updateErr) return NextResponse.json({ error: "Failed to approve user." }, { status: 500 });
 
-      // Generate password setup link so user can set their own password
-      let resetLink: string | null = null;
-      try {
-        resetLink = await fbAuth().generatePasswordResetLink(pending.email);
-      } catch {
-        // Non-fatal: link can be resent later from Firebase console
-      }
+    log.info("users.approve", `User approved: "${userRow.email}" as ${finalRole} by "${session.username}"`, {
+      details: { targetId: id, role: finalRole },
+    });
 
-      await updateById<PendingUser>("pending_users", id, { status: "approved" });
-
-      return NextResponse.json({
-        success:   true,
-        message:   `Account created for ${pending.email}. Password setup link sent.`,
-        resetLink: resetLink ?? "Could not generate - send from Firebase Console",
-        user:      { id: fbUser.uid, name: pending.name, email: pending.email, role },
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      // Firebase "email already exists" error
-      if (msg.includes("already exists")) {
-        return NextResponse.json({ error: "A Firebase account with this email already exists." }, { status: 409 });
-      }
-      console.error("[pending] Firebase createUser error:", err);
-      return NextResponse.json({ error: "Failed to create account." }, { status: 500 });
-    }
+    return NextResponse.json({
+      success: true,
+      message: `Access granted for ${userRow.email}. They can now sign in.`,
+    });
   }
 
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });

@@ -1,10 +1,10 @@
 /**
- * Password reset via Firebase — sends a reset email to the given address.
+ * Password reset via Supabase Auth — sends a reset email to the given address.
  * Public endpoint (no auth required) — rate-limited to 3 attempts per 5 min per IP.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
-import { resolveLoginEmail } from "@/lib/firebase";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { log } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
@@ -24,56 +24,38 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 }); }
 
-  const identifier = (body.email || "").trim();
-  if (!identifier) {
+  const email = (body.email || "").trim().toLowerCase();
+  if (!email) {
     return NextResponse.json({ success: false, error: "Email is required." }, { status: 400 });
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-  if (!apiKey) {
-    log.error("auth.reset", `Password reset failed — NEXT_PUBLIC_FIREBASE_API_KEY not set`, { ip });
+  if (!isSupabaseEnabled()) {
     return NextResponse.json(
-      { success: false, error: "Firebase not configured. Contact your administrator." },
+      { success: false, error: "Password reset not available. Contact your administrator." },
       { status: 503 },
     );
   }
 
-  const email = resolveLoginEmail(identifier);
+  const baseUrl    = process.env.NEXT_PUBLIC_SITE_URL || "https://hotbotstudios.com";
+  const redirectTo = `${baseUrl}/enter/backdrop/reset-password`;
 
   try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
-      {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ requestType: "PASSWORD_RESET", email }),
-        signal:  AbortSignal.timeout(8_000),
-      },
-    );
-
-    const data = await res.json() as { email?: string; error?: { message?: string } };
-
-    if (!res.ok) {
-      const raw = data.error?.message ?? "unknown";
-      log.warn("auth.reset", `Password reset failed for "${email}" — ${raw}`, { ip, details: { raw } });
-
-      // Firebase returns EMAIL_NOT_FOUND but we don't expose this to prevent enumeration
-      return NextResponse.json({
-        success: true,
-        message: "If an account with that email exists, a reset link has been sent.",
-      });
+    const { error } = await sb().auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) {
+      log.warn("auth.reset", `Reset failed for "${email}" — ${error.message}`, { ip });
+    } else {
+      log.info("auth.reset", `Password reset email sent to "${email}"`, { ip });
     }
-
-    log.info("auth.reset", `Password reset email sent to "${email}"`, { ip });
+    // Always return success to prevent email enumeration
     return NextResponse.json({
       success: true,
-      message: "Password reset email sent. Check your inbox (and spam folder).",
+      message: "If an account with that email exists, a password reset link has been sent.",
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error("auth.reset", `Password reset network error for "${email}"`, { ip, details: { error: msg } });
+    log.error("auth.reset", `Password reset error for "${email}"`, { ip, details: { error: msg } });
     return NextResponse.json(
-      { success: false, error: "Unable to reach authentication server. Try again." },
+      { success: false, error: "Unable to process reset. Please try again." },
       { status: 503 },
     );
   }

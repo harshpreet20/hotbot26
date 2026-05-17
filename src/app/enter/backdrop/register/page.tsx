@@ -3,6 +3,15 @@ import Image from "next/image";
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 
+const inputStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  outline: "none",
+  transition: "border-color 0.15s",
+};
+const focusStyle = { borderColor: "rgba(99,102,241,0.6)" };
+const blurStyle  = { borderColor: "rgba(255,255,255,0.12)" };
+
 const ROLES = [
   { value: "manager",      label: "Manager",      desc: "CRM data, reports, team oversight" },
   { value: "sales",        label: "Sales",         desc: "Lead management & pipeline" },
@@ -15,36 +24,31 @@ const ROLES = [
 
 type RequestRole = typeof ROLES[number]["value"];
 
-const inputStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  outline: "none",
-  transition: "border-color 0.15s",
-};
-const focusStyle = { borderColor: "rgba(99,102,241,0.6)" };
-const blurStyle  = { borderColor: "rgba(255,255,255,0.12)" };
-
 export default function RegisterPage() {
-  const [name, setName]   = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole]   = useState<RequestRole>("contributor");
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [success, setSuccess] = useState(false);
+  const [name, setName]         = useState("");
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole]         = useState<RequestRole>("contributor");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name.trim() || !email.trim()) { setError("All fields are required."); return; }
+    if (!name.trim() || !email.trim() || !password.trim()) { setError("All fields are required."); return; }
+    if (password.trim().length < 8) { setError("Password must be at least 8 characters."); return; }
     setLoading(true);
     try {
       const res  = await fetch("/api/blog/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), requestedRole: role }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password: password.trim(), requestedRole: role }),
       });
       const data = await res.json() as { success: boolean; message?: string; error?: string };
       if (!res.ok || !data.success) { setError(data.error || "Something went wrong."); return; }
+      setSuccessMsg(data.message || "Request submitted.");
       setSuccess(true);
     } catch {
       setError("Connection error. Please try again.");
@@ -82,8 +86,7 @@ export default function RegisterPage() {
             </div>
             <p className="text-white font-semibold text-sm">Request submitted!</p>
             <p className="text-slate-400 text-xs leading-relaxed">
-              The admin will review your request. Once approved, you&apos;ll receive an email at{" "}
-              <strong className="text-slate-300">{email}</strong> with a link to set your password.
+              {successMsg || "Check your email for next steps."}
             </p>
             <Link href="/enter/backdrop" className="block mt-2 text-indigo-400 hover:text-indigo-300 text-xs transition-colors">
               Back to login
@@ -109,6 +112,16 @@ export default function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)} disabled={loading}
                 className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
                 style={inputStyle} placeholder="you@hotbotstudios.com"
+                onFocus={(e) => Object.assign(e.target.style, focusStyle)}
+                onBlur={(e)  => Object.assign(e.target.style, blurStyle)} />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Password</label>
+              <input id="password" type="password" autoComplete="new-password" value={password}
+                onChange={(e) => setPassword(e.target.value)} disabled={loading}
+                className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 disabled:opacity-60"
+                style={inputStyle} placeholder="Min. 8 characters"
                 onFocus={(e) => Object.assign(e.target.style, focusStyle)}
                 onBlur={(e)  => Object.assign(e.target.style, blurStyle)} />
             </div>

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
-import {
-  isFirebaseEnabled,
-  verifyFirebasePassword,
-  fbAuth,
-} from "@/lib/firebase";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { getUserByUsername, getEnvFallbackUser, BOOTSTRAP_USER } from "@/lib/adminStore";
 import { rateLimit } from "@/lib/rateLimit";
 import { log } from "@/lib/logger";
@@ -50,49 +46,31 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ needsSetup: false, authenticated: false });
 }
 
-// ── Bootstrap: auto-promote first Firebase user to super_admin ───────────────
-async function bootstrapSuperAdmin(uid: string, email: string): Promise<Role> {
+// ── Bootstrap: auto-promote first Supabase user to super_admin ───────────────
+async function bootstrapSupabaseAdmin(userId: string, email: string): Promise<Role> {
   try {
-    const list = await fbAuth().listUsers(1000);
-    const hasSuperAdmin = list.users.some(
-      (u) => (u.customClaims as Record<string, unknown> | null)?.role === "super_admin",
-    );
-    if (!hasSuperAdmin) {
-      await fbAuth().setCustomUserClaims(uid, { role: "super_admin" });
-      log.info("auth.bootstrap", `First user promoted to super_admin`, { details: { email } });
+    const { count } = await sb()
+      .from("backdrop_users")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "approved");
+    if (!count || count === 0) {
+      await sb().from("backdrop_users").upsert({
+        id:         userId,
+        email,
+        username:   email.split("@")[0],
+        role:       "super_admin",
+        status:     "approved",
+        updated_at: new Date().toISOString(),
+      });
+      log.info("auth.bootstrap", `First user bootstrapped as super_admin`, { details: { email } });
       return "super_admin";
     }
   } catch (err) {
-    log.warn("auth.bootstrap", "Bootstrap check failed (non-fatal)", {
+    log.warn("auth.bootstrap", "Bootstrap check failed", {
       details: { error: err instanceof Error ? err.message : String(err), email },
     });
   }
   return "agent";
-}
-
-// ── Human-readable error messages for each Firebase failure code ──────────────
-function firebaseErrorMessage(code: string): string {
-  switch (code) {
-    case "NO_API_KEY":
-      return "Firebase API key is not configured on this server. Contact your administrator.";
-    case "API_KEY_INVALID":
-      return "Firebase API key is invalid or belongs to a different project. Contact your administrator.";
-    case "USER_NOT_FOUND":
-    case "INVALID_CREDENTIALS":
-      return "Invalid email or password.";
-    case "USER_DISABLED":
-      return "This account has been disabled. Contact your administrator.";
-    case "TOO_MANY_ATTEMPTS":
-      return "Account temporarily locked due to too many failed attempts. Please wait a few minutes or reset your password in Firebase Console.";
-    case "TIMEOUT":
-      return "Authentication server timed out. Please try again.";
-    case "NETWORK_ERROR":
-      return "Unable to reach authentication server. Please check your connection and try again.";
-    case "FIREBASE_ADMIN_ERROR":
-      return "Firebase Admin SDK error. Check server logs.";
-    default:
-      return "Invalid email or password.";
-  }
 }
 
 // ── POST - login ──────────────────────────────────────────────────────────────
@@ -125,12 +103,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Mask password in logs — only log whether it was provided
   log.info("auth.attempt", `Login attempt for "${username}"`, {
     ip,
     username,
     details: {
-      method:   isFirebaseEnabled() ? "firebase" : "bcrypt",
+      method:   isSupabaseEnabled() ? "supabase" : "bcrypt",
       ua,
       hasEmail: !!username,
     },
@@ -140,40 +117,93 @@ export async function POST(req: NextRequest) {
   let resolvedUsername: string;
   let role: Role;
 
-  if (isFirebaseEnabled()) {
-    const result = await verifyFirebasePassword(username, password);
+  if (isSupabaseEnabled()) {
+    // ── Supabase Auth path ──────────────────────────────────────────────────
+    const { data: authData, error: authError } = await sb().auth.signInWithPassword({
+      email:    username,
+      password,
+    });
 
-    if (!result.ok) {
-      const message = firebaseErrorMessage(result.code);
-      const status  = result.code === "TOO_MANY_ATTEMPTS" ? 429
-                    : result.code === "USER_DISABLED"      ? 403
-                    : 401;
-
-      log.error("auth.failure", `Login failed for "${username}" — ${result.code}`, {
-        ip,
-        username,
-        details: {
-          errorCode: result.code,
-          rawError:  result.raw ?? null,
-          method:    "firebase",
-          ua,
-          hint:      getHint(result.code),
-        },
+    if (authError || !authData?.user) {
+      const errMsg = authError?.message ?? "invalid_credentials";
+      log.error("auth.failure", `Login failed for "${username}" — ${errMsg}`, {
+        ip, username,
+        details: { method: "supabase", errorCode: errMsg, ua },
       });
 
-      return NextResponse.json({ success: false, error: message }, { status });
+      if (errMsg.toLowerCase().includes("not confirmed")) {
+        return NextResponse.json(
+          { success: false, error: "Please verify your email address before signing in." },
+          { status: 401 },
+        );
+      }
+
+      return NextResponse.json(
+        { success: false, error: "Invalid email or password." },
+        { status: 401 },
+      );
     }
 
-    userId           = result.uid;
-    resolvedUsername = result.email;
-    role             = result.role;
+    const supabaseUser = authData.user;
 
-    // Auto-promote: first Firebase user with no role becomes super_admin
-    if (role === "agent") {
-      role = await bootstrapSuperAdmin(result.uid, result.email);
+    // Look up backdrop_users for role / status
+    const { data: userRow } = await sb()
+      .from("backdrop_users")
+      .select("id, email, username, role, status")
+      .eq("id", supabaseUser.id)
+      .single();
+
+    if (!userRow) {
+      // Bootstrap: first ever user becomes super_admin
+      role = await bootstrapSupabaseAdmin(supabaseUser.id, supabaseUser.email ?? username);
+      if (role !== "super_admin") {
+        log.error("auth.failure", `No backdrop_users record for "${username}"`, {
+          ip, username, details: { uid: supabaseUser.id },
+        });
+        return NextResponse.json(
+          { success: false, error: "Account not found in directory. Contact your administrator." },
+          { status: 403 },
+        );
+      }
+      userId           = supabaseUser.id;
+      resolvedUsername = (supabaseUser.email ?? username).split("@")[0];
+    } else {
+      let status = userRow.status as string;
+
+      // Auto-advance: if Supabase has confirmed their email, move past pending_email
+      if (status === "pending_email") {
+        const { data: authUser } = await sb().auth.admin.getUserById(supabaseUser.id);
+        if (authUser?.user?.email_confirmed_at) {
+          await sb().from("backdrop_users").update({
+            status:     "pending_approval",
+            updated_at: new Date().toISOString(),
+          }).eq("id", supabaseUser.id);
+          status = "pending_approval";
+        }
+      }
+
+      const statusErrors: Record<string, { msg: string; code: number }> = {
+        pending_email:    { msg: "Please verify your email address. Check your inbox for the verification link.", code: 401 },
+        pending_approval: { msg: "Your account is awaiting administrator approval.", code: 403 },
+        rejected:         { msg: "Your access request was declined. Contact your administrator.", code: 403 },
+        suspended:        { msg: "Your account has been suspended. Contact your administrator.", code: 403 },
+      };
+
+      if (status !== "approved") {
+        const info = statusErrors[status] ?? { msg: "Account access not granted.", code: 403 };
+        log.warn("auth.blocked", `Login blocked for "${username}" — status: ${status}`, {
+          ip, username, details: { status },
+        });
+        return NextResponse.json({ success: false, error: info.msg }, { status: info.code });
+      }
+
+      userId           = userRow.id as string;
+      resolvedUsername = (userRow.username as string) || (userRow.email as string);
+      role             = userRow.role as Role;
     }
+
   } else {
-    // Legacy bcrypt path
+    // ── Legacy bcrypt path ──────────────────────────────────────────────────
     const { default: bcrypt } = await import("bcryptjs");
     const envUser = getEnvFallbackUser();
     let user = (envUser && envUser.username.toLowerCase() === username.toLowerCase())
@@ -182,8 +212,7 @@ export async function POST(req: NextRequest) {
 
     if (!user || user.username.toLowerCase() !== username.toLowerCase()) {
       log.error("auth.failure", `Login failed for "${username}" — user not found (bcrypt)`, {
-        ip,
-        username,
+        ip, username,
         details: { method: "bcrypt", ua, errorCode: "USER_NOT_FOUND" },
       });
       return NextResponse.json(
@@ -199,8 +228,7 @@ export async function POST(req: NextRequest) {
     }
     if (!passwordOk) {
       log.error("auth.failure", `Login failed for "${username}" — wrong password (bcrypt)`, {
-        ip,
-        username,
+        ip, username,
         details: { method: "bcrypt", ua, errorCode: "INVALID_PASSWORD" },
       });
       return NextResponse.json(
@@ -234,7 +262,7 @@ export async function POST(req: NextRequest) {
     ip,
     username: resolvedUsername,
     userId,
-    details: { role, method: isFirebaseEnabled() ? "firebase" : "bcrypt", ua },
+    details: { role, method: isSupabaseEnabled() ? "supabase" : "bcrypt", ua },
   });
 
   const res = NextResponse.json({
@@ -266,26 +294,4 @@ export async function DELETE(req: NextRequest) {
   const res = NextResponse.json({ success: true });
   res.cookies.set(COOKIE_NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;
-}
-
-// ── Diagnostic hints for failure codes ───────────────────────────────────────
-function getHint(code: string): string {
-  switch (code) {
-    case "NO_API_KEY":
-      return "Add NEXT_PUBLIC_FIREBASE_API_KEY to Vercel environment variables and redeploy.";
-    case "API_KEY_INVALID":
-      return "The API key in Vercel does not match the Firebase project. Get the correct Web API Key from Firebase Console → Project Settings → General.";
-    case "USER_NOT_FOUND":
-      return "No Firebase account with this email in this project. Create the user in Firebase Console → Authentication → Users.";
-    case "INVALID_CREDENTIALS":
-      return "Wrong password. Reset it in Firebase Console → Authentication → Users → click user → Reset Password.";
-    case "USER_DISABLED":
-      return "Account is disabled. Re-enable it in Firebase Console → Authentication → Users.";
-    case "TOO_MANY_ATTEMPTS":
-      return "Account locked by Firebase. Wait ~1 hour or go to Firebase Console → Authentication → Users → click user → Reset Password.";
-    case "FIREBASE_ADMIN_ERROR":
-      return "Admin SDK credentials may be wrong. Verify FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL in Vercel match the correct Firebase project.";
-    default:
-      return "Check Vercel Function logs for the full error trace.";
-  }
 }

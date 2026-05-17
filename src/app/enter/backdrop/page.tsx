@@ -1,13 +1,15 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect, useRef, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function BackdropLoginPage() {
-  const router = useRouter();
+function BackdropLoginContent() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername]     = useState("");
   const [password, setPassword]     = useState("");
   const [error, setError]           = useState("");
+  const [notice, setNotice]         = useState("");
   const [loading, setLoading]       = useState(false);
   const [checking, setChecking]     = useState(true);
 
@@ -46,7 +48,12 @@ export default function BackdropLoginPage() {
     }
   }
 
-  useEffect(() => { checkSession(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (searchParams.get("verified") === "1") {
+      setNotice("Email verified! Your access request is pending administrator approval.");
+    }
+    checkSession(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     function onVisibility() {
@@ -201,6 +208,14 @@ export default function BackdropLoginPage() {
             />
           </div>
 
+          {notice && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-sm text-emerald-400"
+              style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)" }}>
+              <span className="shrink-0 mt-0.5 text-xs">✓</span>
+              <span>{notice}</span>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-sm text-red-400"
               style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
@@ -271,7 +286,7 @@ export default function BackdropLoginPage() {
             </div>
 
             <p className="text-slate-400 text-sm">
-              Enter your Firebase account email. We&apos;ll send a password reset link via Firebase.
+              Enter your account email. We&apos;ll send a password reset link.
             </p>
 
             <form onSubmit={handleReset} className="space-y-3">
@@ -304,17 +319,32 @@ export default function BackdropLoginPage() {
             <div className="border-t border-white/[0.06] pt-3 space-y-1">
               <p className="text-slate-600 text-xs font-medium uppercase tracking-wider">Can&apos;t access your email?</p>
               <p className="text-slate-600 text-xs">
-                Go to{" "}
-                <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer"
+                Contact your administrator to reset your account via the{" "}
+                <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer"
                   className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
-                  Firebase Console
+                  Supabase Dashboard
                 </a>
-                {" "}→ Authentication → Users → find your account → Reset Password.
+                {" "}→ Authentication → Users.
               </p>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function BackdropLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0e1a" }}>
+        <svg className="animate-spin h-7 w-7 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+      </div>
+    }>
+      <BackdropLoginContent />
+    </Suspense>
   );
 }
