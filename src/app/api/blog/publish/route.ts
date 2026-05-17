@@ -15,7 +15,7 @@ function extractToken(req: NextRequest): string | null {
 async function isPublishAuthorized(secret: string | null | undefined): Promise<boolean> {
   if (!secret) return false;
   const session = await getSession(secret);
-  if (session?.role === "admin") return true;
+  if (session && ["super_admin", "admin", "editor"].includes(session.role)) return true;
   const ps = getPublishSecret();
   return !!ps && secret === ps;
 }

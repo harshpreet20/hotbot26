@@ -3,7 +3,7 @@ import sharp from "sharp";
 import fs from "fs";
 import path from "path";
 
-const PUBLISH_SECRET = process.env.BLOG_PUBLISH_SECRET || "hotbot-blog-secret-2026";
+const PUBLISH_SECRET = process.env.BLOG_PUBLISH_SECRET ?? "";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "images", "blog");
 
 const MAX_WIDTH = 1200;

@@ -77,7 +77,11 @@ export async function POST(req: NextRequest) {
       createdBy:   session.username,
       createdAt:   new Date().toISOString(),
     };
-    await insert<TeamChannel>("team_channels", channel);
+    try {
+      await insert<TeamChannel>("team_channels", channel);
+    } catch {
+      return NextResponse.json({ error: "Failed to create channel." }, { status: 500 });
+    }
     return NextResponse.json({ channel }, { status: 201 });
   }
 
@@ -97,7 +101,11 @@ export async function POST(req: NextRequest) {
     replyTo:   body.replyTo,
   };
 
-  await insert<TeamMessage>("team_messages", message);
+  try {
+    await insert<TeamMessage>("team_messages", message);
+  } catch {
+    return NextResponse.json({ error: "Failed to send message." }, { status: 500 });
+  }
   return NextResponse.json({ message }, { status: 201 });
 }
 

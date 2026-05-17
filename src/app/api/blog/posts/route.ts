@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (status !== "published") {
     const token   = extractToken(req);
     const session = token ? await getSession(token) : null;
-    if (!session || session.role !== "admin") {
+    if (!session || !["super_admin", "admin", "editor", "contributor"].includes(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

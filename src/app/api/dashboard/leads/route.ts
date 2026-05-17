@@ -48,7 +48,13 @@ export async function POST(req: NextRequest) {
     notes:      body.notes,
     tags:       body.tags,
   };
-  await insert<Lead>("leads", lead);
+  try {
+    await insert<Lead>("leads", lead);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[leads] insert error:", msg);
+    return NextResponse.json({ error: "Failed to create lead. Database error." }, { status: 500 });
+  }
   return NextResponse.json({ lead }, { status: 201 });
 }
 

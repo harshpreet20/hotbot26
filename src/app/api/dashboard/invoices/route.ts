@@ -85,7 +85,13 @@ export async function POST(req: NextRequest) {
     leadId:        body.leadId,
   };
 
-  await insert<Invoice>("invoices", invoice);
+  try {
+    await insert<Invoice>("invoices", invoice);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[invoices] insert error:", msg);
+    return NextResponse.json({ error: "Failed to create invoice. Database error." }, { status: 500 });
+  }
   return NextResponse.json({ invoice }, { status: 201 });
 }
 

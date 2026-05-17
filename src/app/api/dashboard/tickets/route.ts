@@ -84,7 +84,11 @@ export async function POST(req: NextRequest) {
   // Fix ticketId on the activity entry
   ticket.activity![0].ticketId = ticket.id;
 
-  await insert<Ticket>("tickets", ticket);
+  try {
+    await insert<Ticket>("tickets", ticket);
+  } catch {
+    return NextResponse.json({ error: "Failed to create ticket." }, { status: 500 });
+  }
   return NextResponse.json({ ticket }, { status: 201 });
 }
 
@@ -199,7 +203,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!["super_admin", "admin"].includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

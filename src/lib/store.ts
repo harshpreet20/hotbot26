@@ -89,12 +89,9 @@ export async function insert<T>(table: string, item: T): Promise<void> {
       .from(table)
       .insert(toSnake(item as Record<string, unknown>));
     if (error) {
-      console.error(`[store] insert(${table}) Supabase error - falling back to filesystem:`, error.message);
-      // Fall back to filesystem so data is never silently lost
-      const items = fsRead<T>(table);
-      items.unshift(item);
-      fsWrite(table, items);
-      return;
+      // Throw so callers can return a proper error response instead of silently
+      // writing to /tmp (ephemeral on Vercel — data would be lost immediately).
+      throw new Error(`[store] insert(${table}): ${error.message}`);
     }
     return;
   }

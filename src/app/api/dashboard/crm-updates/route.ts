@@ -29,7 +29,11 @@ export async function POST(req: NextRequest) {
     metadata:  body.metadata,
   };
 
-  await insert<CRMUpdate>("crm_updates", update);
+  try {
+    await insert<CRMUpdate>("crm_updates", update);
+  } catch {
+    return NextResponse.json({ error: "Failed to save update." }, { status: 500 });
+  }
   return NextResponse.json({ update }, { status: 201 });
 }
 

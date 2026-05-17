@@ -52,7 +52,13 @@ export async function POST(req: NextRequest) {
     invoiceId:   body.invoiceId,
   };
 
-  await insert<CRMTask>("crm_tasks", task);
+  try {
+    await insert<CRMTask>("crm_tasks", task);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[tasks] insert error:", msg);
+    return NextResponse.json({ error: "Failed to create task. Database error." }, { status: 500 });
+  }
   return NextResponse.json({ task }, { status: 201 });
 }
 
