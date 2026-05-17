@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
-import type { CallbackRequest } from "@/types/dashboard";
+import type { CallbackRequest, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN = 0.4;
@@ -47,6 +47,27 @@ export async function POST(req: NextRequest) {
     };
 
     await insert<CallbackRequest>("callbacks", callback);
+
+    // Also create a CRM lead
+    const lead: Lead = {
+      id:          newId(),
+      name:        name.trim(),
+      email:       "",
+      phone:       phone.trim(),
+      company:     "",
+      service:     "Callback Request",
+      budget:      "",
+      message:     "Requested a callback via chatbot.",
+      formType:    "callback",
+      source:      "chatbot-call-tab",
+      ip,
+      createdAt:   new Date().toISOString(),
+      status:      "new",
+    };
+    await insert<Lead>("leads", lead).catch((err) =>
+      console.error("[callback] lead insert failed:", err)
+    );
+
     return NextResponse.json({ success: true, message: "Confirmed! We'll call you back shortly." });
   } catch (error) {
     console.error("[callback] error:", error);

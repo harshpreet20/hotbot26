@@ -209,11 +209,69 @@ function CallTab() {
   );
 }
 
+// ─── Pre-chat form ────────────────────────────────────────────────────────────
+function PreChatForm({ onDone }: { onDone: (name: string, email: string, phone: string) => void }) {
+  const [name, setName]   = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [err, setErr]     = useState("");
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { setErr("Please enter your name."); return; }
+    if (!emailOk)     { setErr("Please enter a valid email."); return; }
+    onDone(name.trim(), email.trim(), phone.trim());
+  };
+
+  return (
+    <div className="flex-1 flex flex-col justify-center px-5 py-4 gap-4">
+      <div className="text-center">
+        <p className="text-white font-semibold text-sm mb-1">Before we chat…</p>
+        <p className="text-slate-400 text-xs leading-relaxed">Just a quick intro so HotBot can personalise your experience.</p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <input
+          type="text" value={name} onChange={(e) => setName(e.target.value)}
+          placeholder="Your name *"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        <input
+          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email address *"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        <input
+          type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone number (optional)"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        {err && <p className="text-red-400 text-xs">{err}</p>}
+        <button
+          type="submit"
+          disabled={!name.trim() || !emailOk}
+          className="w-full py-3 rounded-xl font-semibold text-white text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+        >
+          Start Chat →
+        </button>
+      </form>
+      <p className="text-slate-600 text-[10px] text-center">Your info helps us follow up and personalise your experience.</p>
+    </div>
+  );
+}
+
 // ─── Main HotBotChat ───────────────────────────────────────────────────────────
 export function HotBotChat() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("chat");
   const [fabHov, setFabHov] = useState(false);
+
+  // Pre-chat form
+  const [preformDone, setPreformDone] = useState(false);
+  const [guestName, setGuestName]     = useState("");
+  const [guestEmail, setGuestEmail]   = useState("");
+  const [guestPhone, setGuestPhone]   = useState("");
 
   // Chat state
   const [msgs, setMsgs] = useState<Message[]>([
@@ -246,13 +304,16 @@ export function HotBotChat() {
     setInput("");
     setTyping(true);
     const controller = new AbortController();
+    const history = msgs.slice(-10).map((m) => ({ role: m.role, content: m.text }));
     try {
       const res = await fetch("/api/forms/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: msgs.slice(-10).map((m) => ({ role: m.role, content: m.text })),
+          history,
+          // Pass guest info only on the first message so the API can create a lead
+          ...(history.length === 0 && guestName ? { guestName, guestEmail, guestPhone } : {}),
         }),
         signal: controller.signal,
       });
@@ -273,7 +334,7 @@ export function HotBotChat() {
     } finally {
       setTyping(false);
     }
-  }, [msgs]);
+  }, [msgs, guestName, guestEmail, guestPhone]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -393,7 +454,14 @@ export function HotBotChat() {
           </div>
 
           {/* Tab content */}
-          {tab === "chat" && (
+          {tab === "chat" && !preformDone && (
+            <PreChatForm onDone={(n, e, p) => {
+              setGuestName(n); setGuestEmail(e); setGuestPhone(p);
+              setMsgs([{ role: "bot", text: `Hi ${n}! I'm HotBot. How can I help you today?`, ts: Date.now() }]);
+              setPreformDone(true);
+            }} />
+          )}
+          {tab === "chat" && preformDone && (
             <>
               <ChatMessages msgs={msgs} typing={typing} scrollRef={scrollRef} />
               {msgs.length <= 2 && <QuickReplies onSelect={sendMsg} />}

@@ -43,13 +43,14 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const cleanWhatsapp = whatsappOptIn ? (whatsapp?.trim() || "") : "";
 
+    const resolvedSource = (body as { source?: string }).source?.trim() || "newsletter-signup";
     const subscriber: NewsletterSubscriber = {
       id:            newId(),
       name:          name?.trim() || "",
       email:         email.trim(),
       whatsapp:      cleanWhatsapp,
       whatsappOptIn: whatsappOptIn ?? false,
-      source:        "newsletter-signup",
+      source:        resolvedSource,
       createdAt:     now,
     };
     await insert<NewsletterSubscriber>("newsletter", subscriber);
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
         ? `Newsletter opt-in. WhatsApp: ${cleanWhatsapp}`
         : "Newsletter opt-in.",
       formType:    "newsletter",
-      source:      "newsletter-signup",
+      source:      resolvedSource,
       ip,
       createdAt:   now,
       status:      "new",
@@ -75,11 +76,14 @@ export async function POST(req: NextRequest) {
       lastUpdatedAt: now,
       lastUpdatedBy: "system",
     };
-    await insert<Lead>("leads", lead);
+    // Lead insert is best-effort — don't block the newsletter subscription
+    await insert<Lead>("leads", lead).catch((err) =>
+      console.error("[newsletter] lead insert failed:", err)
+    );
 
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
     console.error("[newsletter] error:", error);
-    return NextResponse.json({ success: true, message: "Thanks for subscribing!" });
+    return NextResponse.json({ error: "Failed to subscribe. Please try again." }, { status: 500 });
   }
 }

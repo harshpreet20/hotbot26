@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
-import type { Contact } from "@/types/dashboard";
+import type { Contact, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN = 0.4;
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
+    const now = new Date().toISOString();
     const contact: Contact = {
       id:        newId(),
       name:      name.trim(),
@@ -45,9 +46,32 @@ export async function POST(req: NextRequest) {
       subject:   subject || "",
       message:   message || "",
       source:    "contact-page",
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     };
     await insert<Contact>("contacts", contact);
+
+    // Also create a CRM lead so the sales team sees it
+    const lead: Lead = {
+      id:          newId(),
+      name:        name.trim(),
+      email:       email.trim(),
+      phone:       phone || "",
+      company:     "",
+      service:     subject || "General Inquiry",
+      budget:      "",
+      message:     message || "",
+      formType:    "contact",
+      source:      "contact-page",
+      ip,
+      createdAt:   now,
+      status:      "new",
+      lastUpdatedAt: now,
+      lastUpdatedBy: "system",
+    };
+    await insert<Lead>("leads", lead).catch((err) =>
+      console.error("[contact] lead insert failed:", err)
+    );
+
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });
   } catch (error) {
     console.error("[contact form] error:", error);

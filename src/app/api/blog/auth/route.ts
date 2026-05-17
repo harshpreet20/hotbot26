@@ -119,8 +119,11 @@ export async function POST(req: NextRequest) {
 
   if (isSupabaseEnabled()) {
     // ── Supabase Auth path ──────────────────────────────────────────────────
+    // Support both email logins and short usernames (admin-created accounts use
+    // the synthetic domain @hotbotstudios.internal)
+    const loginEmail = username.includes("@") ? username : `${username}@hotbotstudios.internal`;
     const { data: authData, error: authError } = await sb().auth.signInWithPassword({
-      email:    username,
+      email:    loginEmail,
       password,
     });
 

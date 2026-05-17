@@ -435,6 +435,16 @@ function ShareInvoicePanel({ invoiceId, invoiceNumber }: { invoiceId: string; in
         >
           ↗ Preview
         </a>
+        <a
+          href={`${publicUrl}?print=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => { e.preventDefault(); const w = window.open(publicUrl, "_blank"); w?.addEventListener("load", () => w.print()); }}
+          className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+          style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.25)", textDecoration: "none" }}
+        >
+          ⬇ Download PDF
+        </a>
       </div>
     </div>
   );

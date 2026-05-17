@@ -116,14 +116,14 @@ export async function getAllUsers(): Promise<UserRecord[]> {
 
   if (isSupabaseEnabled()) {
     const { data, error } = await sb()
-      .from("users")
-      .select("id, username, password_hash, role, created_at")
+      .from("backdrop_users")
+      .select("id, email, username, role, status, created_at")
       .order("created_at", { ascending: true });
     if (error) { console.error("[adminStore] getAllUsers:", error.message); return []; }
     return (data ?? []).map((u: Record<string, string>) => ({
       id:           u.id,
-      username:     u.username,
-      passwordHash: u.password_hash,
+      username:     u.username || (u.email ?? "").split("@")[0],
+      passwordHash: "",
       role:         u.role as Role,
       createdAt:    u.created_at,
     }));
@@ -143,16 +143,16 @@ export async function getUserByUsername(username: string): Promise<UserRecord | 
 
   if (isSupabaseEnabled()) {
     const { data, error } = await sb()
-      .from("users")
-      .select("id, username, password_hash, role, created_at")
+      .from("backdrop_users")
+      .select("id, email, username, role, status, created_at")
       .ilike("username", username)
-      .single();
+      .maybeSingle();
     if (!error && data) {
       const u = data as Record<string, string>;
       return {
         id:           u.id,
-        username:     u.username,
-        passwordHash: u.password_hash,
+        username:     u.username || (u.email ?? "").split("@")[0],
+        passwordHash: "",
         role:         u.role as Role,
         createdAt:    u.created_at,
       };
@@ -197,33 +197,55 @@ export async function createUser(opts: {
     };
   }
 
-  // Legacy: bcrypt hash + Supabase/filesystem
-  const { default: bcrypt } = await import("bcryptjs");
-  const passwordHash = await bcrypt.hash(opts.password, 12);
-  const user: UserRecord = {
+  if (isSupabaseEnabled()) {
+    // Create Supabase Auth user with synthetic internal email so the login
+    // flow (which uses Supabase Auth) can authenticate them.
+    const internalEmail = `${opts.username.toLowerCase()}@hotbotstudios.internal`;
+    const { data: authData, error: authError } = await sb().auth.admin.createUser({
+      email:          internalEmail,
+      password:       opts.password,
+      email_confirm:  true,
+    });
+    if (authError || !authData?.user) {
+      throw new Error(`[adminStore] createUser auth: ${authError?.message ?? "unknown"}`);
+    }
+    const now = new Date().toISOString();
+    const { error: dbError } = await sb().from("backdrop_users").insert({
+      id:         authData.user.id,
+      email:      internalEmail,
+      username:   opts.username,
+      role:       opts.role,
+      status:     "approved",
+      created_at: now,
+      updated_at: now,
+    });
+    if (dbError) {
+      await sb().auth.admin.deleteUser(authData.user.id).catch(() => {});
+      throw new Error(`[adminStore] createUser db: ${dbError.message}`);
+    }
+    return {
+      id:           authData.user.id,
+      username:     opts.username,
+      passwordHash: "",
+      role:         opts.role,
+      createdAt:    now,
+    };
+  }
+
+  // Filesystem fallback (dev only)
+  const { default: bcrypt2 } = await import("bcryptjs");
+  const fsHash = await bcrypt2.hash(opts.password, 12);
+  const fsUser: UserRecord = {
     id:           `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`,
     username:     opts.username,
-    passwordHash,
+    passwordHash: fsHash,
     role:         opts.role,
     createdAt:    new Date().toISOString(),
   };
-
-  if (isSupabaseEnabled()) {
-    const { error } = await sb().from("users").insert({
-      id:            user.id,
-      username:      user.username,
-      password_hash: user.passwordHash,
-      role:          user.role,
-      created_at:    user.createdAt,
-    });
-    if (error) throw new Error(`[adminStore] createUser: ${error.message}`);
-    return user;
-  }
-
   const store = fsReadAdmin() ?? { publishSecret: crypto.randomBytes(32).toString("hex"), users: [] };
-  store.users.push(user);
+  store.users.push(fsUser);
   fsWriteAdmin(store);
-  return user;
+  return fsUser;
 }
 
 export async function updateUserRole(userId: string, role: Role): Promise<void> {
@@ -232,7 +254,7 @@ export async function updateUserRole(userId: string, role: Role): Promise<void> 
     return;
   }
   if (isSupabaseEnabled()) {
-    const { error } = await sb().from("users").update({ role }).eq("id", userId);
+    const { error } = await sb().from("backdrop_users").update({ role, updated_at: new Date().toISOString() }).eq("id", userId);
     if (error) throw new Error(`[adminStore] updateUserRole: ${error.message}`);
     return;
   }
@@ -250,8 +272,8 @@ export async function deleteUser(userId: string): Promise<void> {
     return;
   }
   if (isSupabaseEnabled()) {
-    const { error } = await sb().from("users").delete().eq("id", userId);
-    if (error) throw new Error(`[adminStore] deleteUser: ${error.message}`);
+    await sb().from("backdrop_users").delete().eq("id", userId);
+    await sb().auth.admin.deleteUser(userId).catch(() => {});
     return;
   }
   const store = fsReadAdmin();

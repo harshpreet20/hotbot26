@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { insert, newId } from "@/lib/store";
-import type { ChatSession, ChatMessage } from "@/types/dashboard";
+import type { ChatSession, ChatMessage, Lead } from "@/types/dashboard";
 
 const SYSTEM_PROMPT = `You are HotBot, the AI assistant for HotBot Studios - a digital marketing and AI automation agency. Help visitors learn about services, answer pricing and process questions, and guide them toward action (booking a call, filling a form, or contacting via WhatsApp).
 
@@ -16,12 +16,41 @@ export async function POST(req: NextRequest) {
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  let body: { message?: string; history?: { role: string; content: string }[]; sessionId?: string };
+  let body: {
+    message?: string;
+    history?: { role: string; content: string }[];
+    sessionId?: string;
+    guestName?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+  };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ error: "Invalid request" }, { status: 400 }); }
 
   const message = (body.message || "").trim();
   if (!message) return NextResponse.json({ error: "Message required" }, { status: 400 });
+
+  // Create/update CRM lead from pre-form data (first message only)
+  if (body.guestName && body.guestEmail && !body.history?.length) {
+    const lead: Lead = {
+      id:          newId(),
+      name:        body.guestName.trim(),
+      email:       body.guestEmail.trim(),
+      phone:       body.guestPhone?.trim() || "",
+      company:     "",
+      service:     "AI Chat",
+      budget:      "",
+      message:     `Chat started: "${message}"`,
+      formType:    "chat",
+      source:      "chatbot-chat-tab",
+      ip,
+      createdAt:   new Date().toISOString(),
+      status:      "new",
+    };
+    await insert<Lead>("leads", lead).catch((err) =>
+      console.error("[chat] lead insert failed:", err)
+    );
+  }
 
   const history = (body.history || []).slice(-10);
   let botReply = "Thanks for reaching out! Our team will connect with you shortly.";
