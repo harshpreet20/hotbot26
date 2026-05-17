@@ -32,15 +32,22 @@ function getIp(req: NextRequest): string {
 }
 
 // ── GET - validate existing session ──────────────────────────────────────────
-// AUTH TEMPORARILY DISABLED — always returns authenticated to bypass login screen
-export async function GET(_req: NextRequest) {
-  return NextResponse.json({
-    needsSetup:    false,
-    authenticated: true,
-    token:         "bypass",
-    role:          "super_admin",
-    username:      "Admin",
-  });
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  if (token) {
+    const session = await getSession(token);
+    if (session) {
+      return NextResponse.json({
+        needsSetup:      false,
+        authenticated:   true,
+        token,
+        role:            session.role,
+        username:        session.username,
+        isImpersonating: session.isImpersonating,
+      });
+    }
+  }
+  return NextResponse.json({ needsSetup: false, authenticated: false });
 }
 
 // ── Bootstrap: auto-promote first Firebase user to super_admin ───────────────
