@@ -1,13 +1,12 @@
 /**
  * User and publish-secret management.
- * Primary:  Firebase Auth (when FIREBASE_* env vars are set).
- * Fallback: Supabase `users` table + local admin.json (bcrypt).
+ * Primary:  Supabase backdrop_users table.
+ * Fallback: local admin.json (bcrypt) for dev.
  */
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
-import { fbAuth, isFirebaseEnabled, toFirebaseEmail } from "@/lib/firebase";
 import type { AdminStore, UserRecord, Role } from "@/types/dashboard";
 
 // ── Filesystem fallback path ──────────────────────────────────────────────────
@@ -19,7 +18,6 @@ const ADMIN_FILE = process.env.VERCEL
 const ADMIN_DEFAULTS_FILE = path.join(process.cwd(), "data", "admin.defaults.json");
 
 // ── Bootstrap credential (bcrypt fallback only) ───────────────────────────────
-// Used only when Firebase is not configured AND Supabase/filesystem are unavailable.
 const BOOTSTRAP_HASH = "$2b$12$nMk6oS00R.r9/qLpZbClSODAXxibghu4SBa7fv.QqVFUUJqay6Qiu";
 export const BOOTSTRAP_USER: UserRecord = {
   id:           "bootstrap",
@@ -91,29 +89,9 @@ export function getPublishSecret(): string | null {
   return process.env.BLOG_PUBLISH_SECRET || null;
 }
 
-// ── Firebase user helpers ─────────────────────────────────────────────────────
-
-function fbRecordFromUser(u: import("firebase-admin/auth").UserRecord): UserRecord {
-  const claims = u.customClaims as Record<string, string> | null;
-  return {
-    id:           u.uid,
-    username:     (u.email ?? "").replace("@hotbotstudios.internal", ""),
-    passwordHash: "",
-    role:         (claims?.role as Role) ?? "agent",
-    createdAt:    u.metadata.creationTime,
-  };
-}
-
 // ── User CRUD ─────────────────────────────────────────────────────────────────
 
 export async function getAllUsers(): Promise<UserRecord[]> {
-  if (isFirebaseEnabled()) {
-    const result = await fbAuth().listUsers(1000);
-    return result.users
-      .filter((u) => u.email?.endsWith("@hotbotstudios.internal"))
-      .map(fbRecordFromUser);
-  }
-
   if (isSupabaseEnabled()) {
     const { data, error } = await sb()
       .from("backdrop_users")
@@ -132,15 +110,6 @@ export async function getAllUsers(): Promise<UserRecord[]> {
 }
 
 export async function getUserByUsername(username: string): Promise<UserRecord | null> {
-  if (isFirebaseEnabled()) {
-    try {
-      const fbUser = await fbAuth().getUserByEmail(toFirebaseEmail(username));
-      return fbRecordFromUser(fbUser);
-    } catch {
-      return null;
-    }
-  }
-
   if (isSupabaseEnabled()) {
     const { data, error } = await sb()
       .from("backdrop_users")
@@ -169,42 +138,17 @@ export async function getUserByUsername(username: string): Promise<UserRecord | 
   return null;
 }
 
-/**
- * Create a new user.
- * Firebase mode: creates a Firebase Auth account with custom role claim.
- * Legacy mode: stores in Supabase/filesystem with bcrypt hash.
- * Returns the created UserRecord (id is Firebase UID in Firebase mode).
- */
 export async function createUser(opts: {
   username: string;
   password: string;
   role: Role;
 }): Promise<UserRecord> {
-  if (isFirebaseEnabled()) {
-    const fbUser = await fbAuth().createUser({
-      email:         toFirebaseEmail(opts.username),
-      password:      opts.password,
-      displayName:   opts.username,
-      emailVerified: true,
-    });
-    await fbAuth().setCustomUserClaims(fbUser.uid, { role: opts.role });
-    return {
-      id:           fbUser.uid,
-      username:     opts.username.toLowerCase(),
-      passwordHash: "",
-      role:         opts.role,
-      createdAt:    fbUser.metadata.creationTime,
-    };
-  }
-
   if (isSupabaseEnabled()) {
-    // Create Supabase Auth user with synthetic internal email so the login
-    // flow (which uses Supabase Auth) can authenticate them.
     const internalEmail = `${opts.username.toLowerCase()}@hotbotstudios.internal`;
     const { data: authData, error: authError } = await sb().auth.admin.createUser({
-      email:          internalEmail,
-      password:       opts.password,
-      email_confirm:  true,
+      email:         internalEmail,
+      password:      opts.password,
+      email_confirm: true,
     });
     if (authError || !authData?.user) {
       throw new Error(`[adminStore] createUser auth: ${authError?.message ?? "unknown"}`);
@@ -249,10 +193,6 @@ export async function createUser(opts: {
 }
 
 export async function updateUserRole(userId: string, role: Role): Promise<void> {
-  if (isFirebaseEnabled()) {
-    await fbAuth().setCustomUserClaims(userId, { role });
-    return;
-  }
   if (isSupabaseEnabled()) {
     const { error } = await sb().from("backdrop_users").update({ role, updated_at: new Date().toISOString() }).eq("id", userId);
     if (error) throw new Error(`[adminStore] updateUserRole: ${error.message}`);
@@ -267,10 +207,6 @@ export async function updateUserRole(userId: string, role: Role): Promise<void> 
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  if (isFirebaseEnabled()) {
-    await fbAuth().deleteUser(userId);
-    return;
-  }
   if (isSupabaseEnabled()) {
     await sb().from("backdrop_users").delete().eq("id", userId);
     await sb().auth.admin.deleteUser(userId).catch(() => {});
@@ -286,9 +222,7 @@ export async function isSetupNeeded(): Promise<boolean> {
   return false;
 }
 
-/** Env-var fallback user (bcrypt mode only, ignored when Firebase is enabled). */
 export function getEnvFallbackUser(): UserRecord | null {
-  if (isFirebaseEnabled()) return null;
   const hash = process.env.BLOG_ADMIN_PASSWORD_HASH || "";
   if (!hash) return null;
   return {
