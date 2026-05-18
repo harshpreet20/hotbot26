@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, readAll, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendNewsletterWelcome } from "@/lib/resend";
+import { unsubToken } from "@/lib/newsletterEmail";
 import type { NewsletterSubscriber, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -81,6 +83,8 @@ export async function POST(req: NextRequest) {
       console.error("[newsletter] lead insert failed:", err)
     );
 
+    const unsubUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com"}/api/forms/newsletter/unsubscribe?token=${unsubToken(email.trim())}`;
+    sendNewsletterWelcome({ name: name?.trim() || "", email: email.trim(), unsubUrl }).catch(() => {});
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
     console.error("[newsletter] error:", error);

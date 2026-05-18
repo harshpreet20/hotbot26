@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { log } from "@/lib/logger";
+import { sendPasswordResetAcknowledgment } from "@/lib/resend";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
       log.warn("auth.reset", `Reset failed for "${email}" — ${error.message}`, { ip });
     } else {
       log.info("auth.reset", `Password reset email sent to "${email}"`, { ip });
+      sendPasswordResetAcknowledgment(email).catch(() => {});
     }
     // Always return success to prevent email enumeration
     return NextResponse.json({

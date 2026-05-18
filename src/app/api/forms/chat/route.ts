@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { insert, updateById, readWhere, readAll, newId } from "@/lib/store";
+import { sendChatTranscript } from "@/lib/resend";
 import type { ChatSession, ChatMessage, Lead, KnowledgeEntry, Ticket, Client } from "@/types/dashboard";
 
 const SYSTEM_PROMPT = `You are HotBot, the AI assistant for HotBot Studios - a digital marketing and AI automation agency. Help visitors learn about services, answer pricing and process questions, and guide them toward action (booking a call, filling a form, or contacting via WhatsApp).
@@ -127,6 +128,18 @@ export async function POST(req: NextRequest) {
   if (wantsHuman) {
     botReply = "I'm connecting you with a human agent right now. Please hold on — someone from our team will join this conversation shortly. You can continue chatting and they'll see everything.";
     needsHuman = true;
+    if (body.guestEmail) {
+      const transcriptMsgs = [
+        ...(body.history || []).map(m => ({ role: m.role as "user" | "bot", text: m.content })),
+        { role: "user" as const, text: message },
+        { role: "bot"  as const, text: botReply },
+      ];
+      sendChatTranscript({
+        name:     body.guestName  || "Visitor",
+        email:    body.guestEmail,
+        messages: transcriptMsgs,
+      }).catch(() => {});
+    }
   } else if (openai) {
     try {
       const aiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [

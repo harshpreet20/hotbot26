@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendLeadConfirmation } from "@/lib/resend";
 import type { Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
     };
 
     await insert<Lead>("leads", lead);
+    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service, message: lead.message, formType: lead.formType }).catch(() => {});
     return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
     console.error("[lead form] error:", error);

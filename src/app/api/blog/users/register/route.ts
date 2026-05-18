@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimit } from "@/lib/rateLimit";
 import { log } from "@/lib/logger";
+import { sendRegistrationConfirmation } from "@/lib/resend";
 import type { Role } from "@/types/dashboard";
 
 const VALID_ROLES: Role[] = ["manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"];
@@ -95,6 +96,8 @@ export async function POST(req: NextRequest) {
   }
 
   log.info("register.success", `New registration: "${email}" (${requestedRole})`, { ip, details: { status } });
+
+  sendRegistrationConfirmation({ name, email, role: requestedRole, needsVerification: !emailConfirmed }).catch(() => {});
 
   if (emailConfirmed) {
     return NextResponse.json({

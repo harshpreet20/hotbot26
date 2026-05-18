@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendContactConfirmation } from "@/lib/resend";
 import type { Contact, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
       console.error("[contact] lead insert failed:", err)
     );
 
+    sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch(() => {});
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });
   } catch (error) {
     console.error("[contact form] error:", error);
