@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAll, updateById, insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
-import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client } from "@/types/dashboard";
+import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN = 0.4;
@@ -136,6 +136,23 @@ export async function POST(req: NextRequest) {
       comments:       [],
     };
     await insert<Ticket>("tickets", ticket);
+
+    // Mirror as a lead so the sales team can follow up
+    insert<Lead>("leads", {
+      id:        newId(),
+      name:      ticket.requesterName,
+      email:     ticket.requesterEmail,
+      phone:     null,
+      company:   null,
+      service:   ticket.category,
+      budget:    null,
+      message:   `[Support Ticket #${ticket.ticketNumber}] ${ticket.title}`,
+      formType:  "support-ticket",
+      source:    "support",
+      ip:        ip,
+      createdAt: ticket.createdAt,
+      status:    "new",
+    }).catch((err) => console.error("[ticket] lead insert failed:", err));
 
     // Send confirmation email to requester (non-blocking)
     sendTicketConfirmation(ticket).catch((err) =>

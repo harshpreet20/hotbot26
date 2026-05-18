@@ -20,6 +20,7 @@ const STATUS_META: Record<LeadStatus, { label: string; color: string }> = {
   negotiation: { label: "Negotiation", color: "#f97316" },
   won:         { label: "Won",         color: "#22c55e" },
   lost:        { label: "Lost",        color: "#ef4444" },
+  converted:   { label: "Converted",   color: "#22c55e" },
 };
 
 const UPDATE_ICONS: Record<UpdateType, string> = {
@@ -212,7 +213,7 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <InfoRow label="Service" value={lead.service || "-"} />
                 <InfoRow label="Budget"  value={lead.budget  || "-"} />
-                <InfoRow label="Form Type" value={lead.formType} />
+                <InfoRow label="Form Type" value={lead.formType ?? "-"} />
                 <InfoRow label="Received" value={new Date(lead.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} />
                 {lead.message && (
                   <div className="col-span-2">
@@ -400,7 +401,7 @@ export default function LeadDetailPage() {
             <div className="rounded-2xl p-5 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
               <h2 className="text-white text-sm font-semibold">Quick Info</h2>
               <InfoRow label="IP" value={lead.ip || "-"} />
-              <InfoRow label="Source" value={lead.source} />
+              <InfoRow label="Source" value={lead.source ?? "-"} />
               {lead.tags && lead.tags.length > 0 && (
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Tags</p>

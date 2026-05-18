@@ -121,7 +121,7 @@ export default function TasksPage() {
       switch (type) {
         case "lead": {
           const d = await fetch("/api/dashboard/leads",          { headers: h }).then((r) => r.json()) as { leads?: Lead[] };
-          opts = (d.leads ?? []).map((l) => ({ id: l.id, label: l.name, sub: l.email || l.service }));
+          opts = (d.leads ?? []).map((l) => ({ id: l.id, label: l.name, sub: l.email || l.service || undefined }));
           break;
         }
         case "invoice": {

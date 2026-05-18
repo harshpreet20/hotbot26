@@ -25,6 +25,7 @@ const STATUS_META: Record<LeadStatus, { label: string; color: string }> = {
   negotiation:  { label: "Negotiation",  color: "#f97316" },
   won:          { label: "Won",          color: "#22c55e" },
   lost:         { label: "Lost",         color: "#ef4444" },
+  converted:    { label: "Converted",    color: "#22c55e" },
 };
 
 const SERVICES = ["Web Development", "Mobile App", "AI Automation", "SEO", "Digital Marketing", "UI/UX Design", "Consulting", "Other"];
@@ -233,13 +234,13 @@ export default function LeadsPage() {
 
   const filtered = leads.filter((l) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || [l.name, l.email, l.company, l.service, l.formType].some((v) => v.toLowerCase().includes(q));
+    const matchSearch = !q || [l.name, l.email, l.company, l.service, l.formType].some((v) => v?.toLowerCase().includes(q));
     const matchFilter = !filter || l.status === filter;
     return matchSearch && matchFilter;
   });
 
   const pipeline: Record<LeadStatus, number> = {
-    new: 0, contacted: 0, qualified: 0, proposal: 0, negotiation: 0, won: 0, lost: 0,
+    new: 0, contacted: 0, qualified: 0, proposal: 0, negotiation: 0, won: 0, lost: 0, converted: 0,
   };
   leads.forEach((l) => { pipeline[l.status ?? "new"]++; });
 
@@ -335,7 +336,7 @@ export default function LeadsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((lead) => {
-                    const formColor  = FORM_COLORS[lead.formType] || "#64748b";
+                    const formColor  = FORM_COLORS[lead.formType ?? ""] || "#64748b";
                     const leadStatus = lead.status ?? "new";
                     const sm = STATUS_META[leadStatus];
                     return (

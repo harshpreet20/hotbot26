@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // Insert with session_id as extra field for DB tracking
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await insert<any>("leads", { ...lead, sessionId: sessionId || undefined });
-    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service, message: lead.message, formType: lead.formType }).catch(() => {});
+    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service ?? "", message: lead.message ?? "", formType: lead.formType ?? "" }).catch(() => {});
 
     // Fire-and-forget journey event
     fireJourneyEvent({

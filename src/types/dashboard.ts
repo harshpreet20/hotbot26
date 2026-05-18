@@ -88,28 +88,31 @@ export interface SessionInfo {
 
 // ── Inbound data types persisted to data/*.json ──────────────────────────────
 
-export type LeadStatus = "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost";
+export type LeadStatus = "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost" | "converted";
 
 export interface Lead {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  company: string;
-  service: string;
-  budget: string;
-  message: string;
-  formType: string;
-  source: string;
-  ip: string;
+  phone?: string | null;
+  company?: string | null;
+  service?: string | null;
+  budget?: string | null;
+  message?: string | null;
+  formType?: string | null;
+  source?: string | null;
+  ip?: string | null;
   createdAt: string;
   // CRM fields
   status: LeadStatus;
-  assignedTo?: string;         // username of assigned agent/manager
-  notes?: string;              // quick internal notes
+  assignedTo?: string | null;
+  notes?: string | null;
   tags?: string[];
-  lastUpdatedAt?: string;
-  lastUpdatedBy?: string;
+  lastUpdatedAt?: string | null;
+  lastUpdatedBy?: string | null;
+  // Journey tracking
+  sessionId?: string | null;
+  journeyStage?: string | null;
 }
 
 export interface Contact {
