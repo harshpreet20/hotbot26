@@ -184,7 +184,7 @@ export default function TeamChatPage() {
 
   return (
     <DashboardShell>
-      <div className="flex h-screen" style={{ maxHeight: "calc(100vh)" }}>
+      <div className="flex h-full overflow-hidden">
         {/* Channel sidebar */}
         <aside className="w-52 shrink-0 flex flex-col border-r" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.01)" }}>
           <div className="px-3 pt-4 pb-2 flex items-center justify-between">

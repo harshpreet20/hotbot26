@@ -385,7 +385,7 @@ export default function UsersPage() {
           </div>
         </header>
 
-        <div className="flex-1 p-6 max-w-4xl space-y-5">
+        <div className="flex-1 p-6 max-w-7xl space-y-5">
 
           {/* Role guide */}
           {showRoles && (
