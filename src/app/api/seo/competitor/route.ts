@@ -11,12 +11,33 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/rateLimit";
+
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_MIN = 0.4;
+
+async function verifyRecaptcha(token: string | null): Promise<boolean> {
+  if (!RECAPTCHA_SECRET) return true;
+  if (!token) return true; // Client has no site key configured — allow through
+  try {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${RECAPTCHA_SECRET}&response=${token}`,
+    });
+    const d = await res.json() as { success: boolean; score: number };
+    return d.success && d.score >= RECAPTCHA_MIN;
+  } catch {
+    return true; // Fail open on reCAPTCHA outage
+  }
+}
 
 interface CompetitorRequest {
   competitorUrl: string;
   yourUrl?: string;
   location?: string;
   niche?: string;
+  recaptchaToken?: string;
 }
 
 interface CompetitorAnalysisResult {
@@ -168,8 +189,15 @@ function generateAnalysis(
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const limited = rateLimitResponse(ip, "seo-competitor", { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   try {
     const body = (await req.json()) as CompetitorRequest;
+
+    const isHuman = await verifyRecaptcha(body.recaptchaToken ?? null);
+    if (!isHuman) return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
 
     if (!body.competitorUrl) {
       return NextResponse.json({ error: "competitorUrl is required" }, { status: 400 });

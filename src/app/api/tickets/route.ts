@@ -10,6 +10,25 @@ import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client } from "@/types/dashboard";
 
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_MIN = 0.4;
+
+async function verifyRecaptcha(token: string | null): Promise<boolean> {
+  if (!RECAPTCHA_SECRET) return true;
+  if (!token) return true; // Client has no site key configured — allow through
+  try {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${RECAPTCHA_SECRET}&response=${token}`,
+    });
+    const d = await res.json() as { success: boolean; score: number };
+    return d.success && d.score >= RECAPTCHA_MIN;
+  } catch {
+    return true;
+  }
+}
+
 function getNextTicketNumber(tickets: Ticket[]): string {
   const nums = tickets
     .map((t) => parseInt(t.ticketNumber.replace(/\D/g, ""), 10))
@@ -46,11 +65,15 @@ export async function POST(req: NextRequest) {
       category?: TicketCategory;
       priority?: TicketPriority;
       clientId?: string;
+      recaptchaToken?: string;
       // For adding a comment
       type?: string;
       ticketId?: string;
       text?: string;
     };
+
+    const isHuman = await verifyRecaptcha(body.recaptchaToken ?? null);
+    if (!isHuman) return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
 
     // ── Add public comment ────────────────────────────────────────────────────
     if (body.type === "comment") {

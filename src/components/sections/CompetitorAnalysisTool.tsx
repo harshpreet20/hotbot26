@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Reveal } from "@/components/shared/Reveal";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 interface AnalysisResult {
   competitorUrl: string;
@@ -24,6 +25,7 @@ export function CompetitorAnalysisTool() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
+  const { getToken } = useRecaptcha();
 
   async function handleAnalyze(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +36,11 @@ export function CompetitorAnalysisTool() {
     setResult(null);
 
     try {
+      const recaptchaToken = await getToken("competitor_analysis");
       const res = await fetch("/api/seo/competitor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitorUrl, yourUrl, location, niche }),
+        body: JSON.stringify({ competitorUrl, yourUrl, location, niche, recaptchaToken }),
       });
 
       const data = await res.json();

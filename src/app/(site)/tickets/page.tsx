@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { TicketCategory, TicketPriority } from "@/types/dashboard";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 const CATEGORIES: { value: TicketCategory; label: string; icon: string }[] = [
   { value: "support",  label: "Support",        icon: "🎯" },
@@ -32,6 +33,7 @@ export default function SubmitTicketPage() {
   const [submitting,  setSubmitting]  = useState(false);
   const [submitted,   setSubmitted]   = useState<{ id: string; ticketNumber: string } | null>(null);
   const [error,       setError]       = useState("");
+  const { getToken } = useRecaptcha();
 
   // Lookup form
   const [lookupId,   setLookupId]   = useState("");
@@ -65,10 +67,11 @@ export default function SubmitTicketPage() {
     if (!clientValid) return;
     setError(""); setSubmitting(true);
     try {
+      const recaptchaToken = await getToken("ticket_submit");
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, requesterName: name, requesterEmail: email, category, priority, clientId: clientId.trim().toUpperCase() }),
+        body: JSON.stringify({ title, description, requesterName: name, requesterEmail: email, category, priority, clientId: clientId.trim().toUpperCase(), recaptchaToken }),
       });
       const data = await res.json() as { error?: string; ticket?: { id: string; ticketNumber: string } };
       if (!res.ok) { setError(data.error ?? "Submission failed."); return; }

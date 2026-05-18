@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { Ticket, TicketComment } from "@/types/dashboard";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 const STATUS_META: Record<string, { label: string; color: string; icon: string }> = {
   open:        { label: "Open",        color: "#3b82f6", icon: "📬" },
@@ -29,6 +30,7 @@ export default function TicketStatusPage() {
   const [replyMail, setReplyMail] = useState("");
   const [sending,   setSending]   = useState(false);
   const [error,     setError]     = useState("");
+  const { getToken } = useRecaptcha();
 
   useEffect(() => {
     fetch(`/api/tickets?id=${encodeURIComponent(id)}`)
@@ -42,10 +44,11 @@ export default function TicketStatusPage() {
     if (!replyText.trim() || !replyName.trim()) return;
     setError(""); setSending(true);
     try {
+      const recaptchaToken = await getToken("ticket_comment");
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "comment", ticketId: ticket!.id, text: replyText.trim(), requesterName: replyName, requesterEmail: replyMail }),
+        body: JSON.stringify({ type: "comment", ticketId: ticket!.id, text: replyText.trim(), requesterName: replyName, requesterEmail: replyMail, recaptchaToken }),
       });
       const data = await res.json() as { error?: string; comment?: TicketComment };
       if (!res.ok) { setError(data.error ?? "Failed to add comment."); return; }
