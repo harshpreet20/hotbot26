@@ -85,7 +85,7 @@ async function vercelFetch<T>(
   path: string,
   extraParams: Record<string, string> = {},
   period: "current" | "previous" = "current"
-): Promise<T> {
+): Promise<T | null> {
   const token = process.env.VERCEL_ACCESS_TOKEN!;
   const projectId = process.env.VERCEL_PROJECT_ID!;
 
@@ -118,10 +118,24 @@ async function vercelFetch<T>(
   });
 
   if (!res.ok) {
-    throw new Error(`Vercel Analytics API error: ${res.status} ${res.statusText} (${path})`);
+    // Log but don't throw — callers handle null gracefully
+    console.warn(`[vercelAnalytics] ${res.status} ${res.statusText} — ${path}`);
+    return null;
   }
 
   return res.json() as Promise<T>;
+}
+
+// Try multiple candidate paths and return the first that succeeds
+async function vercelFetchAny<T>(
+  candidates: string[],
+  extraParams: Record<string, string> = {}
+): Promise<T | null> {
+  for (const path of candidates) {
+    const result = await vercelFetch<T>(path, extraParams);
+    if (result !== null) return result;
+  }
+  return null;
 }
 
 // ── Raw API response types ────────────────────────────────────────────────────
@@ -180,15 +194,15 @@ export async function getAnalyticsBundle(): Promise<AnalyticsBundle> {
     await Promise.all([
       vercelFetch<StatsResponse>("/v1/web-analytics/stats", {}, "current"),
       vercelFetch<StatsResponse>("/v1/web-analytics/stats", {}, "previous"),
-      vercelFetch<TimeseriesResponse>("/v1/web-analytics/timeseries", { granularity: "1d" }, "current"),
-      vercelFetch<PagesResponse>("/v1/web-analytics/pages", { limit: "10" }, "current"),
-      vercelFetch<ReferrersResponse>("/v1/web-analytics/referrers", { limit: "10" }, "current"),
-      vercelFetch<OsResponse>("/v1/web-analytics/os", {}, "current"),
+      vercelFetchAny<TimeseriesResponse>(["/v1/web-analytics/timeseries", "/v1/web-analytics/time-series"], { granularity: "1d" }),
+      vercelFetchAny<PagesResponse>(["/v1/web-analytics/pages", "/v1/web-analytics/page"], { limit: "10" }),
+      vercelFetchAny<ReferrersResponse>(["/v1/web-analytics/referrers", "/v1/web-analytics/referrer", "/v1/web-analytics/sources", "/v1/web-analytics/source"], { limit: "10" }),
+      vercelFetchAny<OsResponse>(["/v1/web-analytics/os", "/v1/web-analytics/devices", "/v1/web-analytics/device"]),
     ]);
 
   // ── Overview ────────────────────────────────────────────────────────────────
-  const sd = statsData?.data ?? {};
-  const psd = prevStatsData?.data ?? {};
+  const sd = (statsData ?? {}).data ?? {};
+  const psd = (prevStatsData ?? {}).data ?? {};
 
   const visitors = safeNum(sd.visitors?.value);
   const pageviews = safeNum(sd.pageViews?.value);
@@ -214,7 +228,7 @@ export async function getAnalyticsBundle(): Promise<AnalyticsBundle> {
   };
 
   // ── Timeseries ──────────────────────────────────────────────────────────────
-  const timeseries: TimePoint[] = (tsData?.data ?? []).map((item) => {
+  const timeseries: TimePoint[] = ((tsData ?? {}).data ?? []).map((item) => {
     const devs = item.devices ?? {};
     const totalDevices =
       safeNum(devs.mobile) + safeNum(devs.desktop) + safeNum(devs.tablet);
@@ -226,14 +240,14 @@ export async function getAnalyticsBundle(): Promise<AnalyticsBundle> {
   });
 
   // ── Top pages ───────────────────────────────────────────────────────────────
-  const topPages: TopPage[] = (pagesData?.data ?? []).map((item) => ({
+  const topPages: TopPage[] = ((pagesData ?? {}).data ?? []).map((item) => ({
     page: item.key ?? "/",
     visitors: safeNum(item.total),
     bounceRate: safeNum(item.bounceRate),
   }));
 
   // ── Sources ─────────────────────────────────────────────────────────────────
-  const rawSources = refData?.data ?? [];
+  const rawSources = (refData ?? {}).data ?? [];
   const totalSourceVisitors = rawSources.reduce(
     (sum, s) => sum + safeNum(s.total),
     0
@@ -251,7 +265,7 @@ export async function getAnalyticsBundle(): Promise<AnalyticsBundle> {
   });
 
   // ── Devices ─────────────────────────────────────────────────────────────────
-  const rawOs = osData?.data ?? [];
+  const rawOs = (osData ?? {}).data ?? [];
   const totalOsVisitors = rawOs.reduce((sum, d) => sum + safeNum(d.total), 0);
   const devices: DeviceSplit[] = rawOs.map((item) => {
     const v = safeNum(item.total);
