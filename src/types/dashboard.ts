@@ -154,6 +154,12 @@ export interface ChatSession {
   ip: string;
   startedAt: string;
   lastMessageAt: string;
+  needsHuman?: boolean;
+  agentUsername?: string;
+  agentTookOverAt?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
 }
 
 /** A user registration request pending admin approval */
@@ -336,6 +342,20 @@ export interface TeamChannel {
   description?: string;
   createdBy: string;
   createdAt: string;
+}
+
+// ── AI Knowledge Base ─────────────────────────────────────────────────────────
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  category?: string;
+  active: boolean;
+  priority: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────

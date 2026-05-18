@@ -283,8 +283,13 @@ export function HotBotChat() {
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [needsHuman, setNeedsHuman] = useState(false);
+  const [agentJoined, setAgentJoined] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMsgCountRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -298,13 +303,36 @@ export function HotBotChat() {
     }
   }, [open]);
 
+  // Poll for agent replies when handoff is requested
+  useEffect(() => {
+    if (!needsHuman || !sessionId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/chat/session?id=${sessionId}`);
+        if (!res.ok) return;
+        const data = await res.json() as { session?: { messages?: Message[]; needsHuman?: boolean; agentUsername?: string } };
+        const remoteMsgs = data.session?.messages ?? [];
+        if (remoteMsgs.length > lastMsgCountRef.current) {
+          lastMsgCountRef.current = remoteMsgs.length;
+          setMsgs(remoteMsgs.map((m) => ({ role: m.role, text: m.text, ts: m.ts })));
+          if (data.session?.agentUsername) {
+            setAgentJoined(true);
+            setNeedsHuman(false);
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    pollRef.current = setInterval(poll, 4000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [needsHuman, sessionId]);
+
   const sendMsg = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setMsgs((p) => [...p, { role: "user", text, ts: Date.now() }]);
     setInput("");
     setTyping(true);
-    const controller = new AbortController();
     const history = msgs.slice(-10).map((m) => ({ role: m.role, content: m.text }));
+    lastMsgCountRef.current = msgs.length + 1;
     try {
       const res = await fetch("/api/forms/chat", {
         method: "POST",
@@ -312,18 +340,21 @@ export function HotBotChat() {
         body: JSON.stringify({
           message: text,
           history,
+          sessionId: sessionId ?? undefined,
           // Pass guest info only on the first message so the API can create a lead
           ...(history.length === 0 && guestName ? { guestName, guestEmail, guestPhone } : {}),
         }),
-        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as { message?: string; sessionId?: string; needsHuman?: boolean };
+      if (data.sessionId && !sessionId) setSessionId(data.sessionId);
+      if (data.needsHuman) setNeedsHuman(true);
       setMsgs((p) => [...p, {
         role: "bot",
         text: data?.message || "Thanks! Our team will reach out shortly.",
         ts: Date.now(),
       }]);
+      lastMsgCountRef.current += 1;
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       setMsgs((p) => [...p, {
@@ -334,7 +365,7 @@ export function HotBotChat() {
     } finally {
       setTyping(false);
     }
-  }, [msgs, guestName, guestEmail, guestPhone]);
+  }, [msgs, guestName, guestEmail, guestPhone, sessionId]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -463,7 +494,20 @@ export function HotBotChat() {
           )}
           {tab === "chat" && preformDone && (
             <>
-              <ChatMessages msgs={msgs} typing={typing} scrollRef={scrollRef} />
+              {/* Human handoff / agent status banner */}
+              {needsHuman && !agentJoined && (
+                <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-xs" style={{ background: "rgba(234,179,8,0.08)", borderBottom: "1px solid rgba(234,179,8,0.15)" }}>
+                  <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+                  <span className="text-yellow-300">Connecting you to a human agent…</span>
+                </div>
+              )}
+              {agentJoined && (
+                <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-xs" style={{ background: "rgba(34,197,94,0.08)", borderBottom: "1px solid rgba(34,197,94,0.15)" }}>
+                  <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                  <span className="text-green-300">A human agent has joined the conversation.</span>
+                </div>
+              )}
+              <ChatMessages msgs={msgs} typing={typing && !needsHuman} scrollRef={scrollRef} />
               {msgs.length <= 2 && <QuickReplies onSelect={sendMsg} />}
               <div
                 className="flex-shrink-0 flex items-end gap-2 p-3 border-t border-white/[0.08]"

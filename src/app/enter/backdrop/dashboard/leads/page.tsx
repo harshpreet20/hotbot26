@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
@@ -27,6 +27,10 @@ const STATUS_META: Record<LeadStatus, { label: string; color: string }> = {
 const SERVICES = ["Web Development", "Mobile App", "AI Automation", "SEO", "Digital Marketing", "UI/UX Design", "Consulting", "Other"];
 const BUDGETS  = ["< $1k", "$1k–$5k", "$5k–$15k", "$15k–$50k", "$50k+", "Not sure"];
 
+interface ScannedCard {
+  name: string; email: string; phone: string; company: string; title: string; website: string;
+}
+
 export default function LeadsPage() {
   const router = useRouter();
   const [leads,    setLeads]    = useState<Lead[]>([]);
@@ -43,6 +47,17 @@ export default function LeadsPage() {
     name: "", email: "", phone: "", company: "",
     service: "", budget: "", message: "", status: "new" as LeadStatus,
   });
+
+  // Scan Card modal
+  const [showScan,    setShowScan]    = useState(false);
+  const [scanPreview, setScanPreview] = useState<string | null>(null);
+  const [scanFile,    setScanFile]    = useState<File | null>(null);
+  const [scanning,    setScanning]    = useState(false);
+  const [scanResult,  setScanResult]  = useState<ScannedCard | null>(null);
+  const [scanError,   setScanError]   = useState("");
+  const [savingScan,  setSavingScan]  = useState(false);
+  const [scanLead, setScanLead]       = useState({ name: "", email: "", phone: "", company: "", message: "", service: "", budget: "" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const secret = getSecret();
@@ -102,6 +117,72 @@ export default function LeadsPage() {
     finally { setAdding(false); }
   }
 
+  function handleCardFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanFile(file);
+    setScanPreview(URL.createObjectURL(file));
+    setScanResult(null);
+    setScanError("");
+  }
+
+  async function scanCard() {
+    if (!scanFile) return;
+    setScanning(true);
+    setScanError("");
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1] ?? result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(scanFile);
+      });
+      const secret = getSecret();
+      const res = await fetch("/api/dashboard/scan-card", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+      const data = await res.json() as { contact?: ScannedCard; error?: string };
+      if (!res.ok || !data.contact) { setScanError(data.error || "Failed to scan card."); return; }
+      setScanResult(data.contact);
+      setScanLead({
+        name: data.contact.name,
+        email: data.contact.email,
+        phone: data.contact.phone,
+        company: data.contact.company,
+        message: data.contact.title ? `Title: ${data.contact.title}${data.contact.website ? ` | Website: ${data.contact.website}` : ""}` : "",
+        service: "",
+        budget: "",
+      });
+    } catch { setScanError("Network error. Please try again."); }
+    finally { setScanning(false); }
+  }
+
+  async function saveScannedLead(e: React.FormEvent) {
+    e.preventDefault();
+    setScanError("");
+    if (!scanLead.name.trim()) { setScanError("Name is required."); return; }
+    const secret = getSecret();
+    setSavingScan(true);
+    try {
+      const res = await fetch("/api/dashboard/leads", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...scanLead, formType: "card-scan", source: "visiting-card" }),
+      });
+      const data = await res.json() as { lead?: Lead; error?: string };
+      if (!res.ok) { setScanError(data.error || "Failed to save lead."); return; }
+      if (data.lead) setLeads((prev) => [data.lead!, ...prev]);
+      setShowScan(false);
+      setScanPreview(null); setScanFile(null); setScanResult(null); setScanError("");
+    } catch { setScanError("Network error."); }
+    finally { setSavingScan(false); }
+  }
+
   const filtered = leads.filter((l) => {
     const q = search.toLowerCase();
     const matchSearch = !q || [l.name, l.email, l.company, l.service, l.formType].some((v) => v.toLowerCase().includes(q));
@@ -140,6 +221,13 @@ export default function LeadsPage() {
               <option value="">All stages</option>
               {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
+            <button
+              onClick={() => { setShowScan(true); setScanPreview(null); setScanFile(null); setScanResult(null); setScanError(""); }}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5 shrink-0"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+            >
+              📷 Scan Card
+            </button>
             <button
               onClick={() => { setShowAdd(true); setAddError(""); }}
               className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5 shrink-0"
@@ -363,6 +451,110 @@ export default function LeadsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Scan Visiting Card Modal */}
+      {showScan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-lg rounded-3xl p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto" style={{ background: "#0f1624", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-semibold text-base">Scan Visiting Card</h2>
+                <p className="text-slate-500 text-xs mt-0.5">Take a photo or upload a business card image</p>
+              </div>
+              <button onClick={() => setShowScan(false)} className="text-slate-500 hover:text-white transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            {/* Camera / file input */}
+            {!scanResult && (
+              <div className="flex flex-col gap-4">
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleCardFileChange} className="hidden" />
+                {!scanPreview ? (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-10 rounded-2xl flex flex-col items-center gap-3 transition-colors hover:bg-white/[0.04]"
+                    style={{ border: "2px dashed rgba(255,255,255,0.12)" }}
+                  >
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span className="text-slate-400 text-sm">Take Photo or Upload Image</span>
+                    <span className="text-slate-600 text-xs">Camera opens automatically on mobile</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <img src={scanPreview} alt="Card preview" className="w-full rounded-2xl object-contain max-h-48" style={{ border: "1px solid rgba(255,255,255,0.1)" }} />
+                    <div className="flex gap-2">
+                      <button onClick={() => fileInputRef.current?.click()} className="flex-1 px-3 py-2 rounded-xl text-xs text-slate-400 transition-colors" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                        Change Image
+                      </button>
+                      <button onClick={scanCard} disabled={scanning} className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-white disabled:opacity-50 transition-opacity" style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}>
+                        {scanning ? "Scanning…" : "✨ Scan Card"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {scanError && <p className="text-red-400 text-xs">{scanError}</p>}
+              </div>
+            )}
+
+            {/* Scanned result form */}
+            {scanResult && (
+              <form onSubmit={saveScannedLead} className="flex flex-col gap-4">
+                <div className="rounded-xl px-4 py-3 text-xs text-emerald-300" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                  Card scanned successfully — review and edit before saving.
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["name", "email", "phone", "company"] as const).map((field) => (
+                    <div key={field}>
+                      <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">{field}</label>
+                      <input
+                        value={scanLead[field]}
+                        onChange={(e) => setScanLead((p) => ({ ...p, [field]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none"
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Notes (from card)</label>
+                  <input
+                    value={scanLead.message}
+                    onChange={(e) => setScanLead((p) => ({ ...p, message: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Service</label>
+                    <select value={scanLead.service} onChange={(e) => setScanLead((p) => ({ ...p, service: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <option value="">Select…</option>
+                      {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Budget</label>
+                    <select value={scanLead.budget} onChange={(e) => setScanLead((p) => ({ ...p, budget: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <option value="">Select…</option>
+                      {BUDGETS.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {scanError && <p className="text-red-400 text-xs">{scanError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setScanResult(null); setScanPreview(null); setScanFile(null); }} className="flex-1 px-4 py-2 rounded-xl text-sm text-slate-400 transition-colors" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                    Re-scan
+                  </button>
+                  <button type="submit" disabled={savingScan} className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition-opacity" style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}>
+                    {savingScan ? "Saving…" : "Save as Lead"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

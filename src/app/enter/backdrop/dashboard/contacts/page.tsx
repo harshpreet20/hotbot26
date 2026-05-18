@@ -14,6 +14,10 @@ export default function ContactsPage() {
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Convert to Lead state
+  const [converting, setConverting] = useState<Record<string, boolean>>({});
+  const [converted,  setConverted]  = useState<Record<string, string>>({});
+
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
@@ -32,6 +36,34 @@ export default function ContactsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
+
+  async function convertToLead(contactId: string) {
+    const secret = getSecret();
+    setConverting((prev) => ({ ...prev, [contactId]: true }));
+    try {
+      const res = await fetch("/api/dashboard/contacts/convert", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json() as { lead?: { id: string; name: string }; error?: string };
+      if (res.ok && data.lead) {
+        setConverted((prev) => ({ ...prev, [contactId]: data.lead!.id }));
+        // Clear success badge after 3 seconds
+        setTimeout(() => {
+          setConverted((prev) => {
+            const next = { ...prev };
+            delete next[contactId];
+            return next;
+          });
+        }, 3000);
+      }
+    } catch {
+      // silently fail — button will re-enable
+    } finally {
+      setConverting((prev) => ({ ...prev, [contactId]: false }));
+    }
+  }
 
   return (
     <DashboardShell>
@@ -95,6 +127,24 @@ export default function ContactsPage() {
                         >
                           Reply via email ↗
                         </a>
+
+                        {converted[c.id] ? (
+                          <span
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}
+                          >
+                            Converted! Lead ID: {converted[c.id]}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => convertToLead(c.id)}
+                            disabled={converting[c.id]}
+                            className="px-3 py-1.5 rounded-lg text-xs transition-colors disabled:opacity-50"
+                            style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.3)", color: "#60a5fa" }}
+                          >
+                            {converting[c.id] ? "Converting…" : "Convert to Lead"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
