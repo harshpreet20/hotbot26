@@ -24,9 +24,9 @@ function isRateLimited(ip: string): boolean {
 
 type TrackPayload =
   | { type: "session"; sessionId: string; firstPage: string; referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string; device?: string; browser?: string; os?: string; trafficCategory?: string; trafficSource?: string; timezone?: string }
-  | { type: "pageview"; sessionId: string; page: string; referrer?: string; durationMs?: number; timezone?: string; hourUtc?: number }
+  | { type: "pageview"; sessionId: string; page: string; referrer?: string; durationMs?: number; timezone?: string; hourUtc?: number; maxScrollDepth?: number }
   | { type: "event"; sessionId: string; eventName: string; page?: string; properties?: Record<string, unknown> }
-  | { type: "session_update"; sessionId: string; pageCount?: number; durationMs?: number; isBounce?: boolean };
+  | { type: "session_update"; sessionId: string; pageCount?: number; durationMs?: number; isBounce?: boolean; tabSwitches?: number; tabHiddenMs?: number };
 
 // ── POST handler ──────────────────────────────────────────────────────────────
 
@@ -74,13 +74,14 @@ export async function POST(req: NextRequest) {
 
     } else if (payload.type === "pageview") {
       await client.from("site_page_views").insert({
-        session_id:  payload.sessionId,
-        page:        payload.page,
-        referrer:    payload.referrer   ?? null,
-        duration_ms: payload.durationMs ?? null,
-        hour_utc:    payload.hourUtc    ?? null,
-        timezone:    payload.timezone   ?? null,
-        created_at:  new Date().toISOString(),
+        session_id:       payload.sessionId,
+        page:             payload.page,
+        referrer:         payload.referrer        ?? null,
+        duration_ms:      payload.durationMs      ?? null,
+        hour_utc:         payload.hourUtc         ?? null,
+        timezone:         payload.timezone        ?? null,
+        max_scroll_depth: payload.maxScrollDepth  ?? null,
+        created_at:       new Date().toISOString(),
       });
 
     } else if (payload.type === "event") {
@@ -96,9 +97,11 @@ export async function POST(req: NextRequest) {
       const updateData: Record<string, unknown> = {
         last_seen_at: new Date().toISOString(),
       };
-      if (payload.pageCount  !== undefined) updateData.page_count  = payload.pageCount;
-      if (payload.durationMs !== undefined) updateData.duration_ms = payload.durationMs;
-      if (payload.isBounce   !== undefined) updateData.is_bounce   = payload.isBounce;
+      if (payload.pageCount   !== undefined) updateData.page_count   = payload.pageCount;
+      if (payload.durationMs  !== undefined) updateData.duration_ms  = payload.durationMs;
+      if (payload.isBounce    !== undefined) updateData.is_bounce    = payload.isBounce;
+      if (payload.tabSwitches !== undefined) updateData.tab_switches = payload.tabSwitches;
+      if (payload.tabHiddenMs !== undefined) updateData.tab_hidden_ms = payload.tabHiddenMs;
 
       await client
         .from("site_sessions")
