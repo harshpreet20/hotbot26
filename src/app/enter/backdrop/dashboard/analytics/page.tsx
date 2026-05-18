@@ -1,8 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
-import type { AnalyticsBundle, Overview, TimePoint, TopPage, Source, DeviceSplit } from "@/lib/vercelAnalytics";
 
 // ── Style constants ────────────────────────────────────────────────────────────
 
@@ -22,6 +21,58 @@ const COLORS = {
   cyan:   "#06b6d4",
 };
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Overview {
+  visitors: number;
+  pageviews: number;
+  sessions: number;
+  bounceRate: number;
+  avgDuration: number;
+  avgDurationMs: number;
+  totalEvents?: number;
+  visitorsTrend: number;
+  pageviewsTrend: number;
+  bounceRateTrend: number;
+  avgDurationTrend: number;
+}
+
+interface TimePoint { date: string; visitors: number; pageviews: number; }
+interface TopPage { page: string; visitors: number; bounceRate: number; }
+interface Source { source: string; visitors: number; pct: number; }
+interface DeviceSplit { device: string; visitors: number; pct: number; }
+interface TopEvent { eventName: string; count: number; }
+
+interface AnalyticsBundle {
+  overview: Overview;
+  timeseries: TimePoint[];
+  topPages: TopPage[];
+  sources: Source[];
+  devices: DeviceSplit[];
+  topEvents: TopEvent[];
+  totalEvents: number;
+}
+
+interface LiveItem {
+  id: string;
+  ts: string;
+  type: "PAGE" | "EVENT";
+  label: string;
+  device?: string;
+  isNew: boolean;
+}
+
+interface AIResult {
+  healthScore: number;
+  flags: string[];
+  sections: {
+    traffic: string;
+    engagement: string;
+    conversions: string;
+    recommendations: string[];
+  };
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function getSecret(): string {
@@ -31,9 +82,22 @@ function getRole(): string {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") ?? "" : "";
 }
 
-function fmtDuration(secs: number): string {
-  const m = Math.floor(secs / 60), s = Math.floor(secs % 60);
+function fmtDurationMs(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60), s = total % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function fmtDurationSec(sec: number): string {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function hhmmss(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toTimeString().slice(0, 8);
+  } catch { return ""; }
 }
 
 function healthColor(score: number): string {
@@ -42,14 +106,20 @@ function healthColor(score: number): string {
   return COLORS.red;
 }
 
-function bounceColor(rate: number): string {
-  if (rate < 0.4) return COLORS.green;
-  if (rate < 0.7) return COLORS.amber;
-  return COLORS.red;
+function bounceStatusBadge(rate: number): { label: string; color: string; bg: string } {
+  if (rate < 0.4) return { label: "Good",     color: COLORS.green, bg: "rgba(34,197,94,0.12)" };
+  if (rate < 0.7) return { label: "Watch",    color: COLORS.amber, bg: "rgba(245,158,11,0.12)" };
+  return              { label: "Critical", color: COLORS.red,   bg: "rgba(239,68,68,0.12)" };
+}
+
+function durationStatusBadge(ms: number): { label: string; color: string; bg: string } {
+  const sec = ms / 1000;
+  if (sec > 180) return { label: "Good",    color: COLORS.green, bg: "rgba(34,197,94,0.12)" };
+  if (sec > 60)  return { label: "Average", color: COLORS.amber, bg: "rgba(245,158,11,0.12)" };
+  return              { label: "Poor",    color: COLORS.red,   bg: "rgba(239,68,68,0.12)" };
 }
 
 function trendColor(pct: number, invertGood = false): string {
-  // invertGood=true means lower is better (bounce rate)
   const positive = invertGood ? pct < 0 : pct > 0;
   if (Math.abs(pct) < 1) return "#64748b";
   return positive ? COLORS.green : COLORS.red;
@@ -61,14 +131,14 @@ function trendArrow(pct: number, invertGood = false): string {
   return positive ? "↑" : "↓";
 }
 
-function statusBadge(pct: number, invertGood = false): { label: string; color: string; bg: string } {
+function genericBadge(pct: number, invertGood = false): { label: string; color: string; bg: string } {
   const positive = invertGood ? pct < 0 : pct > 0;
   const abs = Math.abs(pct);
-  if (abs < 2) return { label: "Stable",   color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
-  if (positive && abs >= 10) return { label: "Good",   color: COLORS.green, bg: "rgba(34,197,94,0.1)" };
-  if (positive)              return { label: "Watch",  color: COLORS.amber, bg: "rgba(245,158,11,0.1)" };
-  if (abs >= 10)             return { label: "Critical", color: COLORS.red,  bg: "rgba(239,68,68,0.1)" };
-  return                            { label: "Watch",  color: COLORS.amber, bg: "rgba(245,158,11,0.1)" };
+  if (abs < 2)              return { label: "Stable",   color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
+  if (positive && abs >= 10) return { label: "Good",    color: COLORS.green, bg: "rgba(34,197,94,0.12)" };
+  if (positive)              return { label: "Watch",   color: COLORS.amber, bg: "rgba(245,158,11,0.12)" };
+  if (abs >= 10)             return { label: "Critical",color: COLORS.red,   bg: "rgba(239,68,68,0.12)" };
+  return                            { label: "Watch",   color: COLORS.amber, bg: "rgba(245,158,11,0.12)" };
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -89,25 +159,22 @@ interface VitalCardProps {
   valueColor: string;
   trend: number;
   invertGood?: boolean;
-  subtitle?: string;
+  badge?: { label: string; color: string; bg: string };
 }
-function VitalCard({ label, value, valueColor, trend: trendPct, invertGood = false, subtitle }: VitalCardProps) {
+function VitalCard({ label, value, valueColor, trend: trendPct, invertGood = false, badge }: VitalCardProps) {
   const color  = trendColor(trendPct, invertGood);
   const arrow  = trendArrow(trendPct, invertGood);
-  const badge  = statusBadge(trendPct, invertGood);
+  const bdg    = badge ?? genericBadge(trendPct, invertGood);
   return (
-    <div style={CARD}>
-      <p style={{ color: "#64748b", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>{label}</p>
-      <p style={{ color: valueColor, fontSize: 24, fontWeight: 700, margin: "0 0 6px", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</p>
-      {subtitle && (
-        <p style={{ color: "#475569", fontSize: 11, margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</p>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ color, fontSize: 12, fontWeight: 600 }}>
+    <div style={{ ...CARD, display: "flex", flexDirection: "column", gap: 6 }}>
+      <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>{label}</p>
+      <p style={{ color: valueColor, fontSize: 22, fontWeight: 700, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{value}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <span style={{ color, fontSize: 11, fontWeight: 600 }}>
           {arrow} {Math.abs(trendPct).toFixed(1)}%
         </span>
-        <span style={{ padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg }}>
-          {badge.label}
+        <span style={{ padding: "2px 7px", borderRadius: 99, fontSize: 10, fontWeight: 700, color: bdg.color, background: bdg.bg }}>
+          {bdg.label}
         </span>
       </div>
     </div>
@@ -115,13 +182,11 @@ function VitalCard({ label, value, valueColor, trend: trendPct, invertGood = fal
 }
 
 function TrafficSparkline({ data }: { data: TimePoint[] }) {
-  if (!data.length) {
-    return (
-      <div style={{ height: 90, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ color: "#334155", fontSize: 12 }}>No timeseries data</span>
-      </div>
-    );
-  }
+  if (!data.length) return (
+    <div style={{ height: 90, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ color: "#334155", fontSize: 12 }}>No timeseries data</span>
+    </div>
+  );
   const vals = data.map(d => d.visitors);
   const max  = Math.max(...vals, 1);
   const W = 600, H = 90, pad = 6;
@@ -151,14 +216,14 @@ function SourcesBar({ sources }: { sources: Source[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {sources.slice(0, 8).map((s) => (
         <div key={s.source}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ color: "#94a3b8", fontSize: 12, textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{s.source || "Direct"}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+            <span style={{ color: "#94a3b8", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>{s.source || "Direct"}</span>
             <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", marginLeft: 8 }}>
               {s.visitors.toLocaleString()} <span style={{ color: "#475569", fontWeight: 400 }}>({s.pct}%)</span>
             </span>
           </div>
-          <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${(s.pct / max) * 100}%`, borderRadius: 99, background: COLORS.purple, transition: "width 0.6s ease" }} />
+          <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${(s.pct / max) * 100}%`, borderRadius: 99, background: COLORS.purple }} />
           </div>
         </div>
       ))}
@@ -166,69 +231,78 @@ function SourcesBar({ sources }: { sources: Source[] }) {
   );
 }
 
-function DeviceDonut({ devices }: { devices: DeviceSplit[] }) {
-  const DEVICE_ICONS: Record<string, string> = {
-    mobile:  "📱",
-    desktop: "💻",
-    tablet:  "🖥",
-  };
+function DeviceBars({ devices }: { devices: DeviceSplit[] }) {
+  const DEVICE_LABELS: Record<string, string> = { mobile: "Mobile", desktop: "Desktop", tablet: "Tablet" };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {devices.slice(0, 6).map((d) => {
-        const icon = DEVICE_ICONS[d.device.toLowerCase()] ?? "🔲";
-        return (
-          <div key={d.device}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "#94a3b8", fontSize: 12 }}>{icon} {d.device}</span>
-              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>{d.pct}%</span>
-            </div>
-            <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${d.pct}%`, borderRadius: 99, background: COLORS.cyan, transition: "width 0.6s ease" }} />
-            </div>
+      {devices.slice(0, 5).map((d) => (
+        <div key={d.device}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+            <span style={{ color: "#94a3b8", fontSize: 12 }}>{DEVICE_LABELS[d.device.toLowerCase()] ?? d.device}</span>
+            <span style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>{d.pct}%</span>
           </div>
-        );
-      })}
+          <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${d.pct}%`, borderRadius: 99, background: COLORS.cyan }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-function PageEngagementList({ pages }: { pages: TopPage[] }) {
-  const maxVisitors = pages[0]?.visitors ?? 1;
+function TopPagesTable({ pages }: { pages: TopPage[] }) {
+  const maxV = pages[0]?.visitors ?? 1;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {pages.map((p, i) => {
-        const bColor = bounceColor(p.bounceRate);
-        const barW   = Math.round((p.visitors / maxVisitors) * 100);
-        return (
-          <div key={i} style={{ paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "#94a3b8", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={p.page}>{p.page}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>{p.visitors.toLocaleString()}</span>
-                <span style={{ color: bColor, fontSize: 11, fontWeight: 700 }}>● {(p.bounceRate * 100).toFixed(0)}%</span>
-              </div>
-            </div>
-            <div style={{ height: 4, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${barW}%`, borderRadius: 99, background: COLORS.blue }} />
-            </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {pages.map((p, i) => (
+        <div key={i} style={{ paddingBottom: 8, borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+            <span style={{ color: "#94a3b8", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={p.page}>{p.page}</span>
+            <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{p.visitors.toLocaleString()}</span>
           </div>
-        );
-      })}
+          <div style={{ height: 4, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${(p.visitors / maxV) * 100}%`, borderRadius: 99, background: COLORS.blue }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-// ── AI result type ────────────────────────────────────────────────────────────
-
-interface AIResult {
-  healthScore: number;
-  flags: string[];
-  sections: {
-    traffic: string;
-    engagement: string;
-    conversions: string;
-    recommendations: string[];
-  };
+function LiveFeed({ items }: { items: LiveItem[] }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 300, overflowY: "auto" }}>
+      {items.length === 0 && (
+        <p style={{ color: "#334155", fontSize: 12, margin: 0 }}>Waiting for live events…</p>
+      )}
+      {items.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "6px 10px", borderRadius: 8,
+            background: item.isNew ? "rgba(59,130,246,0.1)" : "rgba(255,255,255,0.02)",
+            border: item.isNew ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(255,255,255,0.04)",
+            transition: "all 0.5s ease",
+            fontSize: 12,
+          }}
+        >
+          <span style={{ color: "#475569", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{hhmmss(item.ts)}</span>
+          <span style={{
+            padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700, flexShrink: 0,
+            background: item.type === "PAGE" ? "rgba(59,130,246,0.18)" : "rgba(139,92,246,0.18)",
+            color: item.type === "PAGE" ? COLORS.blue : COLORS.purple,
+          }}>{item.type}</span>
+          <span style={{ color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{item.label}</span>
+          {item.device && (
+            <span style={{ color: "#334155", fontSize: 10, flexShrink: 0 }}>
+              {item.device === "mobile" ? "📱" : item.device === "tablet" ? "🖥" : "💻"}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -242,7 +316,13 @@ export default function AnalyticsPage() {
   const [aiResult,  setAiResult]  = useState<AIResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiError,   setAiError]   = useState("");
+  const [liveItems, setLiveItems] = useState<LiveItem[]>([]);
+  const [liveTs,    setLiveTs]    = useState<string>(new Date().toISOString());
+  const [lastPollAt, setLastPollAt] = useState<string>(new Date().toISOString());
+  const secretRef = useRef("");
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
     const secret = getSecret();
     const role   = getRole();
@@ -251,6 +331,7 @@ export default function AnalyticsPage() {
       router.replace("/enter/backdrop/dashboard");
       return;
     }
+    secretRef.current = secret;
 
     fetch("/api/dashboard/analytics", {
       headers: { Authorization: `Bearer ${secret}` },
@@ -264,16 +345,77 @@ export default function AnalyticsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  // ── Live feed polling (every 10s) ─────────────────────────────────────────
+  const pollLive = useCallback(async () => {
+    try {
+      const supabaseUrl  = "https://wsucqpunleplgyrrroae.supabase.co";
+      const anonKey      = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+      if (!anonKey) {
+        // No anon key — just update the timestamp for "live" indicator
+        setLiveTs(new Date().toISOString());
+        return;
+      }
+
+      const since = lastPollAt;
+      const now   = new Date().toISOString();
+
+      // Fetch recent pageviews
+      const pvRes = await fetch(
+        `${supabaseUrl}/rest/v1/site_page_views?select=id,session_id,page,created_at&created_at=gt.${encodeURIComponent(since)}&order=created_at.desc&limit=10`,
+        { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } }
+      );
+      const pvRows = pvRes.ok ? (await pvRes.json() as Array<{ id: string; session_id: string; page: string; created_at: string }>) : [];
+
+      // Fetch recent events
+      const evRes = await fetch(
+        `${supabaseUrl}/rest/v1/site_events?select=id,session_id,event_name,page,created_at&created_at=gt.${encodeURIComponent(since)}&order=created_at.desc&limit=10`,
+        { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } }
+      );
+      const evRows = evRes.ok ? (await evRes.json() as Array<{ id: string; session_id: string; event_name: string; page: string; created_at: string }>) : [];
+
+      const newItems: LiveItem[] = [
+        ...pvRows.map(r => ({ id: `pv-${r.id}`, ts: r.created_at, type: "PAGE" as const, label: r.page, isNew: true })),
+        ...evRows.map(r => ({ id: `ev-${r.id}`, ts: r.created_at, type: "EVENT" as const, label: r.event_name, isNew: true })),
+      ].sort((a, b) => b.ts.localeCompare(a.ts));
+
+      if (newItems.length > 0) {
+        setLiveItems(prev => {
+          const existing = new Set(prev.map(p => p.id));
+          const incoming = newItems.filter(n => !existing.has(n.id));
+          if (!incoming.length) return prev;
+          // Clear "isNew" on old items after 3s
+          setTimeout(() => {
+            setLiveItems(curr => curr.map(c => ({ ...c, isNew: false })));
+          }, 3000);
+          return [...incoming, ...prev.map(p => ({ ...p, isNew: false }))].slice(0, 20);
+        });
+      }
+
+      setLastPollAt(now);
+      setLiveTs(now);
+    } catch {
+      // silently ignore
+    }
+  }, [lastPollAt]);
+
+  useEffect(() => {
+    pollLive();
+    pollTimer.current = setInterval(pollLive, 10_000);
+    return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── AI Debrief ────────────────────────────────────────────────────────────
   async function runAI() {
     if (!bundle) return;
     setAnalyzing(true);
     setAiError("");
     setAiResult(null);
-    const secret = getSecret();
     try {
       const res = await fetch("/api/dashboard/analytics", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${secretRef.current}`, "Content-Type": "application/json" },
         body: JSON.stringify(bundle),
       });
       const d = await res.json() as AIResult & { error?: string };
@@ -286,64 +428,73 @@ export default function AnalyticsPage() {
     }
   }
 
-  // Derived values
-  const ov: Overview | null     = bundle?.overview ?? null;
-  const ts: TimePoint[]         = bundle?.timeseries ?? [];
-  const pages: TopPage[]        = bundle?.topPages ?? [];
-  const sources: Source[]       = bundle?.sources ?? [];
-  const devices: DeviceSplit[]  = bundle?.devices ?? [];
-
-  const topSource = sources[0]?.source ?? "—";
-  const topPage   = pages[0]?.page ?? "—";
-
-  const peakDay   = ts.length
-    ? ts.reduce((a, b) => (b.visitors > a.visitors ? b : a), ts[0])
-    : null;
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const ov      = bundle?.overview ?? null;
+  const ts      = bundle?.timeseries ?? [];
+  const pages   = bundle?.topPages ?? [];
+  const sources = bundle?.sources ?? [];
+  const devices = bundle?.devices ?? [];
+  const events  = bundle?.topEvents ?? [];
 
   const mid        = Math.floor(ts.length / 2);
   const firstHalf  = ts.slice(0, mid).reduce((s, d) => s + d.visitors, 0);
   const secondHalf = ts.slice(mid).reduce((s, d) => s + d.visitors, 0);
   const trendWord  = secondHalf > firstHalf ? "Accelerating" : secondHalf < firstHalf ? "Decelerating" : "Flat";
   const trendWColor = secondHalf > firstHalf ? COLORS.green : secondHalf < firstHalf ? COLORS.red : "#64748b";
+  const peakDay    = ts.length ? ts.reduce((a, b) => (b.visitors > a.visitors ? b : a), ts[0]) : null;
+
+  const isEmpty = !loading && !error && ov && ov.pageviews === 0;
 
   const hscore = aiResult?.healthScore ?? 0;
+  const liveLabel = `Last updated ${new Date(liveTs).toLocaleTimeString()}`;
 
   return (
     <DashboardShell>
-      <div style={{ padding: "24px 28px", maxWidth: 1140 }}>
+      <div style={{ padding: "24px 28px", maxWidth: 1200 }}>
 
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
           <div>
             <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>
               Site Command Centre
             </h1>
             <p style={{ color: "#475569", fontSize: 13, margin: "4px 0 0" }}>
-              Last 30 days · Vercel Analytics
+              Last 30 days · Supabase Real-time
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            {/* Live indicator */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "6px 14px", borderRadius: 99,
+              background: "rgba(34,197,94,0.08)",
+              border: "1px solid rgba(34,197,94,0.25)",
+            }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: COLORS.green, boxShadow: `0 0 8px ${COLORS.green}`, animation: "pulse 2s infinite" }} />
+              <span style={{ color: COLORS.green, fontSize: 12, fontWeight: 600 }}>LIVE</span>
+              <span style={{ color: "#334155", fontSize: 10 }}>{liveLabel}</span>
+            </div>
+
             {aiResult && (
               <div style={{
-                padding: "10px 20px", borderRadius: 12,
+                padding: "8px 16px", borderRadius: 12,
                 background: `${healthColor(hscore)}18`,
                 border: `1px solid ${healthColor(hscore)}44`,
                 display: "flex", alignItems: "baseline", gap: 6,
               }}>
-                <span style={{ color: healthColor(hscore), fontSize: 26, fontWeight: 800, lineHeight: 1 }}>{hscore}</span>
-                <span style={{ color: "#64748b", fontSize: 13 }}>/10 health</span>
+                <span style={{ color: healthColor(hscore), fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{hscore}</span>
+                <span style={{ color: "#64748b", fontSize: 12 }}>/10 health</span>
               </div>
             )}
+
             <button
               onClick={runAI}
               disabled={analyzing || !bundle}
               style={{
-                padding: "10px 22px", borderRadius: 12, border: "none",
+                padding: "9px 20px", borderRadius: 12, border: "none",
                 cursor: analyzing || !bundle ? "not-allowed" : "pointer",
-                background: analyzing
-                  ? "rgba(99,102,241,0.35)"
-                  : "linear-gradient(135deg,#3b82f6,#8b5cf6)",
-                color: "#fff", fontWeight: 700, fontSize: 14,
+                background: analyzing ? "rgba(99,102,241,0.35)" : "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                color: "#fff", fontWeight: 700, fontSize: 13,
                 boxShadow: "0 4px 18px rgba(99,102,241,0.3)",
                 opacity: !bundle ? 0.5 : 1,
                 display: "flex", alignItems: "center", gap: 8,
@@ -356,30 +507,14 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* ── Not configured ───────────────────────────────────────────────── */}
-        {!loading && error === "Vercel Analytics not configured" && (
-          <div style={{ ...CARD, borderColor: "rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.04)", marginBottom: 24 }}>
-            <p style={{ color: "#fbbf24", fontWeight: 700, fontSize: 15, margin: "0 0 8px" }}>
-              Vercel Analytics not configured
-            </p>
-            <p style={{ color: "#92400e", fontSize: 13, margin: "0 0 12px" }}>
-              Add these environment variables in Vercel (Project → Settings → Environment Variables):
-            </p>
-            <pre style={{ color: "#fde68a", fontSize: 12, margin: 0, padding: "12px 16px", background: "rgba(0,0,0,0.3)", borderRadius: 8, lineHeight: 1.8 }}>
-{`VERCEL_ACCESS_TOKEN = get from vercel.com/account/tokens
-VERCEL_PROJECT_ID   = get from Project Settings → General`}
-            </pre>
-          </div>
-        )}
-
-        {/* ── Generic error ────────────────────────────────────────────────── */}
-        {!loading && error && error !== "Vercel Analytics not configured" && (
+        {/* ── Error ──────────────────────────────────────────────────────── */}
+        {!loading && error && (
           <div style={{ ...CARD, borderColor: "rgba(239,68,68,0.2)", marginBottom: 24 }}>
             <p style={{ color: "#ef4444", fontSize: 14, margin: 0 }}>{error}</p>
           </div>
         )}
 
-        {/* ── Loading skeleton ─────────────────────────────────────────────── */}
+        {/* ── Loading skeleton ──────────────────────────────────────────── */}
         {loading && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[...Array(6)].map((_, i) => (
@@ -388,62 +523,58 @@ VERCEL_PROJECT_ID   = get from Project Settings → General`}
           </div>
         )}
 
-        {/* ── Main content ─────────────────────────────────────────────────── */}
-        {bundle && ov && (
+        {/* ── Empty state ────────────────────────────────────────────────── */}
+        {isEmpty && (
+          <div style={{ ...CARD, borderColor: "rgba(59,130,246,0.2)", background: "rgba(59,130,246,0.04)" }}>
+            <p style={{ color: COLORS.blue, fontWeight: 700, fontSize: 15, margin: "0 0 8px" }}>
+              Tracker installed — awaiting visitors
+            </p>
+            <p style={{ color: "#64748b", fontSize: 13, margin: "0 0 8px", lineHeight: 1.6 }}>
+              The SiteTracker component is running and will capture sessions, pageviews, and events
+              as visitors arrive at hotbotstudios.com. Data will appear here within seconds of the
+              first visit.
+            </p>
+            <p style={{ color: "#334155", fontSize: 12, margin: 0 }}>
+              Live feed polls every 10 seconds · Session data written on visit start · Page duration tracked on navigation
+            </p>
+          </div>
+        )}
+
+        {/* ── Main content ──────────────────────────────────────────────── */}
+        {bundle && ov && !isEmpty && (
           <>
-            {/* Vital Signs row — 6 cards */}
+            {/* Vital Signs — 6 cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 20 }}>
-              <VitalCard
-                label="Visitors"
-                value={ov.visitors.toLocaleString()}
-                valueColor={COLORS.blue}
-                trend={ov.visitorsTrend}
-              />
-              <VitalCard
-                label="Pageviews"
-                value={ov.pageviews.toLocaleString()}
-                valueColor={COLORS.cyan}
-                trend={ov.pageviewsTrend}
-              />
+              <VitalCard label="Visitors" value={ov.visitors.toLocaleString()} valueColor={COLORS.blue} trend={ov.visitorsTrend} />
+              <VitalCard label="Pageviews" value={ov.pageviews.toLocaleString()} valueColor={COLORS.cyan} trend={ov.pageviewsTrend} />
+              <VitalCard label="Sessions" value={ov.sessions.toLocaleString()} valueColor={COLORS.purple} trend={ov.visitorsTrend} />
               <VitalCard
                 label="Bounce Rate"
                 value={`${(ov.bounceRate * 100).toFixed(1)}%`}
-                valueColor={bounceColor(ov.bounceRate)}
+                valueColor={bounceStatusBadge(ov.bounceRate).color}
                 trend={ov.bounceRateTrend}
                 invertGood
+                badge={bounceStatusBadge(ov.bounceRate)}
               />
               <VitalCard
                 label="Avg Duration"
-                value={fmtDuration(ov.avgDuration)}
-                valueColor={COLORS.green}
+                value={ov.avgDurationMs > 0 ? fmtDurationMs(ov.avgDurationMs) : fmtDurationSec(ov.avgDuration)}
+                valueColor={durationStatusBadge(ov.avgDurationMs || ov.avgDuration * 1000).color}
                 trend={ov.avgDurationTrend}
+                badge={durationStatusBadge(ov.avgDurationMs || ov.avgDuration * 1000)}
               />
-              <VitalCard
-                label="Top Source"
-                value={topSource}
-                valueColor={COLORS.purple}
-                trend={0}
-                subtitle={sources[0] ? `${sources[0].pct}% of traffic` : undefined}
-              />
-              <VitalCard
-                label="Top Page"
-                value={topPage}
-                valueColor={COLORS.amber}
-                trend={0}
-                subtitle={pages[0] ? `${pages[0].visitors.toLocaleString()} visitors` : undefined}
-              />
+              <VitalCard label="Events" value={(bundle.totalEvents ?? 0).toLocaleString()} valueColor={COLORS.amber} trend={0} />
             </div>
 
-            {/* ── Alerts strip ──────────────────────────────────────────────── */}
+            {/* AI flags strip */}
             {aiResult && aiResult.flags.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                 {aiResult.flags.map((flag, i) => (
                   <div key={i} style={{
-                    padding: "10px 16px", borderRadius: 10,
+                    padding: "9px 16px", borderRadius: 10,
                     background: "rgba(239,68,68,0.06)",
-                    borderLeft: `3px solid ${COLORS.red}`,
                     border: `1px solid rgba(239,68,68,0.18)`,
-                    borderLeftWidth: 3, borderLeftColor: COLORS.red,
+                    borderLeft: `3px solid ${COLORS.red}`,
                     color: "#fca5a5", fontSize: 13,
                   }}>
                     {flag}
@@ -452,13 +583,21 @@ VERCEL_PROJECT_ID   = get from Project Settings → General`}
               </div>
             )}
 
-            {/* ── Traffic Pulse + Page Engagement row ──────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16, marginBottom: 16 }}>
+            {/* Live Feed + Traffic Pulse */}
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 3fr", gap: 16, marginBottom: 16 }}>
+
+              {/* Live Feed */}
+              <div style={CARD}>
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
+                  Live Feed
+                </p>
+                <LiveFeed items={liveItems} />
+              </div>
 
               {/* Traffic Pulse */}
               <div style={CARD}>
-                <p style={{ color: "#94a3b8", fontSize: 12, fontWeight: 600, margin: "0 0 12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Traffic Pulse
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 12px" }}>
+                  Traffic Pulse · Last 30 Days
                 </p>
                 <TrafficSparkline data={ts} />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
@@ -480,53 +619,83 @@ VERCEL_PROJECT_ID   = get from Project Settings → General`}
                   </div>
                 </div>
               </div>
-
-              {/* Page Engagement */}
-              <div style={CARD}>
-                <p style={{ color: "#94a3b8", fontSize: 12, fontWeight: 600, margin: "0 0 14px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Page Engagement
-                </p>
-                {pages.length > 0
-                  ? <PageEngagementList pages={pages} />
-                  : <p style={{ color: "#334155", fontSize: 13 }}>No page data</p>
-                }
-              </div>
             </div>
 
-            {/* ── Three-column row ──────────────────────────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-
-              {/* Traffic Sources */}
+            {/* Top Pages + Traffic Sources + Devices */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div style={CARD}>
-                <p style={{ color: "#94a3b8", fontSize: 12, fontWeight: 600, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
+                  Top Pages
+                </p>
+                {pages.length > 0
+                  ? <TopPagesTable pages={pages} />
+                  : <p style={{ color: "#334155", fontSize: 13 }}>No page data yet</p>
+                }
+              </div>
+              <div style={CARD}>
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
                   Traffic Sources
                 </p>
                 {sources.length > 0
                   ? <SourcesBar sources={sources} />
-                  : <p style={{ color: "#334155", fontSize: 13 }}>No source data</p>
+                  : <p style={{ color: "#334155", fontSize: 13 }}>No source data yet</p>
                 }
               </div>
-
-              {/* Device Split */}
               <div style={CARD}>
-                <p style={{ color: "#94a3b8", fontSize: 12, fontWeight: 600, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
                   Device Split
                 </p>
                 {devices.length > 0
-                  ? <DeviceDonut devices={devices} />
-                  : <p style={{ color: "#334155", fontSize: 13 }}>No device data</p>
+                  ? <DeviceBars devices={devices} />
+                  : <p style={{ color: "#334155", fontSize: 13 }}>No device data yet</p>
                 }
               </div>
+            </div>
 
-              {/* AI Insights */}
+            {/* Conversion Funnel + AI Debrief */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+              {/* Conversion Funnel — top events */}
               <div style={CARD}>
-                <p style={{ color: "#94a3b8", fontSize: 12, fontWeight: 600, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  AI Insights
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
+                  Conversion Funnel
+                </p>
+                {events.length === 0 && (
+                  <p style={{ color: "#334155", fontSize: 13 }}>No events tracked yet</p>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {events.map((e, i) => {
+                    const EVENT_COLORS: Record<string, string> = {
+                      lead_generated:       COLORS.green,
+                      contact_form_submit:  COLORS.blue,
+                      newsletter_signup:    COLORS.cyan,
+                    };
+                    const color = EVENT_COLORS[e.eventName] ?? COLORS.purple;
+                    const maxCount = events[0]?.count ?? 1;
+                    return (
+                      <div key={i}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                          <span style={{ color: "#94a3b8", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>{e.eventName}</span>
+                          <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{e.count.toLocaleString()}</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${(e.count / maxCount) * 100}%`, borderRadius: 99, background: color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* AI Command Debrief */}
+              <div style={CARD}>
+                <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
+                  AI Command Debrief
                 </p>
 
                 {!aiResult && !analyzing && !aiError && (
                   <p style={{ color: "#334155", fontSize: 13, lineHeight: 1.6 }}>
-                    Run AI Debrief above to get your full site health report.
+                    Click <strong style={{ color: "#64748b" }}>Run AI Debrief</strong> to get your full site intelligence report — traffic trends, engagement analysis, conversion signals, and prioritised recommendations.
                   </p>
                 )}
 
@@ -581,7 +750,7 @@ VERCEL_PROJECT_ID   = get from Project Settings → General`}
 
       <style>{`
         @keyframes spin  { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:0.4; } 50% { opacity:0.7; } }
+        @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
       `}</style>
     </DashboardShell>
   );

@@ -74,6 +74,18 @@ export async function POST(req: NextRequest) {
     );
 
     sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch(() => {});
+
+    // Fire-and-forget analytics event
+    const sessionId = req.headers.get("x-site-sid");
+    if (sessionId) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
+      fetch(`${siteUrl}/api/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "event", sessionId, eventName: "contact_form_submit", page: "/contact", properties: { subject } }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });
   } catch (error) {
     console.error("[contact form] error:", error);

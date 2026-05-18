@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import SiteTracker from "@/components/SiteTracker";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -201,6 +202,7 @@ export default function RootLayout({
       <body style={{ backgroundColor: "#0a0e1a" }}>
         {children}
         <Analytics />
+        <SiteTracker />
       </body>
     </html>
   );

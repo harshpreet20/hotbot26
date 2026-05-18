@@ -65,6 +65,18 @@ export async function POST(req: NextRequest) {
 
     await insert<Lead>("leads", lead);
     sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service, message: lead.message, formType: lead.formType }).catch(() => {});
+
+    // Fire-and-forget analytics event
+    const sessionId = req.headers.get("x-site-sid");
+    if (sessionId) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
+      fetch(`${siteUrl}/api/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "event", sessionId, eventName: "lead_generated", page: page || undefined, properties: { service, formType } }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
   } catch (error) {
     console.error("[lead form] error:", error);

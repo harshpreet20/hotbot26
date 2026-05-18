@@ -85,6 +85,18 @@ export async function POST(req: NextRequest) {
 
     const unsubUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com"}/api/forms/newsletter/unsubscribe?token=${unsubToken(email.trim())}`;
     sendNewsletterWelcome({ name: name?.trim() || "", email: email.trim(), unsubUrl }).catch(() => {});
+
+    // Fire-and-forget analytics event
+    const sessionId = req.headers.get("x-site-sid");
+    if (sessionId) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
+      fetch(`${siteUrl}/api/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "event", sessionId, eventName: "newsletter_signup", properties: { source: resolvedSource } }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });
   } catch (error) {
     console.error("[newsletter] error:", error);
