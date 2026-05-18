@@ -226,7 +226,7 @@ export default function LeadsPage() {
               className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5 shrink-0"
               style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
             >
-              📷 Scan Card
+              Scan Card
             </button>
             <button
               onClick={() => { setShowAdd(true); setAddError(""); }}
@@ -491,7 +491,7 @@ export default function LeadsPage() {
                         Change Image
                       </button>
                       <button onClick={scanCard} disabled={scanning} className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-white disabled:opacity-50 transition-opacity" style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}>
-                        {scanning ? "Scanning…" : "✨ Scan Card"}
+                        {scanning ? "Scanning…" : "Scan Card"}
                       </button>
                     </div>
                   </div>
