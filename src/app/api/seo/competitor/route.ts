@@ -103,7 +103,7 @@ function scoreFromUrl(url: string): number {
 
 function generateAnalysis(
   req: CompetitorRequest,
-  claudeKey: string | undefined
+  aiKey: string | undefined
 ): CompetitorAnalysisResult {
   const { competitorUrl, yourUrl, location, niche } = req;
   const { domain } = analyzeDomain(competitorUrl);
@@ -171,7 +171,7 @@ function generateAnalysis(
 
   // If Claude API key is available, this result would be enriched by LLM analysis.
   // For now we return the deterministic rule-based result.
-  void claudeKey; // suppress unused warning
+  void aiKey; // suppress unused warning
 
   return {
     competitorUrl,
@@ -217,8 +217,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const claudeApiKey = process.env.ANTHROPIC_API_KEY;
-    const result = generateAnalysis(body, claudeApiKey);
+    const aiApiKey = process.env.OPENAI_API_KEY;
+    const result = generateAnalysis(body, aiApiKey);
 
     return NextResponse.json(result);
   } catch (err) {

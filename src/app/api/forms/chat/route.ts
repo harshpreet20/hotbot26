@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { insert, updateById, readWhere, readAll, newId } from "@/lib/store";
 import type { ChatSession, ChatMessage, Lead, KnowledgeEntry, Ticket, Client } from "@/types/dashboard";
 
@@ -23,7 +23,7 @@ const HANDOFF_TRIGGERS = [
   "talk to a person",
 ];
 
-const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -127,25 +127,24 @@ export async function POST(req: NextRequest) {
   if (wantsHuman) {
     botReply = "I'm connecting you with a human agent right now. Please hold on — someone from our team will join this conversation shortly. You can continue chatting and they'll see everything.";
     needsHuman = true;
-  } else if (anthropic) {
+  } else if (openai) {
     try {
-      const aiMessages = [
+      const aiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: dynamicSystemPrompt },
         ...history.map((m) => ({
           role:    (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
           content: m.content,
         })),
-        { role: "user" as const, content: message },
+        { role: "user", content: message },
       ];
-      const response = await anthropic.messages.create({
-        model:      "claude-haiku-4-5-20251001",
+      const response = await openai.chat.completions.create({
+        model:      "gpt-4o-mini",
         max_tokens: 300,
-        system:     dynamicSystemPrompt,
         messages:   aiMessages,
       });
-      const block = response.content[0];
-      if (block.type === "text") botReply = block.text;
+      botReply = response.choices[0]?.message?.content ?? botReply;
     } catch (err) {
-      console.error("[chat] Anthropic error:", err);
+      console.error("[chat] OpenAI error:", err);
     }
   }
 

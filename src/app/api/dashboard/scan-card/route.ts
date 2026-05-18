@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { rateLimitResponse } from "@/lib/rateLimit";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 function getIp(req: NextRequest): string {
   return (
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: "Vision AI not configured" }, { status: 503 });
   }
 
@@ -35,17 +35,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const anthropic = new Anthropic();
-    const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
       max_tokens: 300,
       messages: [
         {
           role: "user",
           content: [
             {
-              type: "image",
-              source: { type: "base64", media_type: "image/jpeg", data: imageBase64 },
+              type: "image_url",
+              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
             },
             {
               type: "text",
@@ -56,12 +56,8 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const block = response.content[0];
-    if (block.type !== "text") {
-      return NextResponse.json({ error: "No text response" }, { status: 500 });
-    }
-
-    const parsed = JSON.parse(block.text.trim()) as {
+    const text = response.choices[0]?.message?.content?.trim() ?? "";
+    const parsed = JSON.parse(text) as {
       name: string;
       email: string;
       phone: string;
