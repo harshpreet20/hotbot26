@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
   const to = new Date().toISOString().split("T")[0];
   const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  const baseParams: Record<string, string> = { projectId, from, to, environment: "production" };
-  if (teamId) baseParams.teamId = teamId;
+  const base: Record<string, string> = { projectId, from, to };
+  if (teamId) base.teamId = teamId;
 
   async function probe(path: string, extra: Record<string, string> = {}) {
-    const params = new URLSearchParams({ ...baseParams, ...extra });
+    const params = new URLSearchParams({ ...base, ...extra });
     const url = `https://vercel.com/api${path}?${params}`;
     try {
       const res = await fetch(url, {
@@ -28,27 +28,49 @@ export async function GET(req: NextRequest) {
         cache: "no-store",
       });
       const text = await res.text();
-      let json: unknown;
-      try { json = JSON.parse(text); } catch { json = text; }
-      return { status: res.status, ok: res.ok, body: json };
+      let body: unknown;
+      try { body = JSON.parse(text); } catch { body = text.slice(0, 200); }
+      return { status: res.status, body };
     } catch (e) {
-      return { status: 0, ok: false, body: String(e) };
+      return { status: 0, body: String(e) };
     }
   }
 
-  const [stats, timeseries, pages, referrers, sources, os, devices, browsers] = await Promise.all([
+  // Probe every plausible path variation
+  const [
+    v1Stats, v1Events, v1Pageviews,
+    v9Stats, v9Analytics,
+    webStats, webInsights, webByline,
+    projectAnalytics, projectWebAnalytics,
+    speedInsights,
+  ] = await Promise.all([
     probe("/v1/web-analytics/stats"),
-    probe("/v1/web-analytics/timeseries", { granularity: "1d" }),
-    probe("/v1/web-analytics/pages", { limit: "5" }),
-    probe("/v1/web-analytics/referrers", { limit: "5" }),
-    probe("/v1/web-analytics/sources", { limit: "5" }),
-    probe("/v1/web-analytics/os"),
-    probe("/v1/web-analytics/devices"),
-    probe("/v1/web-analytics/browsers"),
+    probe("/v1/web-analytics/events"),
+    probe("/v1/web-analytics/pageviews"),
+    probe("/v9/web-analytics/stats"),
+    probe("/v9/analytics"),
+    probe("/web/stats"),
+    probe("/web/insights/stats"),
+    probe("/web/byline/stats"),
+    probe(`/v9/projects/${projectId}/analytics`),
+    probe(`/v9/projects/${projectId}/web-analytics`),
+    probe("/v1/speed-insights/stats"),
   ]);
 
   return NextResponse.json({
-    env: { token: token ? `${token.slice(0, 8)}...` : "MISSING", projectId, teamId: teamId ?? "not set" },
-    endpoints: { stats, timeseries, pages, referrers, sources, os, devices, browsers },
+    env: { token: `${token.slice(0, 8)}...`, projectId, teamId: teamId ?? "not set" },
+    probes: {
+      "/v1/web-analytics/stats": v1Stats,
+      "/v1/web-analytics/events": v1Events,
+      "/v1/web-analytics/pageviews": v1Pageviews,
+      "/v9/web-analytics/stats": v9Stats,
+      "/v9/analytics": v9Analytics,
+      "/web/stats": webStats,
+      "/web/insights/stats": webInsights,
+      "/web/byline/stats": webByline,
+      [`/v9/projects/${projectId}/analytics`]: projectAnalytics,
+      [`/v9/projects/${projectId}/web-analytics`]: projectWebAnalytics,
+      "/v1/speed-insights/stats": speedInsights,
+    },
   });
 }
