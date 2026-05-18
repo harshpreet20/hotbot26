@@ -184,6 +184,7 @@ export interface CRMUpdate {
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus   = "open" | "in_progress" | "done" | "cancelled";
+export type LinkedEntityType = "lead" | "invoice" | "ticket" | "client" | "blog" | "callback" | "newsletter";
 
 export interface CRMTask {
   id: string;
@@ -191,14 +192,22 @@ export interface CRMTask {
   description?: string;
   priority: TaskPriority;
   status: TaskStatus;
-  assignedTo?: string;          // username
-  createdBy: string;            // username
+  assignedTo?: string;
+  createdBy: string;
   createdAt: string;
-  dueDate?: string;             // ISO date
+  dueDate?: string;
   completedAt?: string;
-  // Relationships
-  leadId?: string;              // linked lead
-  invoiceId?: string;           // linked invoice
+  // Entity links (at most one populated at a time)
+  leadId?: string;
+  invoiceId?: string;
+  ticketId?: string;
+  clientId?: string;
+  blogId?: string;
+  callbackId?: string;
+  newsletterId?: string;
+  // Denormalized display info (set on create/update, avoids extra fetches)
+  linkedEntityType?: LinkedEntityType;
+  linkedEntityLabel?: string;   // human-readable name/title of the linked entity
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────────────

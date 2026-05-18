@@ -16,16 +16,24 @@ export async function GET(req: NextRequest) {
 
   const tasks  = await readAll<CRMTask>("crm_tasks");
   const params = new URL(req.url).searchParams;
-  const leadId    = params.get("leadId");
-  const invoiceId = params.get("invoiceId");
-  const assignee  = params.get("assignedTo");
-  const status    = params.get("status");
+
+  const filters: Array<[string, keyof CRMTask]> = [
+    ["leadId",       "leadId"],
+    ["invoiceId",    "invoiceId"],
+    ["ticketId",     "ticketId"],
+    ["clientId",     "clientId"],
+    ["blogId",       "blogId"],
+    ["callbackId",   "callbackId"],
+    ["newsletterId", "newsletterId"],
+    ["assignedTo",   "assignedTo"],
+    ["status",       "status"],
+  ];
 
   let filtered = tasks;
-  if (leadId)    filtered = filtered.filter((t) => t.leadId    === leadId);
-  if (invoiceId) filtered = filtered.filter((t) => t.invoiceId === invoiceId);
-  if (assignee)  filtered = filtered.filter((t) => t.assignedTo === assignee);
-  if (status)    filtered = filtered.filter((t) => t.status    === status);
+  for (const [param, field] of filters) {
+    const val = params.get(param);
+    if (val) filtered = filtered.filter((t) => t[field] === val);
+  }
 
   return NextResponse.json({ tasks: filtered });
 }
@@ -39,17 +47,24 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as Partial<CRMTask>;
   const task: CRMTask = {
-    id:          newId(),
-    title:       body.title ?? "Untitled Task",
-    description: body.description,
-    priority:    body.priority  ?? "medium",
-    status:      body.status    ?? "open",
-    assignedTo:  body.assignedTo,
-    createdBy:   session.username,
-    createdAt:   new Date().toISOString(),
-    dueDate:     body.dueDate,
-    leadId:      body.leadId,
-    invoiceId:   body.invoiceId,
+    id:                newId(),
+    title:             body.title ?? "Untitled Task",
+    description:       body.description,
+    priority:          body.priority  ?? "medium",
+    status:            body.status    ?? "open",
+    assignedTo:        body.assignedTo,
+    createdBy:         session.username,
+    createdAt:         new Date().toISOString(),
+    dueDate:           body.dueDate,
+    leadId:            body.leadId,
+    invoiceId:         body.invoiceId,
+    ticketId:          body.ticketId,
+    clientId:          body.clientId,
+    blogId:            body.blogId,
+    callbackId:        body.callbackId,
+    newsletterId:      body.newsletterId,
+    linkedEntityType:  body.linkedEntityType,
+    linkedEntityLabel: body.linkedEntityLabel ?? "",
   };
 
   try {
@@ -57,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[tasks] insert error:", msg);
-    return NextResponse.json({ error: "Failed to create task. Database error." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create task." }, { status: 500 });
   }
   return NextResponse.json({ task }, { status: 201 });
 }
@@ -95,6 +110,7 @@ export async function DELETE(req: NextRequest) {
 
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   if (!["super_admin", "admin", "manager"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -103,9 +119,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const tasks = await readAll<CRMTask>("crm_tasks");
-  if (!tasks.find((t) => t.id === id)) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!tasks.find((t) => t.id === id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await removeById("crm_tasks", id);
   return NextResponse.json({ ok: true });
