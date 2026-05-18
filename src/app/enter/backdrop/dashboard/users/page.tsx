@@ -566,7 +566,7 @@ export default function UsersPage() {
               <div>
                 <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Role</label>
                 <div className="flex flex-wrap gap-2">
-                  {(["admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"] as Role[]).map((r) => (
+                  {(["super_admin", "admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"] as Role[]).filter((r) => r !== "super_admin" || currentRole === "super_admin").map((r) => (
                     <button
                       key={r}
                       type="button"

@@ -8,8 +8,7 @@ import type { Role, UserRecord } from "@/types/dashboard";
 
 const COOKIE_NAME = "backdrop_auth";
 
-// All roles that can be assigned via the API (super_admin only via /api/blog/auth/init)
-const VALID_ROLES: Role[] = ["admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"];
+const VALID_ROLES: Role[] = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"];
 
 function getToken(req: NextRequest): string | null {
   return (
