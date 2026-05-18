@@ -315,7 +315,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-0.5" aria-label="Dashboard navigation">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5" aria-label="Dashboard navigation">
           {NAV.filter(canSee).map((item) => {
             const active = isActive(item);
             return (
