@@ -193,7 +193,20 @@ export async function createImpersonationSession(
   if (isSupabaseEnabled()) {
     const { error } = await sb().from("sessions").insert(session);
     if (!error) return token;
+    if (error.message.includes("violates foreign key constraint") || error.code === "23503") {
+      try {
+        await sb()
+          .from("users")
+          .upsert(
+            { id: target.userId, username: target.username, password_hash: "disabled", role: target.role, created_at: new Date().toISOString() },
+            { onConflict: "id" }
+          );
+      } catch { /* ignore */ }
+      const { error: retryError } = await sb().from("sessions").insert({ ...session });
+      if (!retryError) return token;
+    }
     console.warn("[sessions] Impersonation session Supabase insert failed:", error.message);
+    // Last resort: filesystem (ephemeral on Vercel — impersonation may not survive cross-instance)
   }
   const sessions = fsActive();
   sessions.push(session);

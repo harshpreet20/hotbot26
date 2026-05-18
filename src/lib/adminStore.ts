@@ -206,6 +206,26 @@ export async function updateUserRole(userId: string, role: Role): Promise<void> 
   fsWriteAdmin(store);
 }
 
+export async function updateUserProfile(userId: string, fields: { username?: string; email?: string }): Promise<void> {
+  if (isSupabaseEnabled()) {
+    const updates: Record<string, string> = { updated_at: new Date().toISOString() };
+    if (fields.username) updates.username = fields.username;
+    if (fields.email)    updates.email    = fields.email;
+    const { error } = await sb().from("backdrop_users").update(updates).eq("id", userId);
+    if (error) throw new Error(`[adminStore] updateUserProfile: ${error.message}`);
+    if (fields.email) {
+      await sb().auth.admin.updateUserById(userId, { email: fields.email }).catch(() => {});
+    }
+    return;
+  }
+  const store = fsReadAdmin();
+  if (!store) throw new Error("Admin store not initialised.");
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) throw new Error("User not found.");
+  if (fields.username) user.username = fields.username;
+  fsWriteAdmin(store);
+}
+
 export async function deleteUser(userId: string): Promise<void> {
   if (isSupabaseEnabled()) {
     await sb().from("backdrop_users").delete().eq("id", userId);

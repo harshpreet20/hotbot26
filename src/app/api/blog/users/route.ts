@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllUsers, createUser, updateUserRole, deleteUser } from "@/lib/adminStore";
+import { getAllUsers, createUser, updateUserRole, updateUserProfile, deleteUser } from "@/lib/adminStore";
 import { revokeAllSessions } from "@/lib/sessions";
 import { authorizeAdmin, authorizeUserRead } from "@/lib/dashboardAuth";
 import { validateCreate, validateRoleChange, validateDelete, assignableRoles } from "@/lib/agents/userManagement";
@@ -91,24 +91,49 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH - update role (admin/super_admin with hierarchy enforcement)
+// PATCH - update role or profile (admin/super_admin)
 export async function PATCH(req: NextRequest) {
   const session = await authorizeAdmin(getToken(req));
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let body: { id?: string; role?: string };
+  let body: { id?: string; role?: string; username?: string; email?: string };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
 
-  const { id, role } = body;
+  const { id } = body;
   if (!id) return NextResponse.json({ error: "User id required." }, { status: 400 });
-  if (!role || !([...VALID_ROLES, "super_admin"] as string[]).includes(role)) {
-    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
-  }
 
   const users  = await getAllUsers();
   const target = users.find((u) => u.id === id);
   if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
+
+  // Profile update (username / email)
+  if (body.username !== undefined || body.email !== undefined) {
+    const username = body.username?.trim();
+    const email    = body.email?.trim().toLowerCase();
+    if (username && username.length < 2) {
+      return NextResponse.json({ error: "Name must be at least 2 characters." }, { status: 400 });
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    }
+    await updateUserProfile(id, { username, email });
+    await logAction({
+      session,
+      action:       "user.profile_update",
+      resourceType: "user",
+      resourceId:   id,
+      details:      { username, email, target: target.username },
+      ip:           getIp(req),
+    });
+    return NextResponse.json({ success: true, user: publicUser({ ...target, username: username || target.username }) });
+  }
+
+  // Role update
+  const { role } = body;
+  if (!role || !([...VALID_ROLES, "super_admin"] as string[]).includes(role)) {
+    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
+  }
 
   const hierarchyErr = validateRoleChange(session, target, role as Role, users);
   if (hierarchyErr) {

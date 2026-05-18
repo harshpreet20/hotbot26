@@ -107,6 +107,13 @@ export default function UsersPage() {
   const [permRole, setPermRole]       = useState<Role>("agent");
   const [savingPerms, setSavingPerms] = useState(false);
 
+  // Edit user modal
+  const [editUser,    setEditUser]    = useState<User | null>(null);
+  const [editName,    setEditName]    = useState("");
+  const [editEmail,   setEditEmail]   = useState("");
+  const [editSaving,  setEditSaving]  = useState(false);
+  const [editError,   setEditError]   = useState("");
+
   // Impersonation (super_admin only)
   const [currentRole, setCurrentRole]         = useState<Role>("agent");
   const [impersonating, setImpersonating]     = useState<string | null>(null);
@@ -316,6 +323,26 @@ export default function UsersPage() {
       setShowForm(false);
     } catch { setFormError("Network error."); }
     finally { setCreating(false); }
+  }
+
+  async function saveEditUser(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editUser) return;
+    setEditError("");
+    setEditSaving(true);
+    const secret = getSecret();
+    try {
+      const res = await fetch("/api/blog/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ id: editUser.id, username: editName.trim(), email: editEmail.trim() || undefined }),
+      });
+      const data = await res.json() as { success?: boolean; user?: User; error?: string };
+      if (!res.ok) { setEditError(data.error || "Failed to update."); return; }
+      if (data.user) setUsers((prev) => prev.map((u) => u.id === editUser.id ? { ...u, username: data.user!.username } : u));
+      setEditUser(null);
+    } catch { setEditError("Network error."); }
+    finally { setEditSaving(false); }
   }
 
   // Role breakdown counts for report
@@ -636,6 +663,15 @@ export default function UsersPage() {
 
                     {!readonly && (
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Edit profile */}
+                        <button
+                          onClick={() => { setEditUser(u); setEditName(u.username); setEditEmail(""); setEditError(""); }}
+                          className="px-2.5 py-1.5 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors shrink-0"
+                          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+                          title="Edit user profile"
+                        >
+                          Edit
+                        </button>
                         {/* Module permissions editor button (admin+) */}
                         <button
                           onClick={() => permUserId === u.id ? setPermUserId(null) : openPermEditor(u)}
@@ -745,6 +781,58 @@ export default function UsersPage() {
           )}
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.75)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#0f1729", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h2 className="text-white font-semibold mb-1">Edit User</h2>
+            <p className="text-slate-500 text-xs mb-5">Updating profile for <span className="text-slate-300">{editUser.username}</span></p>
+            <form onSubmit={saveEditUser} className="space-y-4">
+              <div>
+                <label className="text-slate-400 text-xs block mb-1.5">Display Name</label>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  placeholder="Full name"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400 text-xs block mb-1.5">Email <span className="text-slate-600">(leave blank to keep current)</span></label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  placeholder="new@email.com"
+                />
+              </div>
+              {editError && <p className="text-red-400 text-xs">{editError}</p>}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditUser(null)}
+                  className="flex-1 py-2 rounded-xl text-sm text-slate-400 hover:text-white transition-colors"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="flex-1 py-2 rounded-xl text-sm font-medium text-white transition-all"
+                  style={{ background: editSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg,#3b82f6,#8b5cf6)" }}
+                >
+                  {editSaving ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }
