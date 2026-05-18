@@ -43,12 +43,22 @@ export interface DeviceSplit {
   pct: number;
 }
 
+export interface DiagnosticInfo {
+  statsOk: boolean;
+  timeseriesOk: boolean;
+  pagesOk: boolean;
+  sourcesOk: boolean;
+  devicesOk: boolean;
+  rawStatsShape?: string;
+}
+
 export interface AnalyticsBundle {
   overview: Overview;
   timeseries: TimePoint[];
   topPages: TopPage[];
   sources: Source[];
   devices: DeviceSplit[];
+  diagnostics: DiagnosticInfo;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,6 +98,7 @@ async function vercelFetch<T>(
 ): Promise<T | null> {
   const token = process.env.VERCEL_ACCESS_TOKEN!;
   const projectId = process.env.VERCEL_PROJECT_ID!;
+  const teamId = process.env.VERCEL_TEAM_ID || process.env.VERCEL_ORG_ID;
 
   const { from, to } =
     period === "current" ? dateRange(30) : (() => {
@@ -99,31 +110,29 @@ async function vercelFetch<T>(
       return { from: fmt(f), to: fmt(t) };
     })();
 
-  const params = new URLSearchParams({
-    projectId,
-    from,
-    to,
-    environment: "production",
-    ...extraParams,
-  });
+  const baseParams: Record<string, string> = { projectId, from, to, environment: "production" };
+  if (teamId) baseParams.teamId = teamId;
 
+  const params = new URLSearchParams({ ...baseParams, ...extraParams });
   const url = `https://vercel.com/api${path}?${params.toString()}`;
 
   const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     next: { revalidate: 300 },
   });
 
   if (!res.ok) {
-    // Log but don't throw — callers handle null gracefully
-    console.warn(`[vercelAnalytics] ${res.status} ${res.statusText} — ${path}`);
+    const body = await res.text();
+    console.warn(`[vercelAnalytics] ${res.status} ${res.statusText} — ${path} — ${body.slice(0, 200)}`);
     return null;
   }
 
-  return res.json() as Promise<T>;
+  const json = await res.json() as T;
+  // Log top-level keys on first stats call so we can see the actual shape
+  if (path.includes("stats") && period === "current") {
+    console.info(`[vercelAnalytics] stats keys:`, JSON.stringify(json).slice(0, 400));
+  }
+  return json;
 }
 
 // Try multiple candidate paths and return the first that succeeds
@@ -279,5 +288,14 @@ export async function getAnalyticsBundle(): Promise<AnalyticsBundle> {
     };
   });
 
-  return { overview, timeseries, topPages, sources, devices };
+  const diagnostics: DiagnosticInfo = {
+    statsOk: statsData !== null && (visitors > 0 || pageviews > 0),
+    timeseriesOk: tsData !== null,
+    pagesOk: pagesData !== null,
+    sourcesOk: refData !== null,
+    devicesOk: osData !== null,
+    rawStatsShape: statsData ? JSON.stringify(statsData).slice(0, 300) : "null",
+  };
+
+  return { overview, timeseries, topPages, sources, devices, diagnostics };
 }
