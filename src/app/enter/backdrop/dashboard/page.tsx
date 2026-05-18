@@ -48,6 +48,9 @@ export default function OverviewPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
+    const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+    const dataRoles = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance"];
+    if (!dataRoles.includes(role)) { setLoading(false); return; }
     fetch('/api/dashboard/overview', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) {
@@ -79,7 +82,7 @@ export default function OverviewPage() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           </div>
-        ) : !data ? null : (
+        ) : !data ? (<p className="text-slate-500 text-sm">Welcome to Backdrop. You have limited dashboard access based on your role.</p>) : (
           <>
             {/* Stats grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

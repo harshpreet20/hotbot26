@@ -100,6 +100,9 @@ export default function UsersPage() {
   const [approveLink, setApproveLink]   = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // Team view search
+  const [teamSearch, setTeamSearch] = useState("");
+
   // Module permission editor
   const [permUserId, setPermUserId]   = useState<string | null>(null);
   const [permGrants, setPermGrants]   = useState<Set<Permission>>(new Set());
@@ -386,6 +389,47 @@ export default function UsersPage() {
         </header>
 
         <div className="flex-1 p-6 max-w-7xl space-y-5">
+
+          {/* Team member cards */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.015)" }}>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Team Members</p>
+              <input
+                type="text"
+                placeholder="Search…"
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                className="px-2.5 py-1 rounded-lg text-xs text-slate-300 placeholder-slate-600 outline-none"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", width: 160 }}
+              />
+            </div>
+            {users.length === 0 ? (
+              <p className="text-slate-600 text-xs">No team members yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {users
+                  .filter((u) => !teamSearch || u.username.toLowerCase().includes(teamSearch.toLowerCase()) || u.role.toLowerCase().includes(teamSearch.toLowerCase()))
+                  .map((u) => {
+                    const badgeColor = ROLE_COLORS[u.role as Role] ?? "#64748b";
+                    const badgeLabel = u.role.replace(/_/g, " ");
+                    return (
+                      <a
+                        key={u.id}
+                        href={`/enter/backdrop/dashboard/team/${u.username}`}
+                        className="block rounded-xl p-3 transition-all hover:ring-1"
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", ["--tw-ring-color" as string]: "rgba(129,140,248,0.3)" }}
+                      >
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold mb-2" style={{ background: `${badgeColor}22`, color: badgeColor }}>
+                          {u.username.charAt(0).toUpperCase()}
+                        </div>
+                        <p className="text-white text-xs font-medium truncate">{u.username}</p>
+                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize" style={{ background: `${badgeColor}20`, color: badgeColor }}>{badgeLabel}</span>
+                      </a>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
 
           {/* Role guide */}
           {showRoles && (
