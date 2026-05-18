@@ -329,6 +329,23 @@ export interface TeamChannel {
   createdAt: string;
 }
 
+// ── Clients ───────────────────────────────────────────────────────────────────
+
+export type ClientStatus = "active" | "old" | "reactivation_needed";
+
+export interface Client {
+  id: string;
+  clientId: string;        // e.g. "HBS-A1B2C"
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: ClientStatus;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Dashboard Overview ────────────────────────────────────────────────────────
 
 export interface DashboardOverview {

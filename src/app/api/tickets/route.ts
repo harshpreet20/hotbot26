@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAll, updateById, insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
-import type { Ticket, TicketComment, TicketCategory, TicketPriority } from "@/types/dashboard";
+import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client } from "@/types/dashboard";
 
 function getNextTicketNumber(tickets: Ticket[]): string {
   const nums = tickets
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       requesterEmail?: string;
       category?: TicketCategory;
       priority?: TicketPriority;
+      clientId?: string;
       // For adding a comment
       type?: string;
       ticketId?: string;
@@ -82,6 +83,17 @@ export async function POST(req: NextRequest) {
     if (!body.requesterEmail?.trim()) return NextResponse.json({ error: "Email required" }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.requesterEmail.trim())) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    // ── Client ID verification ────────────────────────────────────────────────
+    const clientIdRaw = body.clientId?.trim().toUpperCase() ?? "";
+    if (!clientIdRaw) {
+      return NextResponse.json({ error: "A valid Client ID is required to submit a support ticket. Please contact your account manager if you don't have one." }, { status: 403 });
+    }
+    const clients = await readAll<Client>("clients");
+    const matchedClient = clients.find((c) => c.clientId.toUpperCase() === clientIdRaw);
+    if (!matchedClient) {
+      return NextResponse.json({ error: "Client ID not recognised. Only HotBot Studios clients can submit support tickets." }, { status: 403 });
     }
 
     const tickets = await readAll<Ticket>("tickets");
