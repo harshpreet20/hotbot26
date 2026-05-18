@@ -1,5 +1,13 @@
 {
   "mcpServers": {
+    "google-analytics": {
+      "command": "npx",
+      "args": ["-y", "@googleanalytics/mcp"],
+      "env": {
+        "GA_PROPERTY_ID": "${GA4_PROPERTY_ID}",
+        "GOOGLE_APPLICATION_CREDENTIALS": "${GOOGLE_APPLICATION_CREDENTIALS}"
+      }
+    },
     "supabase": {
       "command": "npx",
       "args": [
