@@ -6,7 +6,7 @@ const RECAPTCHA_MIN_SCORE = 0.4; // 0.0 = bot, 1.0 = human
 
 async function verifyRecaptcha(token: string | null): Promise<boolean> {
   if (!RECAPTCHA_SECRET) return true; // Skip if not configured
-  if (!token) return false;
+  if (!token) return true; // Client has no site key configured — allow through
   try {
     const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",

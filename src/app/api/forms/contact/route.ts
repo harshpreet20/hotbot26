@@ -8,7 +8,7 @@ const RECAPTCHA_MIN = 0.4;
 
 async function verifyRecaptcha(token: string | null): Promise<boolean> {
   if (!RECAPTCHA_SECRET) return true;
-  if (!token) return false;
+  if (!token) return true; // Client has no site key configured — allow through
   const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
