@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Invoice, InvoiceLineItem } from "@/types/dashboard";
@@ -26,7 +26,7 @@ function calcTotals(lineItems: InvoiceLineItem[], taxRate: number, discount: num
 }
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const invoices = await readAll<Invoice>("invoices");
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin", "finance"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
   const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin", "finance"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -151,7 +151,7 @@ export async function DELETE(req: NextRequest) {
   const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

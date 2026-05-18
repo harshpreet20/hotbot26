@@ -6,20 +6,13 @@
  * DELETE /api/dashboard/knowledge?id=     delete an entry
  */
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny, authorizeAdmin } from "@/lib/dashboardAuth";
+import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { insert, readAll, updateById, removeById } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { KnowledgeEntry } from "@/types/dashboard";
 
-const WRITE_ROLES = ["super_admin", "admin", "manager", "editor"] as const;
-type WriteRole = (typeof WRITE_ROLES)[number];
-
-function isWriteRole(role: string): role is WriteRole {
-  return (WRITE_ROLES as readonly string[]).includes(role);
-}
-
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entries = await readAll<KnowledgeEntry>("ai_knowledge_base");
@@ -27,12 +20,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (!isWriteRole(session.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
   const limited = rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
@@ -71,12 +60,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (!isWriteRole(session.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
   const limited = rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });

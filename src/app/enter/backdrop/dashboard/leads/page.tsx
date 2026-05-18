@@ -8,6 +8,9 @@ import type { Lead, LeadStatus } from "@/types/dashboard";
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
 }
+function getRole() {
+  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+}
 
 const FORM_COLORS: Record<string, string> = {
   "get-started": "#3b82f6", "strategy-call": "#22c55e", "consultation": "#8b5cf6",
@@ -58,6 +61,24 @@ export default function LeadsPage() {
   const [savingScan,  setSavingScan]  = useState(false);
   const [scanLead, setScanLead]       = useState({ name: "", email: "", phone: "", company: "", message: "", service: "", budget: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [role, setRole] = useState("");
+
+  useEffect(() => { setRole(getRole()); }, []);
+
+  function exportCSV() {
+    const secret = getSecret();
+    fetch("/api/dashboard/leads/export", { headers: { Authorization: `Bearer ${secret}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `leads-${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(console.error);
+  }
 
   useEffect(() => {
     const secret = getSecret();
@@ -228,6 +249,15 @@ export default function LeadsPage() {
             >
               Scan Card
             </button>
+            {(role === "super_admin" || role === "admin") && (
+              <button
+                onClick={exportCSV}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5 shrink-0"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+              >
+                ↓ Export CSV
+              </button>
+            )}
             <button
               onClick={() => { setShowAdd(true); setAddError(""); }}
               className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5 shrink-0"
