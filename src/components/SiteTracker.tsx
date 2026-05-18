@@ -3,6 +3,33 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
+// ── Referrer categorisation ───────────────────────────────────────────────────
+
+function categoriseReferrer(ref: string): { category: string; source: string } {
+  if (!ref) return { category: "Direct", source: "direct" };
+  try {
+    const host = new URL(ref).hostname.replace(/^www\./, "");
+    // LLM sources
+    const llm = ["chatgpt.com", "chat.openai.com", "perplexity.ai", "claude.ai",
+                  "gemini.google.com", "copilot.microsoft.com", "you.com", "phind.com",
+                  "bing.com/chat", "bard.google.com"];
+    if (llm.some(l => host.includes(l))) return { category: "LLM", source: host };
+    // Organic social
+    const social = ["facebook.com", "instagram.com", "twitter.com", "x.com",
+                    "linkedin.com", "pinterest.com", "tiktok.com", "youtube.com",
+                    "reddit.com", "threads.net", "whatsapp.com", "t.me"];
+    if (social.some(s => host.includes(s))) return { category: "Organic Social", source: host };
+    // Organic search
+    const search = ["google.", "bing.com", "duckduckgo.com", "yahoo.com",
+                    "baidu.com", "yandex.", "ecosia.org", "brave.com"];
+    if (search.some(s => host.includes(s))) return { category: "Organic Search", source: host };
+    // Everything else with a referrer = Referral
+    return { category: "Referral", source: host };
+  } catch {
+    return { category: "Unassigned", source: "unknown" };
+  }
+}
+
 // ── UA helpers ────────────────────────────────────────────────────────────────
 
 function getDevice(ua: string, w: number): string {
@@ -96,17 +123,23 @@ export default function SiteTracker() {
     const utmMedium   = params.get("utm_medium")   ?? undefined;
     const utmCampaign = params.get("utm_campaign") ?? undefined;
 
+    const { category: trafficCategory, source: trafficSource } = categoriseReferrer(document.referrer);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     post({
-      type:        "session",
-      sessionId:   sid,
-      firstPage:   pathname,
-      referrer:    document.referrer || undefined,
+      type:            "session",
+      sessionId:       sid,
+      firstPage:       pathname,
+      referrer:        document.referrer || undefined,
       utmSource,
       utmMedium,
       utmCampaign,
-      device:      getDevice(ua, w),
-      browser:     getBrowser(ua),
-      os:          getOS(ua),
+      device:          getDevice(ua, w),
+      browser:         getBrowser(ua),
+      os:              getOS(ua),
+      trafficCategory,
+      trafficSource,
+      timezone,
     });
 
     // Expose global trackEvent
@@ -156,6 +189,8 @@ export default function SiteTracker() {
     const now = Date.now();
 
     // Send duration of the previous page
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const hourUtc = new Date().getUTCHours();
     if (prevPageRef.current) {
       const durationMs = now - pageStartRef.current;
       post({
@@ -163,6 +198,8 @@ export default function SiteTracker() {
         sessionId: sid,
         page:      prevPageRef.current,
         durationMs,
+        timezone:  tz,
+        hourUtc,
       });
     } else {
       // First page view — send without duration
@@ -171,6 +208,8 @@ export default function SiteTracker() {
         sessionId: sid,
         page:      pathname,
         referrer:  document.referrer || undefined,
+        timezone:  tz,
+        hourUtc,
       });
     }
 

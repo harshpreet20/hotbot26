@@ -210,6 +210,105 @@ export async function GET(req: NextRequest) {
     // ── Total events count ────────────────────────────────────────────────────
     const totalEvents = (eventRows ?? []).length;
 
+    // ── Traffic intelligence queries (run in parallel) ───────────────────────
+
+    const [trafficCatsResult, countriesResult, heatmapRawResult, engagementResult] = await Promise.all([
+      // Traffic source categories
+      client
+        .from("site_sessions")
+        .select("traffic_category, traffic_source")
+        .gte("created_at", prev30)
+        .not("traffic_category", "is", null),
+
+      // Country breakdown
+      client
+        .from("site_sessions")
+        .select("country")
+        .gte("created_at", prev30)
+        .not("country", "is", null),
+
+      // Hourly heatmap
+      client
+        .from("site_page_views")
+        .select("hour_utc, created_at")
+        .gte("created_at", prev30)
+        .not("hour_utc", "is", null),
+
+      // Avg engagement time
+      client
+        .from("site_sessions")
+        .select("duration_ms")
+        .gte("created_at", prev30)
+        .gt("duration_ms", 0),
+    ]);
+
+    // Process traffic source categories
+    const catMap = new Map<string, number>();
+    const srcMap = new Map<string, number>();
+    for (const row of trafficCatsResult.data ?? []) {
+      const cat = (row.traffic_category as string) ?? "Unassigned";
+      catMap.set(cat, (catMap.get(cat) ?? 0) + 1);
+      const src = (row.traffic_source as string) ?? "unknown";
+      if (src !== "direct") {
+        srcMap.set(src, (srcMap.get(src) ?? 0) + 1);
+      }
+    }
+    const totalCatSessions = Array.from(catMap.values()).reduce((a, b) => a + b, 0) || 1;
+    const trafficSources = Array.from(catMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, count]) => ({
+        category,
+        count,
+        pct: Math.round((count / totalCatSessions) * 100 * 10) / 10,
+      }));
+
+    const topSources = Array.from(srcMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([source, count]) => ({ source, count }));
+
+    // Process countries
+    const countryMap = new Map<string, number>();
+    for (const row of countriesResult.data ?? []) {
+      const c = (row.country as string) ?? "Unknown";
+      countryMap.set(c, (countryMap.get(c) ?? 0) + 1);
+    }
+    const totalCountrySessions = Array.from(countryMap.values()).reduce((a, b) => a + b, 0) || 1;
+    const countries = Array.from(countryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([country, count]) => ({
+        country,
+        count,
+        pct: Math.round((count / totalCountrySessions) * 100 * 10) / 10,
+      }));
+
+    // Process heatmap — 7×24 matrix keyed by day+hour
+    const heatmapMap = new Map<string, number>();
+    for (const row of heatmapRawResult.data ?? []) {
+      const d = new Date(row.created_at);
+      const day = d.getUTCDay(); // 0=Sun
+      const hour = row.hour_utc as number;
+      const key = `${day}-${hour}`;
+      heatmapMap.set(key, (heatmapMap.get(key) ?? 0) + 1);
+    }
+    const heatmap: Array<{ day: number; hour: number; count: number }> = [];
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        heatmap.push({ day, hour, count: heatmapMap.get(`${day}-${hour}`) ?? 0 });
+      }
+    }
+
+    // Active and new users
+    const activeUsers = totalSessions; // distinct session count in period
+    const newUsers    = totalSessions; // all sessions are first visits
+
+    // Avg engagement time in seconds
+    const engRows = engagementResult.data ?? [];
+    const avgEngagementTime = engRows.length > 0
+      ? Math.round(engRows.reduce((acc, r) => acc + ((r.duration_ms as number) ?? 0), 0) / engRows.length / 1000)
+      : 0;
+
     return NextResponse.json({
       overview,
       timeseries,
@@ -218,6 +317,13 @@ export async function GET(req: NextRequest) {
       devices,
       topEvents,
       totalEvents,
+      trafficSources,
+      topSources,
+      countries,
+      heatmap,
+      activeUsers,
+      newUsers,
+      avgEngagementTime,
     });
 
   } catch (err) {

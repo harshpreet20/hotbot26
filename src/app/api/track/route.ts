@@ -23,8 +23,8 @@ function isRateLimited(ip: string): boolean {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type TrackPayload =
-  | { type: "session"; sessionId: string; firstPage: string; referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string; device?: string; browser?: string; os?: string }
-  | { type: "pageview"; sessionId: string; page: string; referrer?: string; durationMs?: number }
+  | { type: "session"; sessionId: string; firstPage: string; referrer?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string; device?: string; browser?: string; os?: string; trafficCategory?: string; trafficSource?: string; timezone?: string }
+  | { type: "pageview"; sessionId: string; page: string; referrer?: string; durationMs?: number; timezone?: string; hourUtc?: number }
   | { type: "event"; sessionId: string; eventName: string; page?: string; properties?: Record<string, unknown> }
   | { type: "session_update"; sessionId: string; pageCount?: number; durationMs?: number; isBounce?: boolean };
 
@@ -51,30 +51,35 @@ export async function POST(req: NextRequest) {
 
     if (payload.type === "session") {
       await client.from("site_sessions").upsert({
-        id:           payload.sessionId,
-        first_page:   payload.firstPage,
-        referrer:     payload.referrer    ?? null,
-        utm_source:   payload.utmSource   ?? null,
-        utm_medium:   payload.utmMedium   ?? null,
-        utm_campaign: payload.utmCampaign ?? null,
-        device:       payload.device      ?? null,
-        browser:      payload.browser     ?? null,
-        os:           payload.os          ?? null,
-        country:      country             ?? null,
-        city:         city                ?? null,
-        page_count:   1,
-        duration_ms:  0,
-        is_bounce:    true,
-        created_at:   new Date().toISOString(),
-        last_seen_at: new Date().toISOString(),
+        id:               payload.sessionId,
+        first_page:       payload.firstPage,
+        referrer:         payload.referrer         ?? null,
+        utm_source:       payload.utmSource        ?? null,
+        utm_medium:       payload.utmMedium        ?? null,
+        utm_campaign:     payload.utmCampaign      ?? null,
+        device:           payload.device           ?? null,
+        browser:          payload.browser          ?? null,
+        os:               payload.os               ?? null,
+        country:          country                  ?? null,
+        city:             city                     ?? null,
+        traffic_category: payload.trafficCategory  ?? null,
+        traffic_source:   payload.trafficSource    ?? null,
+        timezone:         payload.timezone         ?? null,
+        page_count:       1,
+        duration_ms:      0,
+        is_bounce:        true,
+        created_at:       new Date().toISOString(),
+        last_seen_at:     new Date().toISOString(),
       }, { onConflict: "id" });
 
     } else if (payload.type === "pageview") {
       await client.from("site_page_views").insert({
         session_id:  payload.sessionId,
         page:        payload.page,
-        referrer:    payload.referrer  ?? null,
+        referrer:    payload.referrer   ?? null,
         duration_ms: payload.durationMs ?? null,
+        hour_utc:    payload.hourUtc    ?? null,
+        timezone:    payload.timezone   ?? null,
         created_at:  new Date().toISOString(),
       });
 
