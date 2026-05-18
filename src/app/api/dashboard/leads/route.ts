@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, insert, updateById, newId } from "@/lib/store";
+import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Lead, CRMUpdate, LeadStatus } from "@/types/dashboard";
 
@@ -109,4 +109,24 @@ export async function PATCH(req: NextRequest) {
   }
 
   return NextResponse.json({ lead: updated });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!["super_admin", "admin"].includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const leads = await readAll<Lead>("leads");
+  if (!leads.find((l) => l.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await removeById("leads", id);
+  return NextResponse.json({ success: true });
 }
