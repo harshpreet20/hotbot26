@@ -21,6 +21,25 @@ const COLORS = {
   cyan:   "#06b6d4",
 };
 
+const CATEGORY_COLORS: Record<string, string> = {
+  "Direct":         "#3b82f6",
+  "Organic Search": "#22c55e",
+  "Organic Social": "#8b5cf6",
+  "Referral":       "#06b6d4",
+  "LLM":            "#f59e0b",
+  "Unassigned":     "#475569",
+};
+
+const FLAGS: Record<string, string> = {
+  IN: "🇮🇳", US: "🇺🇸", GB: "🇬🇧", IE: "🇮🇪", AU: "🇦🇺", CA: "🇨🇦",
+  DE: "🇩🇪", FR: "🇫🇷", SG: "🇸🇬", AE: "🇦🇪", PK: "🇵🇰", PL: "🇵🇱",
+  NL: "🇳🇱", SE: "🇸🇪", NZ: "🇳🇿", ZA: "🇿🇦", BR: "🇧🇷", JP: "🇯🇵",
+  DK: "🇩🇰",
+};
+
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const HOUR_LABELS = ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Overview {
@@ -42,6 +61,9 @@ interface TopPage { page: string; visitors: number; bounceRate: number; }
 interface Source { source: string; visitors: number; pct: number; }
 interface DeviceSplit { device: string; visitors: number; pct: number; }
 interface TopEvent { eventName: string; count: number; }
+interface TrafficCategory { category: string; count: number; pct: number; }
+interface CountryData { country: string; count: number; pct: number; }
+interface HeatmapCell { day: number; hour: number; count: number; }
 
 interface AnalyticsBundle {
   overview: Overview;
@@ -51,6 +73,13 @@ interface AnalyticsBundle {
   devices: DeviceSplit[];
   topEvents: TopEvent[];
   totalEvents: number;
+  trafficSources: TrafficCategory[];
+  topSources: Array<{ source: string; count: number }>;
+  countries: CountryData[];
+  heatmap: HeatmapCell[];
+  activeUsers: number;
+  newUsers: number;
+  avgEngagementTime: number;
 }
 
 interface LiveItem {
@@ -305,6 +334,216 @@ function LiveFeed({ items }: { items: LiveItem[] }) {
   );
 }
 
+// ── Traffic Intelligence components ───────────────────────────────────────────
+
+function SourceCategoriesBar({ trafficSources }: { trafficSources: TrafficCategory[] }) {
+  const max = Math.max(...trafficSources.map(t => t.count), 1);
+  const hasLLM = trafficSources.some(t => t.category === "LLM" && t.count > 0);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {hasLLM && (
+        <div style={{
+          padding: "6px 12px", borderRadius: 8,
+          background: "rgba(245,158,11,0.08)",
+          border: "1px solid rgba(245,158,11,0.25)",
+          marginBottom: 4,
+        }}>
+          <span style={{ color: COLORS.amber, fontSize: 11, fontWeight: 700 }}>✦ AI Referral traffic detected</span>
+        </div>
+      )}
+      {trafficSources.map((t) => {
+        const color = CATEGORY_COLORS[t.category] ?? "#475569";
+        const isLLM = t.category === "LLM";
+        return (
+          <div key={t.category}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
+              <span style={{ color: isLLM ? COLORS.amber : "#94a3b8", fontSize: 12, fontWeight: isLLM ? 700 : 400, display: "flex", alignItems: "center", gap: 5 }}>
+                {isLLM && <span style={{ fontSize: 10 }}>✦</span>}
+                {t.category}
+              </span>
+              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", marginLeft: 8 }}>
+                {t.count.toLocaleString()} <span style={{ color: "#475569", fontWeight: 400 }}>({t.pct}%)</span>
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${(t.count / max) * 100}%`, borderRadius: 99, background: color, transition: "width 0.4s ease" }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CountryList({ countries }: { countries: CountryData[] }) {
+  const maxCount = Math.max(...countries.map(c => c.count), 1);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {countries.slice(0, 8).map((c) => {
+        const flag = FLAGS[c.country] ?? "🌐";
+        return (
+          <div key={c.country}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14, lineHeight: 1 }}>{flag}</span>
+                <span style={{ color: "#94a3b8", fontSize: 12 }}>{c.country}</span>
+              </span>
+              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", marginLeft: 8 }}>
+                {c.count.toLocaleString()} <span style={{ color: "#475569", fontWeight: 400 }}>({c.pct}%)</span>
+              </span>
+            </div>
+            <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${(c.count / maxCount) * 100}%`, borderRadius: 99, background: COLORS.cyan }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function UserEngagementPanel({ activeUsers, newUsers, avgEngagementTime }: { activeUsers: number; newUsers: number; avgEngagementTime: number }) {
+  const newPct = activeUsers > 0 ? Math.round((newUsers / activeUsers) * 100) : 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 12, padding: "14px 16px" }}>
+          <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 4px" }}>Active Users</p>
+          <p style={{ color: COLORS.blue, fontSize: 26, fontWeight: 800, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{activeUsers.toLocaleString()}</p>
+          <p style={{ color: "#475569", fontSize: 11, margin: "4px 0 0" }}>distinct sessions</p>
+        </div>
+        <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "14px 16px" }}>
+          <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 4px" }}>New Users</p>
+          <p style={{ color: COLORS.green, fontSize: 26, fontWeight: 800, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{newUsers.toLocaleString()}</p>
+          <p style={{ color: "#475569", fontSize: 11, margin: "4px 0 0" }}>first-time visits</p>
+        </div>
+      </div>
+
+      <div style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: 12, padding: "14px 16px" }}>
+        <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 4px" }}>Avg Engagement Time</p>
+        <p style={{ color: COLORS.purple, fontSize: 26, fontWeight: 800, margin: 0, lineHeight: 1 }}>{fmtDurationSec(avgEngagementTime)}</p>
+        <p style={{ color: "#475569", fontSize: 11, margin: "4px 0 0" }}>per session (where duration &gt; 0)</p>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ color: "#64748b", fontSize: 11 }}>New users as % of active</span>
+          <span style={{ color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>{newPct}%</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${newPct}%`, borderRadius: 99, background: `linear-gradient(90deg,${COLORS.blue},${COLORS.green})` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrafficHeatmap({ heatmap }: { heatmap: HeatmapCell[] }) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+
+  const maxCount = Math.max(...heatmap.map(c => c.count), 1);
+
+  const cellsByKey = new Map<string, number>();
+  for (const cell of heatmap) {
+    cellsByKey.set(`${cell.day}-${cell.hour}`, cell.count);
+  }
+
+  // Find peak
+  const peak = heatmap.reduce((a, b) => b.count > a.count ? b : a, { day: 0, hour: 0, count: 0 });
+  const peakDayName = DAYS[peak.day] ?? "—";
+  const peakHourLabel = peak.hour === 0 ? "12am" : peak.hour < 12 ? `${peak.hour}am` : peak.hour === 12 ? "12pm" : `${peak.hour - 12}pm`;
+
+  // Most active day
+  const dayTotals = DAYS.map((_, d) => ({ day: d, total: heatmap.filter(c => c.day === d).reduce((a, c) => a + c.count, 0) }));
+  const mostActiveDay = dayTotals.reduce((a, b) => b.total > a.total ? b : a, dayTotals[0]);
+
+  const CELL = 28;
+  const CELL_GAP = 3;
+  const DAY_LABEL_W = 36;
+
+  return (
+    <div>
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ minWidth: 24 * (CELL + CELL_GAP) + DAY_LABEL_W + 20, position: "relative" }}>
+
+          {/* Hour labels */}
+          <div style={{ display: "flex", marginLeft: DAY_LABEL_W, marginBottom: 6 }}>
+            {Array.from({ length: 24 }, (_, h) => (
+              <div key={h} style={{ width: CELL + CELL_GAP, fontSize: 9, color: h % 3 === 0 ? "#64748b" : "transparent", textAlign: "center", flexShrink: 0 }}>
+                {HOUR_LABELS[h / 3]}
+              </div>
+            ))}
+          </div>
+
+          {/* Grid rows */}
+          {DAYS.map((dayLabel, d) => (
+            <div key={d} style={{ display: "flex", alignItems: "center", marginBottom: CELL_GAP }}>
+              <div style={{ width: DAY_LABEL_W, fontSize: 10, color: "#475569", flexShrink: 0, textAlign: "right", paddingRight: 8 }}>{dayLabel}</div>
+              {Array.from({ length: 24 }, (_, h) => {
+                const count = cellsByKey.get(`${d}-${h}`) ?? 0;
+                const alpha = count === 0 ? 0.05 : Math.max(0.1, count / maxCount);
+                const bg = count === 0
+                  ? `rgba(59,130,246,0.05)`
+                  : `rgba(59,130,246,${alpha.toFixed(2)})`;
+                const hourLabel = h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`;
+                return (
+                  <div
+                    key={h}
+                    style={{
+                      width: CELL, height: CELL, borderRadius: 4, flexShrink: 0,
+                      marginRight: CELL_GAP, background: bg,
+                      cursor: count > 0 ? "pointer" : "default",
+                      border: count > 0 ? `1px solid rgba(59,130,246,${Math.min(alpha + 0.1, 1).toFixed(2)})` : "1px solid rgba(59,130,246,0.08)",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (count > 0) {
+                        const rect = (e.target as HTMLElement).getBoundingClientRect();
+                        setTooltip({ x: rect.left, y: rect.top - 32, text: `${dayLabel} ${hourLabel} — ${count} pageview${count !== 1 ? "s" : ""}` });
+                      }
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: "fixed", left: tooltip.x, top: tooltip.y,
+          background: "#0f172a", border: "1px solid rgba(59,130,246,0.3)",
+          borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "#94a3b8",
+          pointerEvents: "none", zIndex: 9999, whiteSpace: "nowrap",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+        }}>
+          {tooltip.text}
+        </div>
+      )}
+
+      {/* Legend & summary */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 10, color: "#475569" }}>Low</span>
+          {[0.05, 0.2, 0.4, 0.6, 0.8, 1].map((a, i) => (
+            <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: `rgba(59,130,246,${a})` }} />
+          ))}
+          <span style={{ fontSize: 10, color: "#475569" }}>High</span>
+        </div>
+        <p style={{ color: "#475569", fontSize: 11, margin: 0 }}>
+          Peak hour: <span style={{ color: COLORS.blue }}>{peakDayName} {peakHourLabel} UTC</span>
+          {mostActiveDay && (
+            <> · Most active day: <span style={{ color: COLORS.blue }}>{DAYS[mostActiveDay.day]}</span></>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
@@ -429,12 +668,18 @@ export default function AnalyticsPage() {
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const ov      = bundle?.overview ?? null;
-  const ts      = bundle?.timeseries ?? [];
-  const pages   = bundle?.topPages ?? [];
-  const sources = bundle?.sources ?? [];
-  const devices = bundle?.devices ?? [];
-  const events  = bundle?.topEvents ?? [];
+  const ov              = bundle?.overview ?? null;
+  const ts              = bundle?.timeseries ?? [];
+  const pages           = bundle?.topPages ?? [];
+  const sources         = bundle?.sources ?? [];
+  const devices         = bundle?.devices ?? [];
+  const events          = bundle?.topEvents ?? [];
+  const trafficSources  = bundle?.trafficSources ?? [];
+  const countries       = bundle?.countries ?? [];
+  const heatmap         = bundle?.heatmap ?? [];
+  const activeUsers     = bundle?.activeUsers ?? 0;
+  const newUsers        = bundle?.newUsers ?? 0;
+  const avgEngTime      = bundle?.avgEngagementTime ?? 0;
 
   const mid        = Math.floor(ts.length / 2);
   const firstHalf  = ts.slice(0, mid).reduce((s, d) => s + d.visitors, 0);
@@ -582,6 +827,50 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             )}
+
+            {/* ── Section A: Traffic Intelligence ────────────────────────── */}
+            <div style={{ ...CARD, marginBottom: 16 }}>
+              <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 18px" }}>
+                Traffic Intelligence — Last 30 Days
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
+
+                {/* Column 1 — Source Categories */}
+                <div>
+                  <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>Source Categories</p>
+                  {trafficSources.length > 0
+                    ? <SourceCategoriesBar trafficSources={trafficSources} />
+                    : <p style={{ color: "#334155", fontSize: 13 }}>No category data yet — traffic_category recorded from next visit</p>
+                  }
+                </div>
+
+                {/* Column 2 — Country Origin */}
+                <div>
+                  <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>Country Origin</p>
+                  {countries.length > 0
+                    ? <CountryList countries={countries} />
+                    : <p style={{ color: "#334155", fontSize: 13 }}>No country data yet — requires Vercel geo headers</p>
+                  }
+                </div>
+
+                {/* Column 3 — User Engagement */}
+                <div>
+                  <p style={{ color: "#64748b", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>Users & Engagement</p>
+                  <UserEngagementPanel activeUsers={activeUsers} newUsers={newUsers} avgEngagementTime={avgEngTime} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section B: Time of Day Heatmap ─────────────────────────── */}
+            <div style={{ ...CARD, marginBottom: 16 }}>
+              <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 18px" }}>
+                Traffic Heatmap — When Your Visitors Arrive (UTC)
+              </p>
+              {heatmap.length > 0 && heatmap.some(c => c.count > 0)
+                ? <TrafficHeatmap heatmap={heatmap} />
+                : <p style={{ color: "#334155", fontSize: 13 }}>No heatmap data yet — hour_utc recorded from next pageview</p>
+              }
+            </div>
 
             {/* Live Feed + Traffic Pulse */}
             <div style={{ display: "grid", gridTemplateColumns: "2fr 3fr", gap: 16, marginBottom: 16 }}>

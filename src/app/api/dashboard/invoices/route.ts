@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { fireJourneyEvent } from "@/lib/journey";
+import { sb } from "@/lib/supabase";
 import type { Invoice, InvoiceLineItem } from "@/types/dashboard";
 
 function getIp(req: NextRequest): string {
@@ -92,6 +94,31 @@ export async function POST(req: NextRequest) {
     console.error("[invoices] insert error:", msg);
     return NextResponse.json({ error: "Failed to create invoice. Database error." }, { status: 500 });
   }
+
+  // Fire-and-forget journey event for invoice creation
+  if (body.leadId) {
+    (async () => {
+      try {
+        const { data: lead } = await sb()
+          .from("leads")
+          .select("session_id, email")
+          .eq("id", body.leadId)
+          .single();
+        fireJourneyEvent({
+          sessionId: lead?.session_id ?? null,
+          email: lead?.email ?? invoice.clientEmail,
+          stage: "invoiced",
+          leadId: body.leadId,
+          invoiceId: invoice.id,
+          revenueAmount: invoice.total,
+          currency: invoice.currency,
+        }).catch(() => {});
+      } catch {
+        // ignore
+      }
+    })();
+  }
+
   return NextResponse.json({ invoice }, { status: 201 });
 }
 
@@ -144,6 +171,37 @@ export async function PATCH(req: NextRequest) {
   };
 
   await updateById<Invoice>("invoices", body.id, updated);
+
+  // Fire-and-forget journey event when invoice is marked as paid
+  if (body.status === "paid" && existing.status !== "paid") {
+    (async () => {
+      try {
+        let sessionId: string | null = null;
+        let email: string | null = updated.clientEmail ?? null;
+        if (updated.leadId) {
+          const { data: lead } = await sb()
+            .from("leads")
+            .select("session_id, email")
+            .eq("id", updated.leadId)
+            .single();
+          sessionId = lead?.session_id ?? null;
+          email = lead?.email ?? email;
+        }
+        fireJourneyEvent({
+          sessionId,
+          email,
+          stage: "paid",
+          leadId: updated.leadId ?? null,
+          invoiceId: updated.id,
+          revenueAmount: updated.total,
+          currency: updated.currency,
+        }).catch(() => {});
+      } catch {
+        // ignore
+      }
+    })();
+  }
+
   return NextResponse.json({ invoice: updated });
 }
 

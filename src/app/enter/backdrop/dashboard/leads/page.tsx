@@ -40,7 +40,10 @@ export default function LeadsPage() {
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState<LeadStatus | "">("");
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [updating,   setUpdating]   = useState<string | null>(null);
+  const [converting, setConverting] = useState<string | null>(null);
+  const [converted,  setConverted]  = useState<Set<string>>(new Set());
+  const [convertMsg, setConvertMsg] = useState<Record<string, string>>({});
 
   // Add Lead modal
   const [showAdd,    setShowAdd]    = useState(false);
@@ -114,6 +117,30 @@ export default function LeadsPage() {
       }
     } finally {
       setUpdating(null);
+    }
+  }
+
+  async function convertToClient(lead: Lead) {
+    const secret = getSecret();
+    if (!confirm(`Convert ${lead.name} to a client?`)) return;
+    setConverting(lead.id);
+    setConvertMsg((prev) => ({ ...prev, [lead.id]: "" }));
+    try {
+      const res = await fetch(`/api/dashboard/leads/${lead.id}/convert`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (res.ok && data.success) {
+        setConverted((prev) => new Set([...prev, lead.id]));
+        setConvertMsg((prev) => ({ ...prev, [lead.id]: "Converted to client ✓" }));
+      } else {
+        setConvertMsg((prev) => ({ ...prev, [lead.id]: data.error || "Conversion failed" }));
+      }
+    } catch {
+      setConvertMsg((prev) => ({ ...prev, [lead.id]: "Network error" }));
+    } finally {
+      setConverting(null);
     }
   }
 
@@ -349,12 +376,36 @@ export default function LeadsPage() {
                           {new Date(lead.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <Link
-                            href={`/enter/backdrop/dashboard/leads/${lead.id}`}
-                            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                          >
-                            View →
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/enter/backdrop/dashboard/leads/${lead.id}`}
+                              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              View →
+                            </Link>
+                            {(role === "super_admin" || role === "admin" || role === "manager" || role === "sales") && (
+                              <>
+                                {converted.has(lead.id) || (lead as Lead & { journey_stage?: string }).journey_stage === "client" || (lead.status as string) === "converted" ? (
+                                  <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(34,197,94,0.15)", color: "#22c55e", fontSize: 11, fontWeight: 600 }}>
+                                    {convertMsg[lead.id] || "Client ✓"}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <button
+                                      disabled={converting === lead.id}
+                                      onClick={() => convertToClient(lead)}
+                                      style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.08)", color: "#22c55e", fontSize: 11, cursor: "pointer", opacity: converting === lead.id ? 0.6 : 1 }}
+                                    >
+                                      {converting === lead.id ? "…" : "→ Client"}
+                                    </button>
+                                    {convertMsg[lead.id] && (
+                                      <span className="text-xs text-red-400">{convertMsg[lead.id]}</span>
+                                    )}
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

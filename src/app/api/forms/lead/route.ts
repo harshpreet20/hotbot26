@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendLeadConfirmation } from "@/lib/resend";
+import { fireJourneyEvent } from "@/lib/journey";
 import type { Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -47,6 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
     }
 
+    const sessionId = req.headers.get("x-site-sid") ?? undefined;
+
     const lead: Lead = {
       id:        newId(),
       name:      name.trim(),
@@ -63,11 +66,23 @@ export async function POST(req: NextRequest) {
       status:    "new",
     };
 
-    await insert<Lead>("leads", lead);
+    // Insert with session_id as extra field for DB tracking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await insert<any>("leads", { ...lead, sessionId: sessionId || undefined });
     sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service, message: lead.message, formType: lead.formType }).catch(() => {});
 
+    // Fire-and-forget journey event
+    fireJourneyEvent({
+      sessionId: sessionId ?? null,
+      email: lead.email,
+      stage: "lead",
+      leadId: lead.id,
+      source: body.source ?? page ?? "direct",
+      page: req.headers.get("referer") ?? null,
+      metadata: { service: lead.service, budget: lead.budget },
+    }).catch(() => {});
+
     // Fire-and-forget analytics event
-    const sessionId = req.headers.get("x-site-sid");
     if (sessionId) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
       fetch(`${siteUrl}/api/track`, {
