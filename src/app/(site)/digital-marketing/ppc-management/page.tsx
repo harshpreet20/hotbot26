@@ -56,7 +56,7 @@ const serviceSchema = {
   "serviceType": "Paid Search & Paid Social",
   "priceRange": "$$-$$$",
   "telephone": "+91-9700001534",
-  "email": "hello@hotbotstudios.com",
+  "email": "hotbotstudios@gmail.com",
 };
 
 const breadcrumbSchema = {

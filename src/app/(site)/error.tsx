@@ -22,8 +22,8 @@ export default function SiteError({
       <h1 className="text-2xl font-bold text-white">Something went wrong</h1>
       <p className="text-slate-400 max-w-sm">
         An unexpected error occurred. Please try again or contact us at{" "}
-        <a href="mailto:hello@hotbotstudios.com" className="text-blue-400 underline">
-          hello@hotbotstudios.com
+        <a href="mailto:hotbotstudios@gmail.com" className="text-blue-400 underline">
+          hotbotstudios@gmail.com
         </a>
       </p>
       <button

@@ -55,7 +55,7 @@ export default function ContactPage() {
               </div>
 
               {[
-                { icon: "📧", title: "Email", value: "hello@hotbotstudios.com", href: "mailto:hello@hotbotstudios.com" },
+                { icon: "📧", title: "Email", value: "hotbotstudios@gmail.com", href: "mailto:hotbotstudios@gmail.com" },
                 { icon: "💬", title: "WhatsApp", value: "+91 97000 01534", href: "https://wa.me/919700001534" },
                 { icon: "📍", title: "Location", value: "New York, United States", href: null },
                 { icon: "⏰", title: "Response Time", value: "Within 24 hours", href: null },
