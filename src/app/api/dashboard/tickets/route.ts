@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
     assignedTo?: string;
     labels?: string[];
     dueDate?: string;
+    isInternal?: boolean;
+    raisedAgainst?: string;
+    raisedBy?: string;
   };
 
   if (!body.title?.trim()) return NextResponse.json({ error: "title required" }, { status: 400 });
@@ -76,6 +79,9 @@ export async function POST(req: NextRequest) {
     assignedTo:     body.assignedTo,
     labels:         body.labels ?? [],
     dueDate:        body.dueDate,
+    isInternal:     body.isInternal ?? false,
+    raisedAgainst:  body.raisedAgainst,
+    raisedBy:       body.raisedBy ?? session.username,
     createdAt:      now,
     updatedAt:      now,
     comments:       [],

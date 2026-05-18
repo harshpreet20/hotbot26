@@ -14,6 +14,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  // ── Daily use ──────────────────────────────────────────────────────────────
   {
     href: "/enter/backdrop/dashboard",
     label: "Overview",
@@ -27,25 +28,23 @@ const NAV: NavItem[] = [
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/analytics",
-    label: "Analytics",
-    roles: ["super_admin", "admin"],
+    href: "/enter/backdrop/dashboard/tasks",
+    label: "Tasks",
+    roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" />
-        <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6"  y1="20" x2="6"  y2="14" />
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
       </svg>
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/users",
-    label: "Users",
-    roles: ["super_admin", "admin", "manager"],
+    href: "/enter/backdrop/dashboard/team-chat",
+    label: "Team Chat",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+        <path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1" />
+        <path d="M15 2H3a2 2 0 00-2 2v8a2 2 0 002 2h2v4l4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z" />
       </svg>
     ),
   },
@@ -73,13 +72,23 @@ const NAV: NavItem[] = [
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/tasks",
-    label: "Tasks",
+    href: "/enter/backdrop/dashboard/tickets",
+    label: "Tickets",
     roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="9 11 12 14 22 4" />
-        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+        <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+        <line x1="6" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="18" y2="12" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/callbacks",
+    label: "Callbacks",
+    roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
       </svg>
     ),
   },
@@ -95,6 +104,41 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: "/enter/backdrop/dashboard/analytics",
+    label: "Analytics",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6"  y1="20" x2="6"  y2="14" />
+      </svg>
+    ),
+  },
+  // ── Team ───────────────────────────────────────────────────────────────────
+  {
+    href: "/enter/backdrop/dashboard/team",
+    label: "Team",
+    roles: ["super_admin", "admin", "manager"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/users",
+    label: "Users",
+    roles: ["super_admin", "admin", "manager"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 00-16 0" />
+      </svg>
+    ),
+  },
+  // ── Less frequent ──────────────────────────────────────────────────────────
   {
     href: "/enter/backdrop/dashboard/contacts",
     label: "Contacts",
@@ -117,17 +161,6 @@ const NAV: NavItem[] = [
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/knowledge",
-    label: "Knowledge",
-    roles: ["super_admin", "admin"],
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
-        <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
-      </svg>
-    ),
-  },
-  {
     href: "/enter/backdrop/dashboard/blog",
     label: "Blog",
     roles: ["super_admin", "admin", "editor", "contributor"],
@@ -135,16 +168,6 @@ const NAV: NavItem[] = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
         <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
-  },
-  {
-    href: "/enter/backdrop/dashboard/callbacks",
-    label: "Callbacks",
-    roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
       </svg>
     ),
   },
@@ -159,15 +182,14 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
-  // ── Team ───────────────────────────────────────────────────────────────────
   {
-    href: "/enter/backdrop/dashboard/tickets",
-    label: "Tickets",
-    roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
+    href: "/enter/backdrop/dashboard/knowledge",
+    label: "Knowledge",
+    roles: ["super_admin", "admin"],
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
-        <line x1="6" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="18" y2="12" />
+        <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
       </svg>
     ),
   },
@@ -192,16 +214,6 @@ const NAV: NavItem[] = [
         <line x1="16" y1="13" x2="8" y2="13" />
         <line x1="16" y1="17" x2="8" y2="17" />
         <polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
-  },
-  {
-    href: "/enter/backdrop/dashboard/team-chat",
-    label: "Team Chat",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1" />
-        <path d="M15 2H3a2 2 0 00-2 2v8a2 2 0 002 2h2v4l4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z" />
       </svg>
     ),
   },

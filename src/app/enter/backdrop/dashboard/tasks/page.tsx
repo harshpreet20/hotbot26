@@ -77,6 +77,12 @@ export default function TasksPage() {
   const [saving,  setSaving]  = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Team members for assignee dropdowns + internal issue modal
+  const [team, setTeam] = useState<{ username: string; role: string }[]>([]);
+  const [showIssue, setShowIssue] = useState(false);
+  const [issueForm, setIssueForm] = useState({ title: "", description: "", priority: "medium" as "low"|"medium"|"high"|"critical", raisedAgainst: "", assignedTo: "" });
+  const [issueSaving, setIssueSaving] = useState(false);
+
   // entity context cache keyed by taskId
   const [ctxCache, setCtxCache] = useState<Record<string, Record<string, unknown> | null>>({});
 
@@ -110,6 +116,15 @@ export default function TasksPage() {
   }, [router]);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
+
+  useEffect(() => {
+    const secret = getSecret();
+    if (!secret) return;
+    fetch("/api/dashboard/team", { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => r.json())
+      .then((d) => setTeam((d as { members?: { username: string; role: string }[] }).members ?? []))
+      .catch(() => {});
+  }, []);
 
   // ── load entity options for link picker ─────────────────────────────────────
 
@@ -248,6 +263,34 @@ export default function TasksPage() {
     }
   }
 
+  // ── raise internal issue ────────────────────────────────────────────────────
+
+  async function createInternalIssue() {
+    if (!issueForm.title.trim()) return;
+    setIssueSaving(true);
+    try {
+      await fetch("/api/dashboard/tickets", {
+        method: "POST",
+        headers: authH(),
+        body: JSON.stringify({
+          title:         issueForm.title.trim(),
+          description:   issueForm.description,
+          priority:      issueForm.priority,
+          category:      "general",
+          status:        "open",
+          requesterName: getUsername(),
+          requesterEmail: "",
+          isInternal:    true,
+          raisedAgainst: issueForm.raisedAgainst || undefined,
+          raisedBy:      getUsername(),
+          assignedTo:    issueForm.assignedTo || undefined,
+        }),
+      });
+      setShowIssue(false);
+      setIssueForm({ title: "", description: "", priority: "medium", raisedAgainst: "", assignedTo: "" });
+    } finally { setIssueSaving(false); }
+  }
+
   // ── delete task ─────────────────────────────────────────────────────────────
 
   async function deleteTask(id: string) {
@@ -292,6 +335,12 @@ export default function TasksPage() {
               <option value="">All statuses</option>
               {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
+            <button onClick={() => setShowIssue(true)}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-white flex items-center gap-1.5 transition-all hover:-translate-y-0.5"
+              style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Raise Issue
+            </button>
             <button onClick={() => setShowNew(true)}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white flex items-center gap-1.5"
               style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
@@ -338,8 +387,11 @@ export default function TasksPage() {
                   <input type="date" value={form.dueDate} onChange={(e) => setForm({...form, dueDate: e.target.value})} className="fi" />
                 </F>
               </div>
-              <F label="Assign To (username)">
-                <input value={form.assignedTo} onChange={(e) => setForm({...form, assignedTo: e.target.value})} placeholder={getUsername() || "leave blank for self"} className="fi" />
+              <F label="Assign To">
+                <select value={form.assignedTo} onChange={(e) => setForm({...form, assignedTo: e.target.value})} className="fi">
+                  <option value="">— Self ({getUsername()}) —</option>
+                  {team.map((m) => <option key={m.username} value={m.username}>{m.username} ({m.role})</option>)}
+                </select>
               </F>
 
               {/* ── Link to entity ── */}
@@ -621,6 +673,63 @@ export default function TasksPage() {
           )}
         </div>
       </div>
+
+      {/* ── Internal Issue Modal ── */}
+      {showIssue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.75)" }}>
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: "#0f1626", border: "1px solid rgba(239,68,68,0.25)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-semibold">Raise Internal Issue</h2>
+                <p className="text-slate-500 text-xs mt-0.5">Flag a problem or concern with a teammate</p>
+              </div>
+              <button onClick={() => setShowIssue(false)} className="text-slate-500 hover:text-white">✕</button>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Issue Title *</label>
+              <input autoFocus value={issueForm.title} onChange={(e) => setIssueForm({...issueForm, title: e.target.value})}
+                placeholder="Brief summary of the issue" className="fi" />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Description</label>
+              <textarea value={issueForm.description} onChange={(e) => setIssueForm({...issueForm, description: e.target.value})}
+                rows={3} placeholder="What happened? What's the impact?" className="fi resize-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Priority</label>
+                <select value={issueForm.priority} onChange={(e) => setIssueForm({...issueForm, priority: e.target.value as typeof issueForm.priority})} className="fi">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Raised Against</label>
+                <select value={issueForm.raisedAgainst} onChange={(e) => setIssueForm({...issueForm, raisedAgainst: e.target.value})} className="fi">
+                  <option value="">— Nobody specific —</option>
+                  {team.map((m) => <option key={m.username} value={m.username}>{m.username}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5 uppercase tracking-wider">Assign To (for resolution)</label>
+              <select value={issueForm.assignedTo} onChange={(e) => setIssueForm({...issueForm, assignedTo: e.target.value})} className="fi">
+                <option value="">— Unassigned —</option>
+                {team.map((m) => <option key={m.username} value={m.username}>{m.username}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setShowIssue(false)} className="flex-1 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white transition-colors" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>Cancel</button>
+              <button onClick={createInternalIssue} disabled={issueSaving || !issueForm.title.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: "rgba(239,68,68,0.7)" }}>
+                {issueSaving ? "Raising…" : "Raise Issue"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .fi { width:100%; padding:9px 13px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#e2e8f0; font-size:13px; outline:none; }

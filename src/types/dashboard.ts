@@ -311,16 +311,21 @@ export interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   category: TicketCategory;
-  // Requester (public user)
+  // Requester (public user or internal reporter)
   requesterName: string;
   requesterEmail: string;
   // Internal
-  assignedTo?: string;    // username
+  assignedTo?: string;      // username
   labels?: string[];
-  dueDate?: string;       // ISO date
+  dueDate?: string;         // ISO date
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
+  // Internal team tickets
+  isInternal?: boolean;     // true = raised within team, not by a public client
+  raisedAgainst?: string;   // username of teammate this issue is about
+  raisedBy?: string;        // username of staff member who raised it
+  clientId?: string;        // optional link to a specific client
   // Tracking
   ip?: string;
   comments?: TicketComment[];
