@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { fireJourneyEvent } from "@/lib/journey";
 import type { CallbackRequest, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -67,6 +68,17 @@ export async function POST(req: NextRequest) {
     await insert<Lead>("leads", lead).catch((err) =>
       console.error("[callback] lead insert failed:", err)
     );
+
+    const sessionId = req.headers.get("x-site-sid");
+    fireJourneyEvent({
+      sessionId: sessionId ?? null,
+      email: null,
+      stage: "lead",
+      leadId: lead.id,
+      source: "chatbot-call-tab",
+      page: req.headers.get("referer") ?? null,
+      metadata: { formType: "callback", phone: phone.trim() },
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, message: "Confirmed! We'll call you back shortly." });
   } catch (error) {

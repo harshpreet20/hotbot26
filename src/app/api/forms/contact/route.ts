@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendContactConfirmation } from "@/lib/resend";
+import { fireJourneyEvent } from "@/lib/journey";
 import type { Contact, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -75,8 +76,19 @@ export async function POST(req: NextRequest) {
 
     sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch(() => {});
 
-    // Fire-and-forget analytics event
     const sessionId = req.headers.get("x-site-sid");
+
+    fireJourneyEvent({
+      sessionId: sessionId ?? null,
+      email: lead.email,
+      stage: "lead",
+      leadId: lead.id,
+      source: "contact-page",
+      page: req.headers.get("referer") ?? null,
+      metadata: { formType: "contact", subject },
+    }).catch(() => {});
+
+    // Fire-and-forget analytics event
     if (sessionId) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
       fetch(`${siteUrl}/api/track`, {

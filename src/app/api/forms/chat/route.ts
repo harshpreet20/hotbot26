@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { insert, updateById, readWhere, readAll, newId } from "@/lib/store";
 import { sendChatTranscript } from "@/lib/resend";
+import { fireJourneyEvent } from "@/lib/journey";
 import type { ChatSession, ChatMessage, Lead, KnowledgeEntry, Ticket, Client } from "@/types/dashboard";
 
 const SYSTEM_PROMPT = `You are HotBot, the AI assistant for HotBot Studios - a digital marketing and AI automation agency. Help visitors learn about services, answer pricing and process questions, and guide them toward action (booking a call, filling a form, or contacting via WhatsApp).
@@ -65,6 +66,15 @@ export async function POST(req: NextRequest) {
     await insert<Lead>("leads", lead).catch((err) =>
       console.error("[chat] lead insert failed:", err)
     );
+    fireJourneyEvent({
+      sessionId: body.sessionId ?? null,
+      email: lead.email,
+      stage: "lead",
+      leadId: lead.id,
+      source: "chatbot-chat-tab",
+      page: req.headers.get("referer") ?? null,
+      metadata: { formType: "chat" },
+    }).catch(() => {});
   }
 
   // ── Ticket / Client ID lookup ─────────────────────────────────────────────

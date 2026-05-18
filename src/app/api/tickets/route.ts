@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAll, updateById, insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
+import { fireJourneyEvent } from "@/lib/journey";
 import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -158,6 +159,15 @@ export async function POST(req: NextRequest) {
     sendTicketConfirmation(ticket).catch((err) =>
       console.error("[Ticket Email] Confirmation failed:", err)
     );
+
+    fireJourneyEvent({
+      sessionId: null,
+      email: ticket.requesterEmail,
+      stage: "lead",
+      source: "support",
+      page: req.headers.get("referer") ?? null,
+      metadata: { formType: "support-ticket", ticketNumber: ticket.ticketNumber, category: ticket.category },
+    }).catch(() => {});
 
     return NextResponse.json({ ticket: { id: ticket.id, ticketNumber: ticket.ticketNumber, status: ticket.status } }, { status: 201 });
   } catch (err) {
