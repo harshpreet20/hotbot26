@@ -112,7 +112,7 @@ async function send(
   emailType = "transactional",
 ): Promise<void> {
   const resend = client();
-  if (!resend) { console.warn("[resend] RESEND_API_KEY not set — email skipped"); return; }
+  if (!resend) { console.warn("[resend] RESEND_API_KEY not set, email skipped"); return; }
 
   // Pre-insert a log row so we have a record even if the API call fails
   let logId: string | null = null;
@@ -178,7 +178,7 @@ export async function sendRegistrationConfirmation(opts: {
     ${infoBox([["Requested role", role], ["Email", email]])}
     ${btn("Go to Login", `${SITE_URL}/enter/backdrop`)}
   `);
-  await send(email, `Welcome to ${FROM_NAME} — your account is pending approval`, html,
+  await send(email, `Welcome to ${FROM_NAME}: Your Account Is Pending Approval`, html,
     `Hi ${name},\n\nThanks for registering at ${FROM_NAME}.\n${needsVerification ? "Please verify your email first, then " : ""}an administrator will review and approve your access.\n\nLogin: ${SITE_URL}/enter/backdrop`,
     "registration",
   );
@@ -197,7 +197,7 @@ export async function sendPasswordResetAcknowledgment(email: string): Promise<vo
     </div>
     ${btn("Go to Login", `${SITE_URL}/enter/backdrop`)}
   `);
-  await send(email, `${FROM_NAME} — password reset requested`, html,
+  await send(email, `${FROM_NAME}: Password Reset Requested`, html,
     `A password reset link has been sent to ${email}. If you didn't request this, ignore this email.\n\nLogin: ${SITE_URL}/enter/backdrop`,
     "password_reset",
   );
@@ -220,7 +220,7 @@ export async function sendContactConfirmation(opts: {
     ${para(`In the meantime, feel free to reach us on WhatsApp for a faster response.`)}
     ${btn("Chat on WhatsApp", `${SITE_URL}/api/wa?text=${encodeURIComponent("Hi, I just sent a message via your website.")}`, "#22c55e")}
   `);
-  await send(email, `${FROM_NAME} — we received your message`, html,
+  await send(email, `${FROM_NAME}: We Received Your Message`, html,
     `Hi ${name},\n\nThanks for your message. We'll reply within 24 hours.\n\nYour subject: ${subject}\nYour message: ${message}\n\n${FROM_NAME}`,
     "contact_confirmation",
   );
@@ -248,7 +248,7 @@ export async function sendLeadConfirmation(opts: {
     ${para(`Want a faster response? Our team is available on WhatsApp.`)}
     ${btn("Chat on WhatsApp", `${SITE_URL}/api/wa?text=${encodeURIComponent(`Hi, I just enquired about ${service || "your services"}.`)}`, "#22c55e")}
   `);
-  await send(email, `${FROM_NAME} — ${subjectLine} received`, html,
+  await send(email, `${FROM_NAME}: ${subjectLine}`, html,
     `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`,
     "lead_confirmation",
   );
@@ -264,7 +264,7 @@ export async function sendNewsletterWelcome(opts: {
   const { name, email, unsubUrl } = opts;
   const html = wrap("Welcome to the Newsletter", `You're in, ${name || "there"}!`, `
     ${greeting(name || "there")}
-    ${para(`You're now subscribed to the <strong>${FROM_NAME}</strong> newsletter. Expect insights on AI automation, digital marketing, and growth strategies — no fluff, just value.`)}
+    ${para(`You're now subscribed to the <strong>${FROM_NAME}</strong> newsletter. Expect insights on AI automation, digital marketing, and growth strategies. No fluff, just value.`)}
     <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border-radius:12px;padding:20px 24px;margin-bottom:24px;">
       <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e1b4b;">What to expect:</p>
       <ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#374151;line-height:2;">
@@ -279,7 +279,7 @@ export async function sendNewsletterWelcome(opts: {
       Not you? <a href="${unsubUrl}" style="color:#9ca3af;">Unsubscribe</a>
     </p>
   `);
-  await send(email, `Welcome to ${FROM_NAME} — you're subscribed!`, html,
+  await send(email, `Welcome to ${FROM_NAME}: You Are Subscribed`, html,
     `Hi ${name || "there"},\n\nYou're now subscribed to the ${FROM_NAME} newsletter.\n\nUnsubscribe: ${unsubUrl}\n\n${FROM_NAME}`,
     "newsletter_welcome",
   );
@@ -300,7 +300,7 @@ export async function sendCallbackConfirmation(opts: {
     ${para(`Calls come from <strong>+91 97000 01534</strong>. If we miss you, we'll try again or you can request another callback.`)}
     ${btn("Request Another Callback", `${SITE_URL}/#contact`, "#8b5cf6")}
   `);
-  await send(opts.email, `${FROM_NAME} — your callback is confirmed`, html,
+  await send(opts.email, `${FROM_NAME}: Callback Confirmed`, html,
     `Hi ${opts.name},\n\nWe'll call ${opts.phone} within 2 minutes. Calls come from +91 97000 01534.\n\n${FROM_NAME}`,
     "callback_confirmation",
   );
@@ -336,7 +336,7 @@ export async function sendChatTranscript(opts: {
   `);
 
   const text = messages.map((m) => `${m.role === "user" ? name : FROM_NAME + " AI"}: ${m.text}`).join("\n\n");
-  await send(email, `${FROM_NAME} — your chat transcript`, html,
+  await send(email, `${FROM_NAME}: Your Chat Transcript`, html,
     `Hi ${name},\n\nHere's your chat transcript:\n\n${text}\n\n${FROM_NAME}`,
     "chat_transcript",
   );
@@ -432,7 +432,7 @@ export async function sendUserApprovedEmail(opts: {
   const { email, username, resetLink } = opts;
   const html = wrap("Account Approved", `Your access has been approved, ${username}!`, `
     ${greeting(username)}
-    ${para(`Great news — your access request to the <strong>${FROM_NAME}</strong> dashboard has been <strong style="color:#22c55e;">approved</strong>!`)}
+    ${para(`Great news! Your access request to the <strong>${FROM_NAME}</strong> dashboard has been <strong style="color:#22c55e;">approved</strong>.`)}
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">Next step: Set your password</p>
       <p style="margin:6px 0 0;font-size:13px;color:#14532d;line-height:1.6;">Click the button below to set your password and activate your account. This link expires in 24 hours.</p>
@@ -441,7 +441,7 @@ export async function sendUserApprovedEmail(opts: {
     ${para(`After setting your password, you can log in at any time from the link below.`)}
     ${btn("Go to Dashboard Login", `${SITE_URL}/enter/backdrop`, "#6366f1")}
   `);
-  await send(email, `${FROM_NAME} — your account has been approved!`, html,
+  await send(email, `${FROM_NAME}: Your Account Has Been Approved`, html,
     `Hi ${username},\n\nYour access has been approved! Set your password here: ${resetLink}\n\nAfter that, log in at: ${SITE_URL}/enter/backdrop\n\n${FROM_NAME}`,
     "user_approved",
   );
@@ -463,7 +463,7 @@ export async function sendUserRejectedEmail(opts: {
     </div>
     ${btn("Contact Us", `${SITE_URL}/contact`, "#6366f1")}
   `);
-  await send(email, `${FROM_NAME} — access request update`, html,
+  await send(email, `${FROM_NAME}: Access Request Update`, html,
     `Hi ${username},\n\nYour access request to the ${FROM_NAME} dashboard was not approved. If you believe this is a mistake, contact your administrator.\n\n${FROM_NAME}`,
     "user_rejected",
   );
@@ -483,7 +483,7 @@ export async function sendFeatureBroadcast(opts: {
   const changeList = changes
     .map((c) => `<li style="margin-bottom:6px;font-size:14px;color:#374151;line-height:1.6;">${c}</li>`)
     .join("");
-  const html = wrap(`Feature Update — ${segment}`, `New updates to the ${segment} module`, `
+  const html = wrap(`Feature Update: ${segment}`, `New updates to the ${segment} module`, `
     ${greeting("Team")}
     ${para(`A new feature update has been shipped to the <strong>${segment}</strong> module${version ? ` (v${version})` : ""}.`)}
     <div style="background:#eff6ff;border-left:4px solid #6366f1;padding:16px 20px;border-radius:0 10px 10px 0;margin-bottom:24px;">
@@ -501,6 +501,49 @@ export async function sendFeatureBroadcast(opts: {
   `);
   const text = `Hi Team,\n\n${segment} module update${version ? ` (v${version})` : ""}:\n\n${changes.map((c) => `• ${c}`).join("\n")}\n\nPushed by: ${pushedBy}\n\nDashboard: ${SITE_URL}/enter/backdrop/dashboard\n\n${FROM_NAME}`;
   for (const recipient of recipients) {
-    await send(recipient, `[Feature Update] ${segment}${version ? ` v${version}` : ""} — ${changes[0] ?? "see details"}`, html, text, "feature_broadcast");
+    await send(recipient, `[Feature Update] ${segment}${version ? ` v${version}` : ""}: ${changes[0] ?? "see details"}`, html, text, "feature_broadcast");
   }
+}
+
+// ── 14. Task assigned notification ───────────────────────────────────────────
+
+export async function sendTaskAssignedEmail(opts: {
+  assigneeEmail: string;
+  assigneeName: string;
+  taskTitle: string;
+  taskDescription?: string;
+  priority: string;
+  dueDate?: string;
+  assignedBy: string;
+  linkedEntityType?: string;
+  linkedEntityLabel?: string;
+}): Promise<void> {
+  const { assigneeEmail, assigneeName, taskTitle, taskDescription, priority, dueDate, assignedBy, linkedEntityType, linkedEntityLabel } = opts;
+  const dashUrl = `${SITE_URL}/enter/backdrop/dashboard/tasks`;
+  const priorityColors: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e", urgent: "#dc2626" };
+  const priorityColor = priorityColors[priority] ?? "#6366f1";
+
+  const html = wrap("Task Assigned to You", `New task: ${taskTitle}`, `
+    ${greeting(assigneeName)}
+    ${para(`You have been assigned a new task by <strong>${assignedBy}</strong>.`)}
+    <div style="background:#eff6ff;border-left:4px solid #6366f1;padding:16px 20px;border-radius:0 10px 10px 0;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#1e1b4b;">${taskTitle}</p>
+      ${taskDescription ? `<p style="margin:6px 0 0;font-size:13px;color:#374151;line-height:1.6;">${taskDescription}</p>` : ""}
+    </div>
+    ${infoBox([
+      ["Priority", `<span style="color:${priorityColor};font-weight:700;text-transform:capitalize;">${priority}</span>`],
+      ...(dueDate ? [["Due Date", new Date(dueDate).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })] as [string, string]] : []),
+      ...(linkedEntityType && linkedEntityLabel ? [[linkedEntityType.charAt(0).toUpperCase() + linkedEntityType.slice(1), linkedEntityLabel] as [string, string]] : []),
+      ["Assigned by", assignedBy],
+    ])}
+    ${btn("View Task in Dashboard", dashUrl)}
+  `);
+
+  await send(
+    assigneeEmail,
+    `[Task] ${taskTitle}`,
+    html,
+    `Hi ${assigneeName},\n\nYou have a new task assigned by ${assignedBy}:\n\n${taskTitle}${taskDescription ? `\n${taskDescription}` : ""}\n\nPriority: ${priority}${dueDate ? `\nDue: ${dueDate}` : ""}\n\nView: ${dashUrl}\n\n${FROM_NAME}`,
+    "task_assigned",
+  );
 }

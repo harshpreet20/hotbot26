@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendTaskAssignedEmail } from "@/lib/resend";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import type { CRMTask } from "@/types/dashboard";
+
+async function lookupUserEmail(username: string): Promise<{ email: string; display: string } | null> {
+  if (!isSupabaseEnabled()) return null;
+  const { data } = await sb()
+    .from("backdrop_users")
+    .select("email, username")
+    .eq("username", username)
+    .single();
+  if (!data?.email) return null;
+  return { email: data.email as string, display: (data.username as string) || username };
+}
 
 function getIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -74,6 +87,24 @@ export async function POST(req: NextRequest) {
     console.error("[tasks] insert error:", msg);
     return NextResponse.json({ error: "Failed to create task." }, { status: 500 });
   }
+
+  if (task.assignedTo && task.assignedTo !== session.username) {
+    lookupUserEmail(task.assignedTo).then((user) => {
+      if (!user) return;
+      sendTaskAssignedEmail({
+        assigneeEmail:     user.email,
+        assigneeName:      user.display,
+        taskTitle:         task.title,
+        taskDescription:   task.description,
+        priority:          task.priority,
+        dueDate:           task.dueDate,
+        assignedBy:        session.username,
+        linkedEntityType:  task.linkedEntityType,
+        linkedEntityLabel: task.linkedEntityLabel,
+      }).catch((err) => console.error("[tasks] email error:", err instanceof Error ? err.message : err));
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ task }, { status: 201 });
 }
 
@@ -101,6 +132,26 @@ export async function PATCH(req: NextRequest) {
   };
 
   await updateById<CRMTask>("crm_tasks", body.id, updated);
+
+  // Notify the new assignee if assignedTo changed and is not the actor
+  const assigneeChanged = body.assignedTo && body.assignedTo !== existing.assignedTo;
+  if (assigneeChanged && updated.assignedTo && updated.assignedTo !== session.username) {
+    lookupUserEmail(updated.assignedTo).then((user) => {
+      if (!user) return;
+      sendTaskAssignedEmail({
+        assigneeEmail:     user.email,
+        assigneeName:      user.display,
+        taskTitle:         updated.title,
+        taskDescription:   updated.description,
+        priority:          updated.priority,
+        dueDate:           updated.dueDate,
+        assignedBy:        session.username,
+        linkedEntityType:  updated.linkedEntityType,
+        linkedEntityLabel: updated.linkedEntityLabel,
+      }).catch((err) => console.error("[tasks] email error:", err instanceof Error ? err.message : err));
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ task: updated });
 }
 

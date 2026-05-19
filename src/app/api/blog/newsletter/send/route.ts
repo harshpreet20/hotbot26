@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   if (!isNewsletterEmailConfigured()) {
     return NextResponse.json(
-      { error: "Email not configured. Set GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD." },
+      { error: "Email not configured. Set RESEND_API_KEY." },
       { status: 503 },
     );
   }

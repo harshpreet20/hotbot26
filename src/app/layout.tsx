@@ -115,7 +115,7 @@ const orgSchema = {
     "@type": "ContactPoint",
     telephone: "+91-9700001534",
     contactType: "customer service",
-    email: "hotbotstudios@gmail.com",
+    email: "info@hotbotstudios.com",
     availableLanguage: "English",
   },
   hasOfferCatalog: {
