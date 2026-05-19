@@ -279,3 +279,100 @@ ALTER TABLE tickets        DISABLE ROW LEVEL SECURITY;
 ALTER TABLE team_channels  DISABLE ROW LEVEL SECURITY;
 ALTER TABLE team_messages  DISABLE ROW LEVEL SECURITY;
 ALTER TABLE posts          DISABLE ROW LEVEL SECURITY;
+
+-- ── Email Logs (sent email tracking) ─────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS email_logs (
+  id             TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  resend_id      TEXT,
+  to_email       TEXT NOT NULL,
+  subject        TEXT NOT NULL DEFAULT '',
+  email_type     TEXT NOT NULL DEFAULT 'transactional',
+  status         TEXT NOT NULL DEFAULT 'queued' CHECK (status IN (
+    'queued','sent','delivered','opened','clicked','bounced','complained','delayed','failed'
+  )),
+  last_event     TEXT,
+  sent_at        TIMESTAMPTZ,
+  delivered_at   TIMESTAMPTZ,
+  opened_at      TIMESTAMPTZ,
+  last_opened_at TIMESTAMPTZ,
+  open_count     INTEGER NOT NULL DEFAULT 0,
+  open_history   TIMESTAMPTZ[] NOT NULL DEFAULT '{}',
+  clicked_at     TIMESTAMPTZ,
+  bounced_at     TIMESTAMPTZ,
+  complained_at  TIMESTAMPTZ,
+  metadata       JSONB,
+  created_at     TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS email_logs_resend_id_idx   ON email_logs(resend_id);
+CREATE INDEX IF NOT EXISTS email_logs_to_email_idx    ON email_logs(to_email);
+CREATE INDEX IF NOT EXISTS email_logs_email_type_idx  ON email_logs(email_type);
+CREATE INDEX IF NOT EXISTS email_logs_created_at_idx  ON email_logs(created_at DESC);
+
+ALTER TABLE email_logs DISABLE ROW LEVEL SECURITY;
+
+-- Add open profiling columns to existing email_logs tables (safe if already exists)
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS last_opened_at TIMESTAMPTZ;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_count     INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_history   TIMESTAMPTZ[] NOT NULL DEFAULT '{}';
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS metadata       JSONB;
+
+-- ── Site Analytics ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS site_sessions (
+  id               TEXT PRIMARY KEY,
+  first_page       TEXT,
+  referrer         TEXT,
+  utm_source       TEXT,
+  utm_medium       TEXT,
+  utm_campaign     TEXT,
+  device           TEXT,
+  browser          TEXT,
+  os               TEXT,
+  country          TEXT,
+  city             TEXT,
+  traffic_category TEXT,
+  traffic_source   TEXT,
+  timezone         TEXT,
+  page_count       INTEGER NOT NULL DEFAULT 1,
+  duration_ms      BIGINT  NOT NULL DEFAULT 0,
+  is_bounce        BOOLEAN NOT NULL DEFAULT TRUE,
+  tab_switches     INTEGER,
+  tab_hidden_ms    BIGINT,
+  created_at       TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  last_seen_at     TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS site_sessions_created_at_idx ON site_sessions(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS site_page_views (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  session_id      TEXT NOT NULL REFERENCES site_sessions(id) ON DELETE CASCADE,
+  page            TEXT NOT NULL,
+  referrer        TEXT,
+  duration_ms     BIGINT,
+  hour_utc        SMALLINT,
+  timezone        TEXT,
+  max_scroll_depth SMALLINT,
+  created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS site_page_views_session_idx    ON site_page_views(session_id);
+CREATE INDEX IF NOT EXISTS site_page_views_created_at_idx ON site_page_views(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS site_events (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  session_id TEXT NOT NULL,
+  event_name TEXT NOT NULL,
+  page       TEXT,
+  properties JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS site_events_session_idx    ON site_events(session_id);
+CREATE INDEX IF NOT EXISTS site_events_created_at_idx ON site_events(created_at DESC);
+
+ALTER TABLE site_sessions   DISABLE ROW LEVEL SECURITY;
+ALTER TABLE site_page_views DISABLE ROW LEVEL SECURITY;
+ALTER TABLE site_events     DISABLE ROW LEVEL SECURITY;

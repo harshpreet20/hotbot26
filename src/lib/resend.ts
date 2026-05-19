@@ -110,6 +110,7 @@ async function send(
   html: string,
   text: string,
   emailType = "transactional",
+  metadata: Record<string, unknown> = {},
 ): Promise<void> {
   const resend = client();
   if (!resend) { console.warn("[resend] RESEND_API_KEY not set, email skipped"); return; }
@@ -120,7 +121,7 @@ async function send(
     try {
       const { data: row } = await sb()
         .from("email_logs")
-        .insert({ to_email: to, subject, email_type: emailType, status: "queued" })
+        .insert({ to_email: to, subject, email_type: emailType, status: "queued", metadata: Object.keys(metadata).length ? metadata : null })
         .select("id")
         .single();
       logId = row?.id ?? null;
@@ -256,6 +257,7 @@ export async function sendLeadConfirmation(opts: {
   await send(email, `${FROM_NAME}: ${subjectLine}`, html,
     `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`,
     "lead_confirmation",
+    { service, formType },
   );
 }
 
@@ -371,6 +373,7 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
     html,
     `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber}: ${ticket.title}\nCategory: ${ticket.category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_confirmation",
+    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
   );
 }
 
@@ -391,6 +394,7 @@ export async function sendStaffReplyNotification(ticket: Ticket, comment: Ticket
     html,
     `Hi ${ticket.requesterName},\n\nNew reply on ticket ${ticket.ticketNumber}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_reply",
+    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
   );
 }
 
@@ -424,6 +428,7 @@ export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: st
     html,
     `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_status_update",
+    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber, newStatus },
   );
 }
 

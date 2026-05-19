@@ -11,11 +11,30 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
 
   if (id && isSupabaseEnabled()) {
-    void sb()
+    const now = new Date().toISOString();
+    const client = sb();
+    // Fetch current row to increment open_count and append to open_history
+    const { data: row } = await client
       .from("email_logs")
-      .update({ opened_at: new Date().toISOString(), status: "opened", last_event: "opened" })
+      .select("opened_at, open_count, open_history")
       .eq("id", id)
-      .is("opened_at", null);
+      .single();
+
+    const openCount = ((row?.open_count as number | null) ?? 0) + 1;
+    const history = (row?.open_history as string[] | null) ?? [];
+    history.push(now);
+
+    void client
+      .from("email_logs")
+      .update({
+        opened_at:    row?.opened_at ?? now,  // first open timestamp preserved
+        last_opened_at: now,
+        open_count:   openCount,
+        open_history: history,
+        status:       "opened",
+        last_event:   "opened",
+      })
+      .eq("id", id);
   }
 
   return new NextResponse(PIXEL, {

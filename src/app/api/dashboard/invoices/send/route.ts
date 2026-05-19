@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import PDFDocument from "pdfkit";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
@@ -24,6 +25,118 @@ function fmtAmount(amount: number, currency: string): string {
 function fmtDate(dateStr: string): string {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function buildInvoicePdf(inv: Invoice): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: "A4" });
+    const chunks: Buffer[] = [];
+    doc.on("data", (c: Buffer) => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const sym = currencySymbol(inv.currency);
+    const fmt = (n: number) => `${sym}${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // Header band
+    doc.rect(0, 0, doc.page.width, 100).fill("#1e1b4b");
+    doc.fillColor("#ffffff").fontSize(22).font("Helvetica-Bold").text(FROM_NAME, 50, 28);
+    doc.fillColor("#a5b4fc").fontSize(10).font("Helvetica").text("INVOICE", 50, 54);
+    doc.fillColor("#ffffff").fontSize(16).font("Helvetica-Bold").text(inv.invoiceNumber, 50, 68);
+    const totalStr = fmt(inv.total);
+    doc.fillColor("#c7d2fe").fontSize(13).font("Helvetica-Bold").text(totalStr, 0, 54, { align: "right" });
+    doc.fillColor("#a5b4fc").fontSize(10).font("Helvetica").text(inv.status.toUpperCase(), 0, 72, { align: "right" });
+
+    let y = 116;
+
+    // From / To
+    doc.fillColor("#6366f1").fontSize(8).font("Helvetica-Bold").text("FROM", 50, y);
+    doc.fillColor("#111827").fontSize(11).font("Helvetica-Bold").text(FROM_NAME, 50, y + 12);
+    doc.fillColor("#6b7280").fontSize(9).font("Helvetica").text(FROM_ADDR, 50, y + 26);
+
+    doc.fillColor("#6366f1").fontSize(8).font("Helvetica-Bold").text("BILLED TO", 300, y);
+    doc.fillColor("#111827").fontSize(11).font("Helvetica-Bold").text(inv.clientName, 300, y + 12);
+    if (inv.clientCompany) doc.fillColor("#6b7280").fontSize(9).font("Helvetica").text(inv.clientCompany, 300, y + 26);
+    doc.fillColor("#6b7280").fontSize(9).font("Helvetica").text(inv.clientEmail, 300, y + (inv.clientCompany ? 38 : 26));
+
+    y += 70;
+
+    // Dates
+    doc.rect(50, y, doc.page.width - 100, 28).fill("#f8fafc");
+    doc.fillColor("#9ca3af").fontSize(8).font("Helvetica-Bold").text("ISSUE DATE", 60, y + 5);
+    doc.fillColor("#374151").fontSize(10).font("Helvetica").text(fmtDate(inv.issuedDate), 60, y + 15);
+    doc.fillColor("#9ca3af").fontSize(8).font("Helvetica-Bold").text("DUE DATE", 200, y + 5);
+    const dueDateColor = inv.status === "overdue" ? "#ef4444" : "#374151";
+    doc.fillColor(dueDateColor).fontSize(10).font("Helvetica").text(fmtDate(inv.dueDate), 200, y + 15);
+
+    y += 44;
+
+    // Line items table header
+    doc.rect(50, y, doc.page.width - 100, 20).fill("#f9fafb");
+    doc.fillColor("#9ca3af").fontSize(8).font("Helvetica-Bold");
+    doc.text("DESCRIPTION", 60, y + 6);
+    doc.text("QTY", 370, y + 6);
+    doc.text("UNIT PRICE", 400, y + 6);
+    doc.text("AMOUNT", 480, y + 6);
+
+    y += 22;
+    doc.strokeColor("#e5e7eb").lineWidth(0.5);
+
+    for (const li of inv.lineItems) {
+      doc.moveTo(50, y).lineTo(doc.page.width - 50, y).stroke();
+      doc.fillColor("#374151").fontSize(9).font("Helvetica");
+      doc.text(li.description, 60, y + 4, { width: 300 });
+      doc.text(String(li.quantity), 370, y + 4);
+      doc.text(fmt(li.unitPrice), 398, y + 4);
+      doc.fillColor("#374151").font("Helvetica-Bold").text(fmt(li.amount), 476, y + 4);
+      y += 20;
+    }
+
+    doc.moveTo(50, y).lineTo(doc.page.width - 50, y).stroke();
+    y += 12;
+
+    // Totals
+    const totalsX = 380;
+    doc.fillColor("#6b7280").fontSize(9).font("Helvetica").text("Subtotal", totalsX, y);
+    doc.fillColor("#374151").text(fmt(inv.subtotal), 0, y, { align: "right" });
+    y += 16;
+    if (inv.discount > 0) {
+      doc.fillColor("#6b7280").text("Discount", totalsX, y);
+      doc.fillColor("#ef4444").text(`- ${fmt(inv.discount)}`, 0, y, { align: "right" });
+      y += 16;
+    }
+    doc.fillColor("#6b7280").font("Helvetica").text(`Tax (${inv.taxRate}%)`, totalsX, y);
+    doc.fillColor("#374151").text(fmt(inv.taxAmount), 0, y, { align: "right" });
+    y += 10;
+    doc.moveTo(totalsX, y).lineTo(doc.page.width - 50, y).strokeColor("#e5e7eb").stroke();
+    y += 8;
+    doc.fillColor("#111827").fontSize(12).font("Helvetica-Bold").text("TOTAL", totalsX, y);
+    doc.fillColor("#6366f1").text(fmt(inv.total), 0, y, { align: "right" });
+    y += 28;
+
+    if (inv.terms) {
+      doc.rect(50, y, doc.page.width - 100, 1).fill("#e5e7eb");
+      y += 10;
+      doc.fillColor("#6366f1").fontSize(8).font("Helvetica-Bold").text("PAYMENT TERMS", 50, y);
+      y += 12;
+      doc.fillColor("#374151").fontSize(9).font("Helvetica").text(inv.terms, 50, y, { width: doc.page.width - 100 });
+      y += 24;
+    }
+    if (inv.notes) {
+      doc.fillColor("#9ca3af").fontSize(8).font("Helvetica-Bold").text("NOTES", 50, y);
+      y += 12;
+      doc.fillColor("#6b7280").fontSize(9).font("Helvetica").text(inv.notes, 50, y, { width: doc.page.width - 100 });
+    }
+
+    // Footer
+    doc.rect(0, doc.page.height - 50, doc.page.width, 50).fill("#1e1b4b");
+    doc.fillColor("#a5b4fc").fontSize(9).font("Helvetica").text(
+      `Thank you for your business! · ${SITE_URL.replace(/^https?:\/\//, "")} · ${FROM_ADDR}`,
+      0, doc.page.height - 30, { align: "center" },
+    );
+
+    doc.end();
+  });
 }
 
 function buildInvoiceHtml(inv: Invoice, logId?: string): string {
@@ -163,6 +276,14 @@ export async function POST(req: NextRequest) {
     logId = logRow?.id as string | undefined;
   }
 
+  // Generate PDF attachment
+  let pdfBuffer: Buffer | undefined;
+  try {
+    pdfBuffer = await buildInvoicePdf(inv);
+  } catch (pdfErr) {
+    console.error("[Invoice Send] PDF generation failed:", pdfErr);
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from:    `${FROM_NAME} <${FROM_ADDR}>`,
@@ -170,6 +291,12 @@ export async function POST(req: NextRequest) {
     subject,
     text:    buildInvoiceText(inv),
     html:    buildInvoiceHtml(inv, logId),
+    ...(pdfBuffer ? {
+      attachments: [{
+        filename: `${inv.invoiceNumber}.pdf`,
+        content:  pdfBuffer.toString("base64"),
+      }],
+    } : {}),
   });
 
   if (error) {

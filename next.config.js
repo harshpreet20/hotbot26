@@ -42,13 +42,6 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // www → canonical (eliminates the +349ms redirect penalty)
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.hotbotstudios.com" }],
-        destination: "https://hotbotstudios.com/:path*",
-        permanent: true,
-      },
       { source: "/marketing-services", destination: "/digital-marketing", permanent: true },
       { source: "/marketing-services/:path*", destination: "/digital-marketing/:path*", permanent: true },
       { source: "/consultancy", destination: "/marketing-consulting", permanent: true },

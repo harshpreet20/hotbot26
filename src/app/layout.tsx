@@ -165,6 +165,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
 
+        {/* LCP: preload logo so browser fetches it in parallel with HTML parse.
+            The Navbar is a client component so Next.js cannot inject this automatically. */}
+        <link rel="preload" as="image" href="/logos/hotbot-logo.svg" fetchPriority="high" />
+
         {/* Google Analytics 4 — lazyOnload keeps it off the critical path */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
