@@ -49,9 +49,11 @@ function wrap(title: string, preheader: string, body: string): string {
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td width="44">
-                <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;text-align:center;line-height:40px;">
-                  <span style="color:#ffffff;font-size:20px;font-weight:900;font-family:sans-serif;">H</span>
-                </div>
+                <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+                  <td width="40" height="40" style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);text-align:center;vertical-align:middle;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:900;font-family:Arial,sans-serif;line-height:40px;display:block;">H</span>
+                  </td>
+                </tr></table>
               </td>
               <td style="padding-left:12px;">
                 <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.3px;">${FROM_NAME}</p>
@@ -220,7 +222,7 @@ export async function sendContactConfirmation(opts: {
     ${infoBox([["Subject", subject || "General Enquiry"]])}
     ${message ? quoteBox("Your Message", message) : ""}
     ${para(`In the meantime, feel free to reach us on WhatsApp for a faster response.`)}
-    ${btn("Chat on WhatsApp", `https://wa.me/919700001534?text=${encodeURIComponent("Hi, I just sent a message via your website.")}`, "#22c55e")}
+    ${btn("Chat on WhatsApp", `${SITE_URL}/api/wa?text=${encodeURIComponent("Hi, I just sent a message via your website.")}`, "#22c55e")}
   `);
   await send(email, `${FROM_NAME} — we received your message`, html,
     `Hi ${name},\n\nThanks for your message. We'll reply within 24 hours.\n\nYour subject: ${subject}\nYour message: ${message}\n\n${FROM_NAME}`,
@@ -248,7 +250,7 @@ export async function sendLeadConfirmation(opts: {
     ])}
     ${message ? quoteBox("Your message", message) : ""}
     ${para(`Want a faster response? Our team is available on WhatsApp.`)}
-    ${btn("Chat on WhatsApp", `https://wa.me/919700001534?text=${encodeURIComponent(`Hi, I just enquired about ${service || "your services"}.`)}`, "#22c55e")}
+    ${btn("Chat on WhatsApp", `${SITE_URL}/api/wa?text=${encodeURIComponent(`Hi, I just enquired about ${service || "your services"}.`)}`, "#22c55e")}
   `);
   await send(email, `${FROM_NAME} — ${subjectLine} received`, html,
     `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`,
