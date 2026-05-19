@@ -550,16 +550,33 @@ export default function AnalyticsPage() {
   const router = useRouter();
 
   const [bundle,    setBundle]    = useState<AnalyticsBundle | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState("");
-  const [aiResult,  setAiResult]  = useState<AIResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiError,   setAiError]   = useState("");
-  const [liveItems, setLiveItems] = useState<LiveItem[]>([]);
-  const [liveTs,    setLiveTs]    = useState<string>(new Date().toISOString());
+  const [loading,    setLoading]   = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error,      setError]     = useState("");
+  const [aiResult,   setAiResult]  = useState<AIResult | null>(null);
+  const [analyzing,  setAnalyzing] = useState(false);
+  const [aiError,    setAiError]   = useState("");
+  const [liveItems,  setLiveItems] = useState<LiveItem[]>([]);
+  const [liveTs,     setLiveTs]    = useState<string>(new Date().toISOString());
   const [lastPollAt, setLastPollAt] = useState<string>(new Date().toISOString());
   const secretRef = useRef("");
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Load / refresh analytics data ────────────────────────────────────────
+  const loadData = useCallback((secret: string, isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError("");
+    fetch("/api/dashboard/analytics", {
+      headers: { Authorization: `Bearer ${secret}` },
+    })
+      .then(r => r.json() as Promise<AnalyticsBundle & { error?: string }>)
+      .then(d => {
+        if (d.error) { setError(d.error); }
+        else { setBundle(d); }
+      })
+      .catch(() => setError("Failed to load analytics."))
+      .finally(() => { setLoading(false); setRefreshing(false); });
+  }, []);
 
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -571,18 +588,8 @@ export default function AnalyticsPage() {
       return;
     }
     secretRef.current = secret;
-
-    fetch("/api/dashboard/analytics", {
-      headers: { Authorization: `Bearer ${secret}` },
-    })
-      .then(r => r.json() as Promise<AnalyticsBundle & { error?: string }>)
-      .then(d => {
-        if (d.error) { setError(d.error); }
-        else { setBundle(d); }
-      })
-      .catch(() => setError("Failed to load analytics."))
-      .finally(() => setLoading(false));
-  }, [router]);
+    loadData(secret);
+  }, [router, loadData]);
 
   // ── Live feed polling (every 10s) ─────────────────────────────────────────
   const pollLive = useCallback(async () => {
@@ -731,6 +738,27 @@ export default function AnalyticsPage() {
                 <span style={{ color: "#64748b", fontSize: 12 }}>/10 health</span>
               </div>
             )}
+
+            <button
+              onClick={() => loadData(secretRef.current, true)}
+              disabled={refreshing || loading}
+              title="Refresh data"
+              style={{
+                padding: "9px 14px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)",
+                cursor: refreshing || loading ? "not-allowed" : "pointer",
+                background: "rgba(99,102,241,0.08)",
+                color: refreshing ? "#6366f1" : "#94a3b8", fontWeight: 600, fontSize: 14,
+                display: "flex", alignItems: "center", gap: 6,
+                transition: "color 0.2s, background 0.2s",
+              }}
+            >
+              <span style={{
+                display: "inline-block",
+                animation: refreshing ? "spin 0.8s linear infinite" : "none",
+                lineHeight: 1,
+              }}>↻</span>
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
 
             <button
               onClick={runAI}
