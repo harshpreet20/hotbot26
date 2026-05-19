@@ -43,16 +43,26 @@ export async function GET(req: NextRequest) {
     // ── Current period data ──────────────────────────────────────────────────
 
     // Total pageviews current
-    const { count: pvCount } = await client
+    const { count: pvCount, error: pvErr } = await client
       .from("site_page_views")
       .select("id", { count: "exact", head: true })
       .gte("created_at", prev30);
 
+    if (pvErr) {
+      console.error("[analytics] site_page_views query failed:", pvErr.message);
+      return NextResponse.json({ error: `Analytics query failed: ${pvErr.message}` }, { status: 500 });
+    }
+
     // Total visitors (distinct session_ids) — use all sessions in range
-    const { data: sessionsCurrent } = await client
+    const { data: sessionsCurrent, error: sessErr } = await client
       .from("site_sessions")
       .select("id, is_bounce, duration_ms")
       .gte("created_at", prev30);
+
+    if (sessErr) {
+      console.error("[analytics] site_sessions query failed:", sessErr.message);
+      return NextResponse.json({ error: `Analytics query failed: ${sessErr.message}` }, { status: 500 });
+    }
 
     const totalSessions  = sessionsCurrent?.length ?? 0;
     const totalVisitors  = totalSessions;
