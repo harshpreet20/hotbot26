@@ -52,7 +52,7 @@ export function FormModal() {
   const [leadId, setLeadId] = useState<string | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
-  const { getToken } = useRecaptcha();
+  const { getToken, prime } = useRecaptcha();
 
   // Persist form draft to sessionStorage on every change (survives page refresh)
   useEffect(() => {
@@ -71,6 +71,7 @@ export function FormModal() {
       setDone(false);
       setSubmitting(false);
       document.body.style.overflow = "hidden";
+      prime(); // user clicked a CTA — warm up reCAPTCHA now
     } else {
       document.body.style.overflow = "";
     }

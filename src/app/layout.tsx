@@ -161,25 +161,16 @@ export default function RootLayout({
         <meta name="theme-color" content="#0a0e1a" />
         <meta name="color-scheme" content="dark" />
 
-        {/* Performance: DNS prefetch & preconnect for third-party origins */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        {/* Performance: DNS prefetch for analytics — fonts are self-hosted via next/font */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
 
-        {/* LCP font preload - Plus Jakarta Sans primary weight */}
-        <link
-          rel="preload"
-          as="font"
-          href="https://fonts.gstatic.com/s/plusjakartasans/v8/LDIoaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_KU7NSg.woff2"
-          crossOrigin="anonymous"
-        />
-
-        {/* Google Analytics 4 */}
+        {/* Google Analytics 4 — lazyOnload keeps it off the critical path */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="gtag-init" strategy="afterInteractive">
+        <Script id="gtag-init" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
