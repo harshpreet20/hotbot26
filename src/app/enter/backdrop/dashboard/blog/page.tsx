@@ -87,7 +87,7 @@ export default function BlogPage() {
           </Link>
         </header>
 
-        <div className="flex-1 p-6 max-w-5xl w-full mx-auto">
+        <div className="flex-1 p-6">
           {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
           {loading ? (
             <div className="flex items-center justify-center py-20 text-slate-500 text-sm">Loading posts…</div>

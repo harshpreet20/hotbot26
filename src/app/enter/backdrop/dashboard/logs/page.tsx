@@ -190,7 +190,7 @@ export default function LogsPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-6xl mx-auto space-y-5">
+      <div className="p-6 space-y-5">
 
         {/* Header */}
         <div className="flex items-center justify-between">

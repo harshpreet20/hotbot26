@@ -60,7 +60,7 @@ export default function CallbacksPage() {
           </div>
         </header>
 
-        <div className="flex-1 p-6 max-w-3xl">
+        <div className="flex-1 p-6">
           {loading ? (
             <div className="text-slate-500 text-sm py-20 text-center">Loading…</div>
           ) : items.length === 0 ? (

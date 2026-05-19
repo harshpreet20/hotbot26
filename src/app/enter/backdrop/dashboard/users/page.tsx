@@ -396,7 +396,7 @@ export default function UsersPage() {
           </div>
         </header>
 
-        <div className="flex-1 p-6 max-w-7xl space-y-5">
+        <div className="flex-1 p-6 space-y-5">
 
           {/* Team member cards */}
           <div className="rounded-2xl p-4 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.015)" }}>

@@ -261,6 +261,13 @@ const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
   agent:        { label: "Agent",        color: "#f59e0b" },
 };
 
+const BADGE_KEY_MAP: Record<string, keyof BadgeCounts> = {
+  "/enter/backdrop/dashboard/tickets":   "tickets",
+  "/enter/backdrop/dashboard/leads":     "leads",
+  "/enter/backdrop/dashboard/callbacks": "callbacks",
+  "/enter/backdrop/dashboard/chats":     "chats",
+};
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
@@ -269,6 +276,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [impersonatingAs, setImpersonatingAs] = useState<string | null>(null);
   const [originalUser,    setOriginalUser]    = useState<string>("");
   const [badges, setBadges]     = useState<BadgeCounts>({ tickets: 0, leads: 0, callbacks: 0, chats: 0 });
+  const [seenCounts, setSeenCounts] = useState<BadgeCounts>(() => {
+    if (typeof window === "undefined") return { tickets: 0, leads: 0, callbacks: 0, chats: 0 };
+    try {
+      const stored = localStorage.getItem("backdrop_seen_counts");
+      return stored ? JSON.parse(stored) as BadgeCounts : { tickets: 0, leads: 0, callbacks: 0, chats: 0 };
+    } catch { return { tickets: 0, leads: 0, callbacks: 0, chats: 0 }; }
+  });
   const badgeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -338,6 +352,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     badgeTimer.current = setInterval(fetchBadges, 10_000);
     return () => { if (badgeTimer.current) clearInterval(badgeTimer.current); };
   }, []);
+
+  // Mark badge section as seen when navigating to it
+  useEffect(() => {
+    const key = Object.keys(BADGE_KEY_MAP).find(p => pathname.startsWith(p));
+    if (!key) return;
+    const field = BADGE_KEY_MAP[key];
+    const currentCount = badges[field];
+    setSeenCounts(prev => {
+      if (prev[field] === currentCount) return prev;
+      const next = { ...prev, [field]: currentCount };
+      try { localStorage.setItem("backdrop_seen_counts", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [pathname, badges]);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -423,8 +451,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5" aria-label="Dashboard navigation">
           {NAV.filter(canSee).map((item) => {
-            const active  = isActive(item);
-            const count   = NAV_BADGES[item.href] ?? 0;
+            const active      = isActive(item);
+            const count       = NAV_BADGES[item.href] ?? 0;
+            const badgeKey    = BADGE_KEY_MAP[item.href];
+            const seenCount   = badgeKey ? (seenCounts[badgeKey] ?? 0) : 0;
+            const unreadCount = Math.max(0, count - seenCount);
             return (
               <Link
                 key={item.href}
@@ -438,7 +469,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               >
                 <span style={{ color: active ? "#818cf8" : "#475569" }}>{item.icon}</span>
                 <span className="flex-1 min-w-0 truncate">{item.label}</span>
-                {count > 0 && (
+                {unreadCount > 0 && (
                   <span style={{
                     minWidth: 18, height: 18, borderRadius: 9,
                     background: item.href.includes("chats") ? "#ef4444" : "#6366f1",
@@ -446,7 +477,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     padding: "0 5px", lineHeight: 1, flexShrink: 0,
                   }}>
-                    {count > 99 ? "99+" : count}
+                    {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </Link>
@@ -466,6 +497,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
           )}
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            title="Refresh page"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            Refresh
+          </button>
           <button
             onClick={signOut}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-300 transition-colors"

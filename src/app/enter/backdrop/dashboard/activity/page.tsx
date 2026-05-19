@@ -112,7 +112,7 @@ export default function ActivityPage() {
           </div>
         </header>
 
-        <div className="flex-1 p-6 max-w-5xl">
+        <div className="flex-1 p-6">
           {loading ? (
             <div className="text-slate-500 text-sm py-20 text-center">Loading…</div>
           ) : filtered.length === 0 ? (

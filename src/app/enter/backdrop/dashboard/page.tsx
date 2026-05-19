@@ -69,7 +69,7 @@ export default function OverviewPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-5xl">
+      <div className="p-6">
         <div className="mb-7">
           <h1 className="text-white text-xl font-semibold">Overview</h1>
           <p className="text-slate-500 text-sm mt-1">All inbound activity from your website - no N8N required.</p>
