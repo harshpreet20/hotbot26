@@ -182,6 +182,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/broadcasts",
+    label: "Broadcasts",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/activity",
     label: "Activity Log",
     roles: ["super_admin", "admin"],
@@ -224,6 +234,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const [role, setRole]         = useState<Role | null>(null);
   const [username, setUsername] = useState<string>("");
+  const [impersonatingAs, setImpersonatingAs] = useState<string | null>(null);
+  const [originalUser,    setOriginalUser]    = useState<string>("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -232,6 +244,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     if (stored) {
       setRole((sessionStorage.getItem("backdrop_role") as Role | null) ?? null);
       setUsername(sessionStorage.getItem("backdrop_username") ?? "");
+      if (sessionStorage.getItem("backdrop_impersonating") === "1") {
+        setImpersonatingAs(sessionStorage.getItem("backdrop_username") ?? "");
+        setOriginalUser(sessionStorage.getItem("backdrop_original_username") ?? "");
+      }
       return;
     }
 
@@ -278,10 +294,41 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     router.push("/enter/backdrop");
   }
 
+  async function stopImpersonation() {
+    const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
+    try {
+      const res  = await fetch("/api/blog/auth/impersonate", { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+      const data = await res.json() as { success?: boolean; token?: string; role?: string; username?: string };
+      if (res.ok && data.token) {
+        sessionStorage.setItem("backdrop_secret",   data.token);
+        sessionStorage.setItem("backdrop_role",     data.role ?? "");
+        sessionStorage.setItem("backdrop_username", data.username ?? "");
+        sessionStorage.removeItem("backdrop_impersonating");
+        sessionStorage.removeItem("backdrop_original_username");
+        sessionStorage.removeItem("backdrop_original_role");
+        window.location.href = "/enter/backdrop/dashboard/users";
+      }
+    } catch { /* ignore */ }
+  }
+
   const badge = role ? ROLE_BADGE[role] : null;
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "#0a0e1a" }}>
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: "#0a0e1a" }}>
+      {/* Impersonation banner */}
+      {impersonatingAs && (
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 text-xs font-medium" style={{ background: "rgba(251,191,36,0.12)", borderBottom: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}>
+          <span>⚠ Acting as <strong>{impersonatingAs}</strong> — you are viewing the dashboard as this user</span>
+          <button
+            onClick={stopImpersonation}
+            className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors"
+            style={{ background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24" }}
+          >
+            Stop — return as {originalUser}
+          </button>
+        </div>
+      )}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Sidebar */}
       <aside
         className="w-56 shrink-0 flex flex-col border-r"
@@ -354,6 +401,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 min-w-0 overflow-y-auto h-full">
         {children}
       </main>
+      </div>
     </div>
   );
 }

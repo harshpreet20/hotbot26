@@ -3,6 +3,7 @@ import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { authorizeAdmin, extractToken } from "@/lib/dashboardAuth";
 import { log } from "@/lib/logger";
 import type { Role } from "@/types/dashboard";
+import { sendUserApprovedEmail, sendUserRejectedEmail } from "@/lib/resend";
 
 // GET - list users pending approval (admin only)
 export async function GET(req: NextRequest) {
@@ -58,7 +59,7 @@ export async function PATCH(req: NextRequest) {
 
   const { data: userRow, error: fetchErr } = await sb()
     .from("backdrop_users")
-    .select("email, role, status")
+    .select("email, username, role, status")
     .eq("id", id)
     .single();
 
@@ -77,6 +78,7 @@ export async function PATCH(req: NextRequest) {
     log.info("users.reject", `User rejected: "${userRow.email}" by "${session.username}"`, {
       details: { targetId: id },
     });
+    sendUserRejectedEmail({ email: userRow.email, username: userRow.username || userRow.email }).catch(() => {});
     return NextResponse.json({ success: true });
   }
 
@@ -96,6 +98,9 @@ export async function PATCH(req: NextRequest) {
     log.info("users.approve", `User approved: "${userRow.email}" as ${finalRole} by "${session.username}"`, {
       details: { targetId: id, role: finalRole },
     });
+
+    const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/enter/backdrop`;
+    sendUserApprovedEmail({ email: userRow.email, username: userRow.username || userRow.email, resetLink: resetLink ?? `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/enter/backdrop` }).catch(() => {});
 
     return NextResponse.json({
       success: true,

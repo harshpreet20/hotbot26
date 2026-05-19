@@ -369,3 +369,84 @@ export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: st
     `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`
   );
 }
+
+// ── 11. User account approved ─────────────────────────────────────────────────
+
+export async function sendUserApprovedEmail(opts: {
+  email: string;
+  username: string;
+  resetLink: string;
+}): Promise<void> {
+  const { email, username, resetLink } = opts;
+  const html = wrap("Account Approved", `Your access has been approved, ${username}!`, `
+    ${greeting(username)}
+    ${para(`Great news — your access request to the <strong>${FROM_NAME}</strong> dashboard has been <strong style="color:#22c55e;">approved</strong>!`)}
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">Next step: Set your password</p>
+      <p style="margin:6px 0 0;font-size:13px;color:#14532d;line-height:1.6;">Click the button below to set your password and activate your account. This link expires in 24 hours.</p>
+    </div>
+    ${btn("Set My Password", resetLink, "#22c55e")}
+    ${para(`After setting your password, you can log in at any time from the link below.`)}
+    ${btn("Go to Dashboard Login", `${SITE_URL}/enter/backdrop`, "#6366f1")}
+  `);
+  await send(email, `${FROM_NAME} — your account has been approved!`, html,
+    `Hi ${username},\n\nYour access has been approved! Set your password here: ${resetLink}\n\nAfter that, log in at: ${SITE_URL}/enter/backdrop\n\n${FROM_NAME}`
+  );
+}
+
+// ── 12. User account rejected ─────────────────────────────────────────────────
+
+export async function sendUserRejectedEmail(opts: {
+  email: string;
+  username: string;
+}): Promise<void> {
+  const { email, username } = opts;
+  const html = wrap("Access Request Update", `Regarding your access request`, `
+    ${greeting(username)}
+    ${para(`Thank you for your interest in joining the <strong>${FROM_NAME}</strong> team dashboard. Unfortunately, your access request has not been approved at this time.`)}
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#991b1b;font-weight:600;">Request not approved</p>
+      <p style="margin:6px 0 0;font-size:13px;color:#7f1d1d;line-height:1.6;">If you believe this is a mistake or have questions, please reach out to your team administrator directly.</p>
+    </div>
+    ${btn("Contact Us", `${SITE_URL}/contact`, "#6366f1")}
+  `);
+  await send(email, `${FROM_NAME} — access request update`, html,
+    `Hi ${username},\n\nYour access request to the ${FROM_NAME} dashboard was not approved. If you believe this is a mistake, contact your administrator.\n\n${FROM_NAME}`
+  );
+}
+
+// ── 13. Feature update broadcast ─────────────────────────────────────────────
+
+export async function sendFeatureBroadcast(opts: {
+  segment: string;
+  changes: string[];
+  pushedBy: string;
+  recipients: string[];
+  version?: string;
+}): Promise<void> {
+  const { segment, changes, pushedBy, recipients, version } = opts;
+  if (!recipients.length) return;
+  const changeList = changes
+    .map((c) => `<li style="margin-bottom:6px;font-size:14px;color:#374151;line-height:1.6;">${c}</li>`)
+    .join("");
+  const html = wrap(`Feature Update — ${segment}`, `New updates to the ${segment} module`, `
+    ${greeting("Team")}
+    ${para(`A new feature update has been shipped to the <strong>${segment}</strong> module${version ? ` (v${version})` : ""}.`)}
+    <div style="background:#eff6ff;border-left:4px solid #6366f1;padding:16px 20px;border-radius:0 10px 10px 0;margin-bottom:24px;">
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1px;">What was added / changed</p>
+      <ul style="margin:0;padding-left:20px;">${changeList}</ul>
+    </div>
+    ${infoBox([
+      ["Module", segment],
+      ["Pushed by", pushedBy],
+      ...(version ? [["Version", version] as [string, string]] : []),
+      ["Time", new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })],
+    ])}
+    ${btn("Open Dashboard", `${SITE_URL}/enter/backdrop/dashboard`)}
+    ${para(`Log in to the dashboard to see the latest changes in action.`)}
+  `);
+  const text = `Hi Team,\n\n${segment} module update${version ? ` (v${version})` : ""}:\n\n${changes.map((c) => `• ${c}`).join("\n")}\n\nPushed by: ${pushedBy}\n\nDashboard: ${SITE_URL}/enter/backdrop/dashboard\n\n${FROM_NAME}`;
+  for (const recipient of recipients) {
+    await send(recipient, `[Feature Update] ${segment}${version ? ` v${version}` : ""} — ${changes[0] ?? "see details"}`, html, text);
+  }
+}

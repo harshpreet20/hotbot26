@@ -10,6 +10,9 @@ function getSecret() {
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
+function getUsername() {
+  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : "";
+}
 
 import type { Permission } from "@/types/dashboard";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
@@ -248,9 +251,14 @@ export default function UsersPage() {
       });
       const data = await res.json() as { success?: boolean; token?: string; username?: string; role?: string; error?: string };
       if (res.ok && data.token) {
+        const originalUsername = getUsername();
+        const originalRole     = getRole();
         sessionStorage.setItem("backdrop_secret", data.token);
         sessionStorage.setItem("backdrop_role", data.role ?? "");
         sessionStorage.setItem("backdrop_username", data.username ?? "");
+        sessionStorage.setItem("backdrop_impersonating",       "1");
+        sessionStorage.setItem("backdrop_original_username",   originalUsername);
+        sessionStorage.setItem("backdrop_original_role",       originalRole);
         setImpersonating(data.username ?? targetId);
         window.location.href = "/enter/backdrop/dashboard";
       }
