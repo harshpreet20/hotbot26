@@ -280,9 +280,14 @@ describe("DELETE /api/dashboard/tickets", () => {
 
 // ── Public ticket submission ──────────────────────────────────────────────────
 
+const MOCK_CLIENT = { id: "c-1", clientId: "CLIENT-001", name: "Test Client", email: "client@test.com" };
+
 describe("POST /api/tickets - public submission", () => {
   beforeEach(() => {
-    vi.mocked(readAll).mockResolvedValue([]);
+    vi.mocked(readAll).mockImplementation(async (table: string) => {
+      if (table === "clients") return [MOCK_CLIENT] as unknown as typeof TICKET_FIXTURE[];
+      return [];
+    });
     vi.mocked(sendTicketConfirmation).mockClear();
   });
 
@@ -293,6 +298,7 @@ describe("POST /api/tickets - public submission", () => {
       requesterName:  "Bob",
       requesterEmail: "bob@example.com",
       category:       "billing",
+      clientId:       "CLIENT-001",
     }));
     const body = await res.json() as { ticket: { ticketNumber: string; status: string } };
     expect(res.status).toBe(201);
@@ -336,7 +342,7 @@ describe("POST /api/tickets - public submission", () => {
 
   it("defaults priority to medium and category to general", async () => {
     await pubPost(makeReq("POST", "http://localhost/api/tickets", {
-      title: "T", requesterName: "X", requesterEmail: "x@x.com",
+      title: "T", requesterName: "X", requesterEmail: "x@x.com", clientId: "CLIENT-001",
     }));
     expect(insert).toHaveBeenCalledWith("tickets", expect.objectContaining({
       priority: "medium",

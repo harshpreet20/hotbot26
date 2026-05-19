@@ -7,6 +7,28 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+  rateLimitResponse: vi.fn().mockReturnValue(null),
+}));
+
+const { mockSignUp, mockFromFn } = vi.hoisted(() => {
+  const mockSignUp = vi.fn().mockResolvedValue({
+    data: { user: { id: "new-uid", email: "contrib@example.com", email_confirmed_at: null, session: null, identities: [{ id: "id-1" }] }, session: null },
+    error: null,
+  });
+  const mockFromFn = vi.fn().mockReturnValue({ insert: vi.fn().mockResolvedValue({ error: null }) });
+  return { mockSignUp, mockFromFn };
+});
+
+vi.mock("@/lib/supabase", () => ({
+  isSupabaseEnabled: vi.fn().mockReturnValue(true),
+  sb: vi.fn().mockReturnValue({
+    auth: { signUp: mockSignUp },
+    from: mockFromFn,
+  }),
+}));
+
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken:      vi.fn(),
   authorizeRole:     vi.fn(),
@@ -323,19 +345,32 @@ describe("DELETE /api/blog/users", () => {
   });
 });
 
-// ── Registration - self-service pending approval ──────────────────────────────
+// ── Registration - self-service via Supabase ─────────────────────────────────
 
 describe("POST /api/blog/users/register", () => {
+  beforeEach(() => {
+    mockSignUp.mockClear();
+    mockFromFn.mockClear();
+    mockFromFn.mockReturnValue({ insert: vi.fn().mockResolvedValue({ error: null }) });
+    mockSignUp.mockResolvedValue({
+      data: {
+        user: { id: "new-uid", email: "contrib@example.com", email_confirmed_at: null, session: null, identities: [{ id: "id-1" }] },
+        session: null,
+      },
+      error: null,
+    });
+  });
+
   it("returns 400 when name is missing", async () => {
     const res = await register(makeReq("POST", "http://localhost/api/blog/users/register", {
-      email: "ab@example.com", requestedRole: "contributor",
+      email: "ab@example.com", password: "password123", requestedRole: "contributor",
     }));
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when email is invalid", async () => {
     const res = await register(makeReq("POST", "http://localhost/api/blog/users/register", {
-      name: "Valid User", email: "not-an-email", requestedRole: "contributor",
+      name: "Valid User", email: "not-an-email", password: "password123", requestedRole: "contributor",
     }));
     expect(res.status).toBe(400);
     const body = await res.json() as Record<string, unknown>;
@@ -344,7 +379,7 @@ describe("POST /api/blog/users/register", () => {
 
   it("returns 400 when requestedRole is admin (not allowed for self-registration)", async () => {
     const res = await register(makeReq("POST", "http://localhost/api/blog/users/register", {
-      name: "Hacker", email: "h@example.com", requestedRole: "admin",
+      name: "Hacker", email: "h@example.com", password: "password123", requestedRole: "admin",
     }));
     expect(res.status).toBe(400);
     const body = await res.json() as Record<string, unknown>;
@@ -355,17 +390,15 @@ describe("POST /api/blog/users/register", () => {
     const req = new NextRequest("http://localhost/api/blog/users/register", {
       method:  "POST",
       headers: { "Content-Type": "application/json", "x-forwarded-for": "10.0.0.1" },
-      body:    JSON.stringify({ name: "New Contrib", email: "contrib@example.com", requestedRole: "contributor" }),
+      body:    JSON.stringify({ name: "New Contrib", email: "contrib@example.com", password: "password123", requestedRole: "contributor" }),
     });
     const res  = await register(req);
     const body = await res.json() as Record<string, unknown>;
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(insert).toHaveBeenCalledWith("pending_users", expect.objectContaining({
-      name:          "New Contrib",
-      email:         "contrib@example.com",
-      requestedRole: "contributor",
-      status:        "pending",
+    expect(mockSignUp).toHaveBeenCalledWith(expect.objectContaining({
+      email:    "contrib@example.com",
+      password: "password123",
     }));
   });
 
@@ -373,11 +406,12 @@ describe("POST /api/blog/users/register", () => {
     const req = new NextRequest("http://localhost/api/blog/users/register", {
       method:  "POST",
       headers: { "Content-Type": "application/json", "x-forwarded-for": "10.0.0.2" },
-      body:    JSON.stringify({ name: "Auto Contrib", email: "auto@example.com" }),
+      body:    JSON.stringify({ name: "Auto Contrib", email: "auto@example.com", password: "password123" }),
     });
-    await register(req);
-    expect(insert).toHaveBeenCalledWith("pending_users", expect.objectContaining({
-      requestedRole: "contributor",
+    const res = await register(req);
+    expect(res.status).toBe(200);
+    expect(mockSignUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({ data: expect.objectContaining({ requestedRole: "contributor" }) }),
     }));
   });
 });
