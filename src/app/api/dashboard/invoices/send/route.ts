@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import type { Invoice } from "@/types/dashboard";
 
 function createTransporter() {
@@ -33,11 +34,12 @@ function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function buildInvoiceHtml(inv: Invoice): string {
+function buildInvoiceHtml(inv: Invoice, logId?: string): string {
   const sym        = currencySymbol(inv.currency);
   const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
   const fromEmail  = process.env.GMAIL_FROM_EMAIL    ?? "billing@hotbotstudios.com";
   const fromName   = process.env.GMAIL_FROM_NAME     ?? "HotBot Studios";
+  const pixelUrl   = logId ? `${siteUrl}/api/track/pixel?id=${logId}` : null;
 
   const lineItemsRows = inv.lineItems.map((li) => `
     <tr>
@@ -52,6 +54,9 @@ function buildInvoiceHtml(inv: Invoice): string {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 16px;"><tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 <tr><td style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%);padding:36px 40px;border-radius:16px 16px 0 0;">
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:12px;"><tr>
+<td><img src="${siteUrl}/logos/hotbot-logo.svg" width="120" height="30" alt="${fromName}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
+</tr></table>
 <table width="100%" cellpadding="0" cellspacing="0"><tr>
 <td><p style="margin:0;color:#a5b4fc;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Invoice</p>
 <h1 style="margin:6px 0 0;color:#ffffff;font-size:28px;font-weight:700;">${inv.invoiceNumber}</h1></td>
@@ -101,7 +106,9 @@ ${inv.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:14px 16p
 <p style="margin:0;color:#a5b4fc;font-size:13px;">Thank you for your business!</p>
 <p style="margin:6px 0 0;"><a href="${siteUrl}" style="color:#818cf8;text-decoration:none;">${siteUrl.replace(/^https?:\/\//, "")}</a>&nbsp;·&nbsp;<a href="mailto:${fromEmail}" style="color:#818cf8;text-decoration:none;">${fromEmail}</a></p>
 </td></tr>
-</table></td></tr></table></body></html>`;
+</table></td></tr></table>
+${pixelUrl ? `<img src="${pixelUrl}" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;" alt="" />` : ""}
+</body></html>`;
 }
 
 function buildInvoiceText(inv: Invoice): string {
@@ -157,18 +164,38 @@ export async function POST(req: NextRequest) {
 
   const fromName  = process.env.GMAIL_FROM_NAME ?? "HotBot Studios";
   const fromEmail = process.env.GMAIL_FROM_EMAIL!;
+  const subject   = `Invoice ${inv.invoiceNumber} from ${fromName} - ${inv.total.toLocaleString("en-IN", { style: "currency", currency: inv.currency, minimumFractionDigits: 2 })}`;
+
+  // Pre-insert email log to get an id for the tracking pixel
+  let logId: string | undefined;
+  if (isSupabaseEnabled()) {
+    const { data: logRow } = await sb().from("email_logs").insert({
+      to_email:   toEmail,
+      subject,
+      email_type: "invoice",
+      status:     "queued",
+      metadata:   { invoiceNumber: inv.invoiceNumber, invoiceId: inv.id },
+    }).select("id").single();
+    logId = logRow?.id as string | undefined;
+  }
 
   try {
     await createTransporter().sendMail({
       from:    `"${fromName}" <${fromEmail}>`,
       to:      toEmail,
-      subject: `Invoice ${inv.invoiceNumber} from ${fromName} - ${inv.total.toLocaleString("en-IN", { style: "currency", currency: inv.currency, minimumFractionDigits: 2 })}`,
+      subject,
       text:    buildInvoiceText(inv),
-      html:    buildInvoiceHtml(inv),
+      html:    buildInvoiceHtml(inv, logId),
     });
+    if (logId && isSupabaseEnabled()) {
+      await sb().from("email_logs").update({ status: "sent", sent_at: new Date().toISOString(), last_event: "sent" }).eq("id", logId);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[Invoice Send] SMTP error:", msg);
+    if (logId && isSupabaseEnabled()) {
+      await sb().from("email_logs").update({ status: "failed", last_event: "failed", metadata: { error: msg } }).eq("id", logId);
+    }
     return NextResponse.json({ error: `Failed to send email: ${msg}` }, { status: 500 });
   }
 

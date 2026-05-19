@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import type { NewsletterSubscriber } from "@/types/dashboard";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 const SITE_URL   = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
 const FROM_NAME  = process.env.GMAIL_FROM_NAME  ?? "HotBot Studios";
@@ -32,9 +33,11 @@ export function generateNewsletterHtml(
   bodyHtml: string,
   subscriberName: string,
   subscriberEmail: string,
+  logId?: string,
 ): string {
   const token      = unsubToken(subscriberEmail);
   const unsubUrl   = `${SITE_URL}/api/forms/newsletter/unsubscribe?token=${token}`;
+  const pixelUrl   = logId ? `${SITE_URL}/api/track/pixel?id=${logId}` : null;
   const greeting   = subscriberName
     ? `Hi ${subscriberName.split(" ")[0]},`
     : "Hi there,";
@@ -47,8 +50,10 @@ export function generateNewsletterHtml(
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
         <tr><td style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%);padding:32px 40px;border-radius:16px 16px 0 0;">
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:12px;"><tr>
+            <td><img src="${SITE_URL}/logos/hotbot-logo.svg" width="120" height="30" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
+          </tr></table>
           <p style="margin:0 0 4px;color:#a5b4fc;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;">Newsletter</p>
-          <h1 style="margin:0 0 4px;color:#ffffff;font-size:24px;font-weight:800;">${FROM_NAME}</h1>
           <p style="margin:0;color:#818cf8;font-size:13px;">AI Automation &amp; Digital Marketing</p>
         </td></tr>
         <tr><td style="background:#1e1b4b;padding:16px 40px;border-bottom:1px solid #312e81;">
@@ -78,6 +83,7 @@ export function generateNewsletterHtml(
       </table>
     </td></tr>
   </table>
+  ${pixelUrl ? `<img src="${pixelUrl}" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;" alt="" />` : ""}
 </body>
 </html>`;
 }
@@ -98,9 +104,22 @@ export async function sendNewsletter(
 
   const t = transporter();
   for (const sub of subscribers) {
+    // Pre-insert log row to get id for tracking pixel
+    let logId: string | undefined;
+    if (isSupabaseEnabled()) {
+      const { data: logRow } = await sb().from("email_logs").insert({
+        to_email:   sub.email,
+        subject,
+        email_type: "newsletter",
+        status:     "queued",
+        metadata:   { name: sub.name },
+      }).select("id").single();
+      logId = logRow?.id as string | undefined;
+    }
+
     try {
-      const html      = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email);
       const unsubUrl  = `${SITE_URL}/api/forms/newsletter/unsubscribe?token=${unsubToken(sub.email)}`;
+      const html      = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email, logId);
       await t.sendMail({
         from:    `"${FROM_NAME}" <${FROM_EMAIL}>`,
         to:      sub.email,
@@ -108,13 +127,17 @@ export async function sendNewsletter(
         text:    `${subject}\n\nVisit ${SITE_URL} for the full newsletter.\n\nUnsubscribe: ${unsubUrl}`,
         html,
       });
+      if (logId && isSupabaseEnabled()) {
+        await sb().from("email_logs").update({ status: "sent", sent_at: new Date().toISOString(), last_event: "sent" }).eq("id", logId);
+      }
       result.sent++;
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (logId && isSupabaseEnabled()) {
+        await sb().from("email_logs").update({ status: "failed", last_event: "failed", metadata: { error: errMsg } }).eq("id", logId);
+      }
       result.failed++;
-      result.errors.push({
-        email: sub.email,
-        error: err instanceof Error ? err.message : String(err),
-      });
+      result.errors.push({ email: sub.email, error: errMsg });
     }
   }
 
