@@ -3,9 +3,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import type { Role } from "@/types/dashboard";
 
 interface BadgeCounts { tickets: number; leads: number; callbacks: number; chats: number; }
+
+function supabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 interface NavItem {
   href: string;
@@ -290,18 +298,35 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       .catch(() => router.replace("/enter/backdrop"));
   }, [router]);
 
-  // Poll badge counts every 30 s
+  // Realtime badge counts via Supabase websocket (falls back to 10s poll)
   useEffect(() => {
+    const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") : null;
+    if (!secret) return;
+
     function fetchBadges() {
-      const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") : null;
-      if (!secret) return;
       fetch("/api/dashboard/badge-counts", { headers: { Authorization: `Bearer ${secret}` } })
         .then((r) => r.ok ? r.json() as Promise<BadgeCounts> : Promise.reject())
         .then((d) => setBadges(d))
         .catch(() => {});
     }
-    fetchBadges();
-    badgeTimer.current = setInterval(fetchBadges, 30_000);
+
+    fetchBadges(); // initial load
+
+    const sb = supabaseClient();
+    if (sb) {
+      // Subscribe to INSERT/UPDATE on all 4 tables — refetch counts on any change
+      const channel = sb
+        .channel("badge-counts")
+        .on("postgres_changes", { event: "*", schema: "public", table: "leads" },    fetchBadges)
+        .on("postgres_changes", { event: "*", schema: "public", table: "tickets" },  fetchBadges)
+        .on("postgres_changes", { event: "*", schema: "public", table: "callbacks" },fetchBadges)
+        .on("postgres_changes", { event: "*", schema: "public", table: "chats" },    fetchBadges)
+        .subscribe();
+      return () => { void sb.removeChannel(channel); };
+    }
+
+    // Fallback: poll every 10s if Supabase not configured
+    badgeTimer.current = setInterval(fetchBadges, 10_000);
     return () => { if (badgeTimer.current) clearInterval(badgeTimer.current); };
   }, []);
 

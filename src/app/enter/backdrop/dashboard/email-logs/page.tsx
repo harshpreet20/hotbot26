@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
@@ -112,6 +113,22 @@ export default function EmailLogsPage() {
   }, [router]);
 
   useEffect(() => { load(page, search, typeFilter, statusFilter); }, [load, page, search, typeFilter, statusFilter]);
+
+  // Subscribe to email_logs via Supabase Realtime — auto-refresh when any row changes
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+    const sb = createClient(url, key);
+    const channel = sb
+      .channel("email-logs-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "email_logs" }, () => {
+        load(page, search, typeFilter, statusFilter);
+      })
+      .subscribe();
+    return () => { void sb.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, typeFilter, statusFilter]);
 
   const totalPages = Math.ceil(total / limit);
 

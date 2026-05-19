@@ -1,8 +1,16 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { ChatMessages } from "./ChatMessages";
 import { QuickReplies } from "./QuickReplies";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
+
+function sbClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -303,23 +311,42 @@ export function HotBotChat() {
     }
   }, [open]);
 
-  // Poll for agent replies — starts on handoff, keeps running after agent joins
+  // Realtime agent reply listener — subscribe to this session's row via Supabase
   useEffect(() => {
     if ((!needsHuman && !agentJoined) || !sessionId) return;
+
+    function applySession(row: { messages?: Message[]; agent_username?: string }) {
+      const remoteMsgs = (row.messages ?? []) as Message[];
+      if (remoteMsgs.length > lastMsgCountRef.current) {
+        lastMsgCountRef.current = remoteMsgs.length;
+        setMsgs(remoteMsgs.map((m) => ({ role: m.role, text: m.text, ts: m.ts })));
+      }
+      if (row.agent_username && !agentJoined) {
+        setAgentJoined(true);
+        setNeedsHuman(false);
+      }
+    }
+
+    const sb = sbClient();
+    if (sb) {
+      const channel = sb
+        .channel(`chat-session-${sessionId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "chats", filter: `id=eq.${sessionId}` },
+          (payload) => applySession(payload.new as { messages?: Message[]; agent_username?: string }),
+        )
+        .subscribe();
+      return () => { void sb.removeChannel(channel); };
+    }
+
+    // Fallback poll when Supabase not configured
     const poll = async () => {
       try {
         const res = await fetch(`/api/chat/session?id=${sessionId}`);
         if (!res.ok) return;
-        const data = await res.json() as { session?: { messages?: Message[]; needsHuman?: boolean; agentUsername?: string } };
-        const remoteMsgs = data.session?.messages ?? [];
-        if (remoteMsgs.length > lastMsgCountRef.current) {
-          lastMsgCountRef.current = remoteMsgs.length;
-          setMsgs(remoteMsgs.map((m) => ({ role: m.role, text: m.text, ts: m.ts })));
-        }
-        if (data.session?.agentUsername && !agentJoined) {
-          setAgentJoined(true);
-          setNeedsHuman(false);
-        }
+        const data = await res.json() as { session?: { messages?: Message[]; agentUsername?: string } };
+        if (data.session) applySession({ messages: data.session.messages, agent_username: data.session.agentUsername });
       } catch { /* ignore */ }
     };
     pollRef.current = setInterval(poll, 4000);
