@@ -3,8 +3,12 @@ import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { BlogPost, BlogAdTopic, AdSlot } from "@/types/blog";
-import { SeoPanel } from "@/components/backdrop/SeoPanel";
 import dynamic from "next/dynamic";
+
+const SeoPanel = dynamic(
+  () => import("@/components/backdrop/SeoPanel").then((m) => m.SeoPanel),
+  { ssr: false, loading: () => <div className="h-48 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} /> },
+);
 
 const RichEditor = dynamic(
   () => import("@/components/backdrop/RichEditor").then((m) => m.RichEditor),

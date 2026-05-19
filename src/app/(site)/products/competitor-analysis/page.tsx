@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FAQSection } from "@/components/sections/FAQSection";
 import { CTASection } from "@/components/sections/CTASection";
 import { Reveal } from "@/components/shared/Reveal";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import Link from "next/link";
-import { CompetitorAnalysisTool } from "@/components/sections/CompetitorAnalysisTool";
+
+const CompetitorAnalysisTool = dynamic(
+  () => import("@/components/sections/CompetitorAnalysisTool").then((m) => m.CompetitorAnalysisTool),
+  { ssr: false, loading: () => <div className="h-64 rounded-2xl animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} /> },
+);
 
 export const metadata: Metadata = {
   title: "AI Competitor Analysis Tool - SEO & Content Gap Intelligence | HotBot Studios",
