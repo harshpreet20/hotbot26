@@ -5,9 +5,14 @@
  * Requires: RESEND_API_KEY env var.
  * Optional: RESEND_FROM_EMAIL (defaults to noreply@hotbotstudios.com)
  *           RESEND_FROM_NAME  (defaults to HotBot Studios)
+ *
+ * Every send is logged to the email_logs Supabase table (when Supabase is
+ * configured). Delivery/open/bounce events are updated via the Resend webhook
+ * at /api/webhooks/resend.
  */
 import { Resend } from "resend";
 import type { Ticket, TicketComment } from "@/types/dashboard";
+import { isSupabaseEnabled, sb } from "@/lib/supabase";
 
 const SITE_URL  = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
 const FROM_NAME = process.env.RESEND_FROM_NAME  ?? "HotBot Studios";
@@ -101,18 +106,52 @@ function quoteBox(label: string, text: string): string {
   </div>`;
 }
 
-async function send(to: string, subject: string, html: string, text: string): Promise<void> {
+async function send(
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  emailType = "transactional",
+): Promise<void> {
   const resend = client();
   if (!resend) { console.warn("[resend] RESEND_API_KEY not set — email skipped"); return; }
+
+  // Pre-insert a log row so we have a record even if the API call fails
+  let logId: string | null = null;
+  if (isSupabaseEnabled()) {
+    try {
+      const { data: row } = await sb()
+        .from("email_logs")
+        .insert({ to_email: to, subject, email_type: emailType, status: "queued" })
+        .select("id")
+        .single();
+      logId = row?.id ?? null;
+    } catch { /* non-fatal */ }
+  }
+
   try {
     const { data, error } = await resend.emails.send({ from: FROM, to, subject, html, text });
     if (error) {
       console.error("[resend] delivery error:", JSON.stringify(error));
+      if (logId && isSupabaseEnabled()) {
+        await sb().from("email_logs").update({ status: "failed", last_event: "api_error", metadata: { error } }).eq("id", logId);
+      }
     } else {
       console.log("[resend] sent:", data?.id, "to:", to, "subject:", subject);
+      if (logId && isSupabaseEnabled()) {
+        await sb().from("email_logs").update({
+          resend_id: data?.id ?? null,
+          status:    "sent",
+          sent_at:   new Date().toISOString(),
+          last_event: "sent",
+        }).eq("id", logId);
+      }
     }
   } catch (err) {
     console.error("[resend] send error:", err instanceof Error ? err.message : err);
+    if (logId && isSupabaseEnabled()) {
+      await sb().from("email_logs").update({ status: "failed", last_event: "exception" }).eq("id", logId);
+    }
   }
 }
 
@@ -142,7 +181,8 @@ export async function sendRegistrationConfirmation(opts: {
     ${btn("Go to Login", `${SITE_URL}/enter/backdrop`)}
   `);
   await send(email, `Welcome to ${FROM_NAME} — your account is pending approval`, html,
-    `Hi ${name},\n\nThanks for registering at ${FROM_NAME}.\n${needsVerification ? "Please verify your email first, then " : ""}an administrator will review and approve your access.\n\nLogin: ${SITE_URL}/enter/backdrop`
+    `Hi ${name},\n\nThanks for registering at ${FROM_NAME}.\n${needsVerification ? "Please verify your email first, then " : ""}an administrator will review and approve your access.\n\nLogin: ${SITE_URL}/enter/backdrop`,
+    "registration",
   );
 }
 
@@ -160,7 +200,8 @@ export async function sendPasswordResetAcknowledgment(email: string): Promise<vo
     ${btn("Go to Login", `${SITE_URL}/enter/backdrop`)}
   `);
   await send(email, `${FROM_NAME} — password reset requested`, html,
-    `A password reset link has been sent to ${email}. If you didn't request this, ignore this email.\n\nLogin: ${SITE_URL}/enter/backdrop`
+    `A password reset link has been sent to ${email}. If you didn't request this, ignore this email.\n\nLogin: ${SITE_URL}/enter/backdrop`,
+    "password_reset",
   );
 }
 
@@ -182,7 +223,8 @@ export async function sendContactConfirmation(opts: {
     ${btn("Chat on WhatsApp", `https://wa.me/919700001534?text=${encodeURIComponent("Hi, I just sent a message via your website.")}`, "#22c55e")}
   `);
   await send(email, `${FROM_NAME} — we received your message`, html,
-    `Hi ${name},\n\nThanks for your message. We'll reply within 24 hours.\n\nYour subject: ${subject}\nYour message: ${message}\n\n${FROM_NAME}`
+    `Hi ${name},\n\nThanks for your message. We'll reply within 24 hours.\n\nYour subject: ${subject}\nYour message: ${message}\n\n${FROM_NAME}`,
+    "contact_confirmation",
   );
 }
 
@@ -209,7 +251,8 @@ export async function sendLeadConfirmation(opts: {
     ${btn("Chat on WhatsApp", `https://wa.me/919700001534?text=${encodeURIComponent(`Hi, I just enquired about ${service || "your services"}.`)}`, "#22c55e")}
   `);
   await send(email, `${FROM_NAME} — ${subjectLine} received`, html,
-    `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`
+    `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`,
+    "lead_confirmation",
   );
 }
 
@@ -239,7 +282,8 @@ export async function sendNewsletterWelcome(opts: {
     </p>
   `);
   await send(email, `Welcome to ${FROM_NAME} — you're subscribed!`, html,
-    `Hi ${name || "there"},\n\nYou're now subscribed to the ${FROM_NAME} newsletter.\n\nUnsubscribe: ${unsubUrl}\n\n${FROM_NAME}`
+    `Hi ${name || "there"},\n\nYou're now subscribed to the ${FROM_NAME} newsletter.\n\nUnsubscribe: ${unsubUrl}\n\n${FROM_NAME}`,
+    "newsletter_welcome",
   );
 }
 
@@ -259,7 +303,8 @@ export async function sendCallbackConfirmation(opts: {
     ${btn("Request Another Callback", `${SITE_URL}/#contact`, "#8b5cf6")}
   `);
   await send(opts.email, `${FROM_NAME} — your callback is confirmed`, html,
-    `Hi ${opts.name},\n\nWe'll call ${opts.phone} within 2 minutes. Calls come from +91 97000 01534.\n\n${FROM_NAME}`
+    `Hi ${opts.name},\n\nWe'll call ${opts.phone} within 2 minutes. Calls come from +91 97000 01534.\n\n${FROM_NAME}`,
+    "callback_confirmation",
   );
 }
 
@@ -294,7 +339,8 @@ export async function sendChatTranscript(opts: {
 
   const text = messages.map((m) => `${m.role === "user" ? name : FROM_NAME + " AI"}: ${m.text}`).join("\n\n");
   await send(email, `${FROM_NAME} — your chat transcript`, html,
-    `Hi ${name},\n\nHere's your chat transcript:\n\n${text}\n\n${FROM_NAME}`
+    `Hi ${name},\n\nHere's your chat transcript:\n\n${text}\n\n${FROM_NAME}`,
+    "chat_transcript",
   );
 }
 
@@ -320,7 +366,8 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
     ticket.requesterEmail,
     `[${ticket.ticketNumber}] We received your support request`,
     html,
-    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber}: ${ticket.title}\nCategory: ${ticket.category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`
+    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber}: ${ticket.title}\nCategory: ${ticket.category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    "ticket_confirmation",
   );
 }
 
@@ -339,7 +386,8 @@ export async function sendStaffReplyNotification(ticket: Ticket, comment: Ticket
     ticket.requesterEmail,
     `[${ticket.ticketNumber}] New reply from our team`,
     html,
-    `Hi ${ticket.requesterName},\n\nNew reply on ticket ${ticket.ticketNumber}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`
+    `Hi ${ticket.requesterName},\n\nNew reply on ticket ${ticket.ticketNumber}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    "ticket_reply",
   );
 }
 
@@ -371,7 +419,8 @@ export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: st
     ticket.requesterEmail,
     `[${ticket.ticketNumber}] Status updated: ${meta.label}`,
     html,
-    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`
+    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    "ticket_status_update",
   );
 }
 
@@ -395,7 +444,8 @@ export async function sendUserApprovedEmail(opts: {
     ${btn("Go to Dashboard Login", `${SITE_URL}/enter/backdrop`, "#6366f1")}
   `);
   await send(email, `${FROM_NAME} — your account has been approved!`, html,
-    `Hi ${username},\n\nYour access has been approved! Set your password here: ${resetLink}\n\nAfter that, log in at: ${SITE_URL}/enter/backdrop\n\n${FROM_NAME}`
+    `Hi ${username},\n\nYour access has been approved! Set your password here: ${resetLink}\n\nAfter that, log in at: ${SITE_URL}/enter/backdrop\n\n${FROM_NAME}`,
+    "user_approved",
   );
 }
 
@@ -416,7 +466,8 @@ export async function sendUserRejectedEmail(opts: {
     ${btn("Contact Us", `${SITE_URL}/contact`, "#6366f1")}
   `);
   await send(email, `${FROM_NAME} — access request update`, html,
-    `Hi ${username},\n\nYour access request to the ${FROM_NAME} dashboard was not approved. If you believe this is a mistake, contact your administrator.\n\n${FROM_NAME}`
+    `Hi ${username},\n\nYour access request to the ${FROM_NAME} dashboard was not approved. If you believe this is a mistake, contact your administrator.\n\n${FROM_NAME}`,
+    "user_rejected",
   );
 }
 
@@ -452,6 +503,6 @@ export async function sendFeatureBroadcast(opts: {
   `);
   const text = `Hi Team,\n\n${segment} module update${version ? ` (v${version})` : ""}:\n\n${changes.map((c) => `• ${c}`).join("\n")}\n\nPushed by: ${pushedBy}\n\nDashboard: ${SITE_URL}/enter/backdrop/dashboard\n\n${FROM_NAME}`;
   for (const recipient of recipients) {
-    await send(recipient, `[Feature Update] ${segment}${version ? ` v${version}` : ""} — ${changes[0] ?? "see details"}`, html, text);
+    await send(recipient, `[Feature Update] ${segment}${version ? ` v${version}` : ""} — ${changes[0] ?? "see details"}`, html, text, "feature_broadcast");
   }
 }

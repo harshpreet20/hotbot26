@@ -182,6 +182,18 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/email-logs",
+    label: "Email Logs",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+        <circle cx="18" cy="18" r="4" fill="currentColor" stroke="none" opacity="0" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/broadcasts",
     label: "Broadcasts",
     roles: ["super_admin", "admin"],

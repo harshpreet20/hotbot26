@@ -99,8 +99,8 @@ export async function PATCH(req: NextRequest) {
       details: { targetId: id, role: finalRole },
     });
 
-    const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/enter/backdrop`;
-    sendUserApprovedEmail({ email: userRow.email, username: userRow.username || userRow.email, resetLink: resetLink ?? `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/enter/backdrop` }).catch(() => {});
+    const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com"}/enter/backdrop`;
+    sendUserApprovedEmail({ email: userRow.email, username: userRow.username || userRow.email, resetLink }).catch(() => {});
 
     return NextResponse.json({
       success: true,
