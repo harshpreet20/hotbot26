@@ -11,13 +11,11 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
 
   if (id && isSupabaseEnabled()) {
-    sb()
+    void sb()
       .from("email_logs")
       .update({ opened_at: new Date().toISOString(), status: "opened", last_event: "opened" })
       .eq("id", id)
-      .is("opened_at", null)
-      .then(() => {})
-      .catch(() => {});
+      .is("opened_at", null);
   }
 
   return new NextResponse(PIXEL, {
