@@ -20,7 +20,7 @@ export function FormStep1({ form, update, onNext }: FormStep1Props) {
 
   return (
     <div className="animate-form-step-in space-y-4">
-      <p className="text-slate-400 text-sm mb-2">Step 1 of 3 — Contact Information</p>
+      <p className="text-slate-400 text-sm mb-2">Step 1 of 3 - Contact Information</p>
       {fields.map(({ key, label, type, placeholder, required }) => (
         <div key={key}>
           <label className="block text-slate-400 text-[12px] font-medium mb-1.5">

@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  hotbot-studios:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    container_name: hotbot-studios
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # n8n Webhook Base URL
+      - N8N_BASE_URL=${N8N_BASE_URL}
+      # n8n Webhook Endpoints
+      - N8N_WEBHOOK_CHAT=${N8N_WEBHOOK_CHAT}
+      - N8N_WEBHOOK_VOICE=${N8N_WEBHOOK_VOICE}
+      - N8N_WEBHOOK_FORM=${N8N_WEBHOOK_FORM}
+      - N8N_WEBHOOK_LEADS=${N8N_WEBHOOK_LEADS}
+      - N8N_WEBHOOK_ANALYTICS=${N8N_WEBHOOK_ANALYTICS}
+      - N8N_WEBHOOK_CONTACT=${N8N_WEBHOOK_CONTACT}
+      - N8N_WEBHOOK_NEWSLETTER=${N8N_WEBHOOK_NEWSLETTER}
+      # Public
+      - NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

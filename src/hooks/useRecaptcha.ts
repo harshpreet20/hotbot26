@@ -1,5 +1,5 @@
 // src/hooks/useRecaptcha.ts
-// reCAPTCHA v3 — invisible, score-based spam protection.
+// reCAPTCHA v3 - invisible, score-based spam protection.
 // Site key is public (NEXT_PUBLIC_). Secret key lives server-side only.
 "use client";
 import { useEffect, useCallback } from "react";
@@ -27,7 +27,7 @@ export function useRecaptcha() {
 
   const getToken = useCallback(async (action: string): Promise<string | null> => {
     if (!SITE_KEY || typeof window === "undefined" || !window.grecaptcha) {
-      return null; // No key configured — skip silently
+      return null; // No key configured - skip silently
     }
     return new Promise((resolve) => {
       window.grecaptcha!.ready(async () => {

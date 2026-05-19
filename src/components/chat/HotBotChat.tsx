@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessages } from "./ChatMessages";
 import { QuickReplies } from "./QuickReplies";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -62,7 +63,7 @@ function WhatsAppTab() {
       <div className="text-center">
         <p className="text-white font-semibold text-base mb-1">Chat on WhatsApp</p>
         <p className="text-slate-400 text-sm leading-relaxed max-w-[240px]">
-          Get instant replies from our AI assistant — powered by AI Sensy on WhatsApp Business.
+          Get instant replies from our AI assistant - powered by AI Sensy on WhatsApp Business.
         </p>
       </div>
 
@@ -90,6 +91,7 @@ function CallTab() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const { getToken } = useRecaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,10 +99,11 @@ function CallTab() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/n8n/callback", {
+      const recaptchaToken = await getToken("callback_form");
+      const res = await fetch("/api/forms/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), recaptchaToken }),
       });
       if (!res.ok) {
         setError("Something went wrong. Please try again.");
@@ -113,7 +116,7 @@ function CallTab() {
         setError(data.error || "Something went wrong. Please try again.");
       }
     } catch {
-      // Network error — still confirm so user isn't stuck
+      // Network error - still confirm so user isn't stuck
       setDone(true);
     } finally {
       setLoading(false);
@@ -206,24 +209,87 @@ function CallTab() {
   );
 }
 
+// ─── Pre-chat form ────────────────────────────────────────────────────────────
+function PreChatForm({ onDone }: { onDone: (name: string, email: string, phone: string) => void }) {
+  const [name, setName]   = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [err, setErr]     = useState("");
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { setErr("Please enter your name."); return; }
+    if (!emailOk)     { setErr("Please enter a valid email."); return; }
+    onDone(name.trim(), email.trim(), phone.trim());
+  };
+
+  return (
+    <div className="flex-1 flex flex-col justify-center px-5 py-4 gap-4">
+      <div className="text-center">
+        <p className="text-white font-semibold text-sm mb-1">Before we chat…</p>
+        <p className="text-slate-400 text-xs leading-relaxed">Just a quick intro so HotBot can personalise your experience.</p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <input
+          type="text" value={name} onChange={(e) => setName(e.target.value)}
+          placeholder="Your name *"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        <input
+          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email address *"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        <input
+          type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone number (optional)"
+          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
+        />
+        {err && <p className="text-red-400 text-xs">{err}</p>}
+        <button
+          type="submit"
+          disabled={!name.trim() || !emailOk}
+          className="w-full py-3 rounded-xl font-semibold text-white text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+        >
+          Start Chat →
+        </button>
+      </form>
+      <p className="text-slate-600 text-[10px] text-center">Your info helps us follow up and personalise your experience.</p>
+    </div>
+  );
+}
+
 // ─── Main HotBotChat ───────────────────────────────────────────────────────────
 export function HotBotChat() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("chat");
   const [fabHov, setFabHov] = useState(false);
 
+  // Pre-chat form
+  const [preformDone, setPreformDone] = useState(false);
+  const [guestName, setGuestName]     = useState("");
+  const [guestEmail, setGuestEmail]   = useState("");
+  const [guestPhone, setGuestPhone]   = useState("");
+
   // Chat state
   const [msgs, setMsgs] = useState<Message[]>([
     {
       role: "bot",
-      text: "Hey! I'm HotBot — your AI assistant. Ask me anything about our services, pricing, or how we can help your business grow.",
+      text: "Hey! I'm HotBot - your AI assistant. Ask me anything about our services, pricing, or how we can help your business grow.",
       ts: Date.now(),
     },
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [needsHuman, setNeedsHuman] = useState(false);
+  const [agentJoined, setAgentJoined] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMsgCountRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -237,29 +303,58 @@ export function HotBotChat() {
     }
   }, [open]);
 
+  // Poll for agent replies when handoff is requested
+  useEffect(() => {
+    if (!needsHuman || !sessionId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/chat/session?id=${sessionId}`);
+        if (!res.ok) return;
+        const data = await res.json() as { session?: { messages?: Message[]; needsHuman?: boolean; agentUsername?: string } };
+        const remoteMsgs = data.session?.messages ?? [];
+        if (remoteMsgs.length > lastMsgCountRef.current) {
+          lastMsgCountRef.current = remoteMsgs.length;
+          setMsgs(remoteMsgs.map((m) => ({ role: m.role, text: m.text, ts: m.ts })));
+          if (data.session?.agentUsername) {
+            setAgentJoined(true);
+            setNeedsHuman(false);
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    pollRef.current = setInterval(poll, 4000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [needsHuman, sessionId]);
+
   const sendMsg = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setMsgs((p) => [...p, { role: "user", text, ts: Date.now() }]);
     setInput("");
     setTyping(true);
-    const controller = new AbortController();
+    const history = msgs.slice(-10).map((m) => ({ role: m.role, content: m.text }));
+    lastMsgCountRef.current = msgs.length + 1;
     try {
-      const res = await fetch("/api/n8n/chat", {
+      const res = await fetch("/api/forms/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: msgs.slice(-10).map((m) => ({ role: m.role, content: m.text })),
+          history,
+          sessionId: sessionId ?? undefined,
+          // Pass guest info only on the first message so the API can create a lead
+          ...(history.length === 0 && guestName ? { guestName, guestEmail, guestPhone } : {}),
         }),
-        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as { message?: string; sessionId?: string; needsHuman?: boolean };
+      if (data.sessionId && !sessionId) setSessionId(data.sessionId);
+      if (data.needsHuman) setNeedsHuman(true);
       setMsgs((p) => [...p, {
         role: "bot",
         text: data?.message || "Thanks! Our team will reach out shortly.",
         ts: Date.now(),
       }]);
+      lastMsgCountRef.current += 1;
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       setMsgs((p) => [...p, {
@@ -270,7 +365,7 @@ export function HotBotChat() {
     } finally {
       setTyping(false);
     }
-  }, [msgs]);
+  }, [msgs, guestName, guestEmail, guestPhone, sessionId]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -358,7 +453,7 @@ export function HotBotChat() {
               <p className="text-white font-semibold text-sm">HotBot Studios</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                <p className="text-slate-400 text-[11px]">Online — choose how to connect</p>
+                <p className="text-slate-400 text-[11px]">Online - choose how to connect</p>
               </div>
             </div>
           </div>
@@ -390,9 +485,29 @@ export function HotBotChat() {
           </div>
 
           {/* Tab content */}
-          {tab === "chat" && (
+          {tab === "chat" && !preformDone && (
+            <PreChatForm onDone={(n, e, p) => {
+              setGuestName(n); setGuestEmail(e); setGuestPhone(p);
+              setMsgs([{ role: "bot", text: `Hi ${n}! I'm HotBot. How can I help you today?`, ts: Date.now() }]);
+              setPreformDone(true);
+            }} />
+          )}
+          {tab === "chat" && preformDone && (
             <>
-              <ChatMessages msgs={msgs} typing={typing} scrollRef={scrollRef} />
+              {/* Human handoff / agent status banner */}
+              {needsHuman && !agentJoined && (
+                <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-xs" style={{ background: "rgba(234,179,8,0.08)", borderBottom: "1px solid rgba(234,179,8,0.15)" }}>
+                  <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+                  <span className="text-yellow-300">Connecting you to a human agent…</span>
+                </div>
+              )}
+              {agentJoined && (
+                <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-xs" style={{ background: "rgba(34,197,94,0.08)", borderBottom: "1px solid rgba(34,197,94,0.15)" }}>
+                  <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                  <span className="text-green-300">A human agent has joined the conversation.</span>
+                </div>
+              )}
+              <ChatMessages msgs={msgs} typing={typing && !needsHuman} scrollRef={scrollRef} />
               {msgs.length <= 2 && <QuickReplies onSelect={sendMsg} />}
               <div
                 className="flex-shrink-0 flex items-end gap-2 p-3 border-t border-white/[0.08]"

@@ -87,7 +87,7 @@ export function FormModal() {
     try {
       // Get reCAPTCHA v3 token (returns null if site key not configured)
       const recaptchaToken = await getToken("lead_form");
-      const res = await fetch("/api/n8n/form", {
+      const res = await fetch("/api/forms/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, formType, page: formPage, recaptchaToken }),
@@ -96,7 +96,7 @@ export function FormModal() {
       const data = await res.json();
       if (mountedRef.current) setLeadId(data?.leadId || null);
     } catch {
-      // Network / server error — show success so user isn't blocked
+      // Network / server error - show success so user isn't blocked
     } finally {
       if (mountedRef.current) {
         setSubmitting(false);

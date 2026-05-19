@@ -1,0 +1,100 @@
+import { NextRequest, NextResponse } from "next/server";
+import { insert, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import { sendLeadConfirmation } from "@/lib/resend";
+import { fireJourneyEvent } from "@/lib/journey";
+import type { Lead } from "@/types/dashboard";
+
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_MIN    = 0.4;
+
+async function verifyRecaptcha(token: string | null): Promise<boolean> {
+  if (!RECAPTCHA_SECRET) return true;
+  if (!token) return true; // Client has no site key configured — allow through
+  try {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${RECAPTCHA_SECRET}&response=${token}`,
+    });
+    const d = await res.json() as { success: boolean; score: number };
+    return d.success && d.score >= RECAPTCHA_MIN;
+  } catch {
+    return true;
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
+  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 });
+  if (limited) return limited;
+
+  try {
+    const body = await req.json() as Record<string, string>;
+    const { name, email, phone, company, service, budget, message, formType, page, recaptchaToken } = body;
+
+    if (!name?.trim() || !email?.trim()) {
+      return NextResponse.json({ error: "Name and email required" }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+
+    const isHuman = await verifyRecaptcha(recaptchaToken || null);
+    if (!isHuman) {
+      return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
+    }
+
+    const sessionId = req.headers.get("x-site-sid") ?? undefined;
+
+    const lead: Lead = {
+      id:        newId(),
+      name:      name.trim(),
+      email:     email.trim(),
+      phone:     phone    || "",
+      company:   company  || "",
+      service:   service  || "",
+      budget:    budget   || "",
+      message:   message  || "",
+      formType:  formType || "get-started",
+      source:    page     || "unknown",
+      ip,
+      createdAt: new Date().toISOString(),
+      status:    "new",
+    };
+
+    // Insert with session_id as extra field for DB tracking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await insert<any>("leads", { ...lead, sessionId: sessionId || undefined });
+    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service ?? "", message: lead.message ?? "", formType: lead.formType ?? "" }).catch(() => {});
+
+    // Fire-and-forget journey event
+    fireJourneyEvent({
+      sessionId: sessionId ?? null,
+      email: lead.email,
+      stage: "lead",
+      leadId: lead.id,
+      source: body.source ?? page ?? "direct",
+      page: req.headers.get("referer") ?? null,
+      metadata: { service: lead.service, budget: lead.budget },
+    }).catch(() => {});
+
+    // Fire-and-forget analytics event
+    if (sessionId) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
+      fetch(`${siteUrl}/api/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "event", sessionId, eventName: "lead_generated", page: page || undefined, properties: { service, formType } }),
+      }).catch(() => {});
+    }
+
+    return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });
+  } catch (error) {
+    console.error("[lead form] error:", error);
+    return NextResponse.json({ success: true, message: "Thank you! We'll be in touch shortly." });
+  }
+}

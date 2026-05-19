@@ -12,7 +12,7 @@ interface FormStep3Props {
 export function FormStep3({ form, update, onBack, onSubmit, submitting }: FormStep3Props) {
   return (
     <div className="animate-form-step-in">
-      <p className="text-slate-400 text-sm mb-4">Step 3 of 3 — Your Message</p>
+      <p className="text-slate-400 text-sm mb-4">Step 3 of 3 - Your Message</p>
 
       {/* Summary */}
       <div
