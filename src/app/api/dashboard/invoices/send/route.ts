@@ -284,13 +284,25 @@ export async function POST(req: NextRequest) {
     console.error("[Invoice Send] PDF generation failed:", pdfErr);
   }
 
+  // Instrument invoice HTML with internal click + open trackers
+  function wrapInvoiceLinks(html: string, id: string): string {
+    return html.replace(/(<a\s[^>]*href=")([^"]+)(")/gi, (match, pre, href, post) => {
+      if (href.startsWith("mailto:") || href.startsWith("tel:") || href.includes("/api/track/")) return match;
+      const tracked = `${SITE_URL}/api/track/click?id=${id}&url=${encodeURIComponent(href)}`;
+      return `${pre}${tracked}${post}`;
+    });
+  }
+
+  let finalHtml = buildInvoiceHtml(inv, logId);
+  if (logId) finalHtml = wrapInvoiceLinks(finalHtml, logId);
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from:    `${FROM_NAME} <${FROM_ADDR}>`,
     to:      toEmail,
     subject,
     text:    buildInvoiceText(inv),
-    html:    buildInvoiceHtml(inv, logId),
+    html:    finalHtml,
     ...(pdfBuffer ? {
       attachments: [{
         filename: `${inv.invoiceNumber}.pdf`,

@@ -299,6 +299,9 @@ CREATE TABLE IF NOT EXISTS email_logs (
   open_count     INTEGER NOT NULL DEFAULT 0,
   open_history   TIMESTAMPTZ[] NOT NULL DEFAULT '{}',
   clicked_at     TIMESTAMPTZ,
+  last_clicked_at TIMESTAMPTZ,
+  click_count    INTEGER NOT NULL DEFAULT 0,
+  click_history  JSONB NOT NULL DEFAULT '[]',
   bounced_at     TIMESTAMPTZ,
   complained_at  TIMESTAMPTZ,
   metadata       JSONB,
@@ -312,11 +315,14 @@ CREATE INDEX IF NOT EXISTS email_logs_created_at_idx  ON email_logs(created_at D
 
 ALTER TABLE email_logs DISABLE ROW LEVEL SECURITY;
 
--- Add open profiling columns to existing email_logs tables (safe if already exists)
-ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS last_opened_at TIMESTAMPTZ;
-ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_count     INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_history   TIMESTAMPTZ[] NOT NULL DEFAULT '{}';
-ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS metadata       JSONB;
+-- Add open + click profiling columns (safe to run on existing tables)
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS last_opened_at  TIMESTAMPTZ;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_count      INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS open_history    TIMESTAMPTZ[] NOT NULL DEFAULT '{}';
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS last_clicked_at TIMESTAMPTZ;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS click_count     INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS click_history   JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS metadata        JSONB;
 
 -- ── Site Analytics ────────────────────────────────────────────────────────────
 

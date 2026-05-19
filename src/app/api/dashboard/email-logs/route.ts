@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   let query = sb()
     .from("email_logs")
-    .select("id, resend_id, to_email, subject, email_type, status, last_event, sent_at, delivered_at, opened_at, last_opened_at, open_count, open_history, clicked_at, bounced_at, complained_at, created_at, metadata", { count: "exact" })
+    .select("id, resend_id, to_email, subject, email_type, status, last_event, sent_at, delivered_at, opened_at, last_opened_at, open_count, open_history, clicked_at, last_clicked_at, click_count, click_history, bounced_at, complained_at, metadata, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 

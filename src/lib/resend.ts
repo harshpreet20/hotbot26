@@ -104,6 +104,26 @@ function quoteBox(label: string, text: string): string {
   </div>`;
 }
 
+// ── Internal tracking helpers ─────────────────────────────────────────────────
+
+// Wrap every <a href="..."> in the HTML with our own click tracker.
+// Skips mailto:, tel:, and already-wrapped links.
+function wrapLinks(html: string, logId: string): string {
+  return html.replace(/(<a\s[^>]*href=")([^"]+)(")/gi, (match, pre, href, post) => {
+    if (href.startsWith("mailto:") || href.startsWith("tel:") || href.includes("/api/track/")) {
+      return match;
+    }
+    const tracked = `${SITE_URL}/api/track/click?id=${logId}&url=${encodeURIComponent(href)}`;
+    return `${pre}${tracked}${post}`;
+  });
+}
+
+// Append a 1×1 tracking pixel before </body>.
+function injectPixel(html: string, logId: string): string {
+  const pixelTag = `<img src="${SITE_URL}/api/track/pixel?id=${logId}" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;" alt="" />`;
+  return html.replace(/<\/body>/i, `${pixelTag}</body>`);
+}
+
 async function send(
   to: string,
   subject: string,
@@ -115,38 +135,42 @@ async function send(
   const resend = client();
   if (!resend) { console.warn("[resend] RESEND_API_KEY not set, email skipped"); return; }
 
-  // Pre-insert a log row so we have a record even if the API call fails
+  // Pre-insert a log row to get an id for link + pixel tracking
   let logId: string | null = null;
   if (isSupabaseEnabled()) {
     try {
       const { data: row } = await sb()
         .from("email_logs")
-        .insert({ to_email: to, subject, email_type: emailType, status: "queued", metadata: Object.keys(metadata).length ? metadata : null })
+        .insert({
+          to_email:   to,
+          subject,
+          email_type: emailType,
+          status:     "queued",
+          metadata:   Object.keys(metadata).length ? metadata : null,
+        })
         .select("id")
         .single();
       logId = row?.id ?? null;
     } catch { /* non-fatal */ }
   }
 
-  // Inject our own tracking pixel (independent of Resend's built-in tracking)
+  // Instrument HTML with our internal trackers (open pixel + click wrappers)
   const htmlFinal = logId
-    ? html.replace(/<\/body>/i, `<img src="${SITE_URL}/api/track/pixel?id=${logId}" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;" alt="" /></body>`)
+    ? injectPixel(wrapLinks(html, logId), logId)
     : html;
 
   try {
     const { data, error } = await resend.emails.send({ from: FROM, to, subject, html: htmlFinal, text });
     if (error) {
-      console.error("[resend] delivery error:", JSON.stringify(error));
       if (logId && isSupabaseEnabled()) {
-        await sb().from("email_logs").update({ status: "failed", last_event: "api_error", metadata: { error } }).eq("id", logId);
+        await sb().from("email_logs").update({ status: "failed", last_event: "api_error" }).eq("id", logId);
       }
     } else {
-      console.log("[resend] sent:", data?.id, "to:", to, "subject:", subject);
       if (logId && isSupabaseEnabled()) {
         await sb().from("email_logs").update({
-          resend_id: data?.id ?? null,
-          status:    "sent",
-          sent_at:   new Date().toISOString(),
+          resend_id:  data?.id ?? null,
+          status:     "sent",
+          sent_at:    new Date().toISOString(),
           last_event: "sent",
         }).eq("id", logId);
       }
