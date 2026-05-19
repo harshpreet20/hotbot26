@@ -44,3 +44,4 @@ next-env.d.ts
 /data/chats.json
 /data/sessions.json
 /data/rate_limits.json
+/data/system_logs.json
