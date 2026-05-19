@@ -38,6 +38,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/ai-analyst",
+    label: "AI Analyst",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/analytics",
     label: "Analytics",
     roles: ["super_admin", "admin"],
@@ -314,7 +324,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
     const sb = supabaseClient();
     if (sb) {
-      // Subscribe to INSERT/UPDATE on all 4 tables — refetch counts on any change
       const channel = sb
         .channel("badge-counts")
         .on("postgres_changes", { event: "*", schema: "public", table: "leads" },    fetchBadges)
@@ -369,10 +378,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const badge = role ? ROLE_BADGE[role] : null;
 
   const NAV_BADGES: Partial<Record<string, number>> = {
-    "/enter/backdrop/dashboard/tickets":  badges.tickets,
-    "/enter/backdrop/dashboard/leads":    badges.leads,
+    "/enter/backdrop/dashboard/tickets":   badges.tickets,
+    "/enter/backdrop/dashboard/leads":     badges.leads,
     "/enter/backdrop/dashboard/callbacks": badges.callbacks,
-    "/enter/backdrop/dashboard/chats":    badges.chats,
+    "/enter/backdrop/dashboard/chats":     badges.chats,
   };
 
   return (
