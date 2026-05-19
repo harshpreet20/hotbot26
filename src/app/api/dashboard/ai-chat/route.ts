@@ -3,7 +3,11 @@ import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function openai() {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OPENAI_API_KEY is not set");
+  return new OpenAI({ apiKey: key });
+}
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -242,7 +246,7 @@ export async function POST(req: NextRequest) {
   try {
     // Agentic loop: keep calling until no more tool calls
     for (let iter = 0; iter < 5; iter++) {
-      const response = await openai.chat.completions.create({
+      const response = await openai().chat.completions.create({
         model: "gpt-4o-mini",
         messages,
         tools: TOOLS,
