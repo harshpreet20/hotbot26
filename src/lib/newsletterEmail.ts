@@ -1,22 +1,13 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import type { NewsletterSubscriber } from "@/types/dashboard";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 const SITE_URL   = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com";
-const FROM_NAME  = process.env.GMAIL_FROM_NAME  ?? "HotBot Studios";
-const FROM_EMAIL = process.env.GMAIL_FROM_EMAIL ?? "info@hotbotstudios.com";
-
-function transporter() {
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: { user: FROM_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
-  });
-}
+const FROM_NAME  = process.env.RESEND_FROM_NAME     ?? "HotBot Studios";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL    ?? "noreply@hotbotstudios.com";
 
 export function isNewsletterEmailConfigured(): boolean {
-  return !!(process.env.GMAIL_FROM_EMAIL && process.env.GMAIL_APP_PASSWORD);
+  return !!process.env.RESEND_API_KEY;
 }
 
 export function unsubToken(email: string): string {
@@ -102,7 +93,8 @@ export async function sendNewsletter(
   const result: SendNewsletterResult = { sent: 0, failed: 0, errors: [] };
   if (!isNewsletterEmailConfigured() || !subscribers.length) return result;
 
-  const t = transporter();
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   for (const sub of subscribers) {
     // Pre-insert log row to get id for tracking pixel
     let logId: string | undefined;
@@ -117,27 +109,35 @@ export async function sendNewsletter(
       logId = logRow?.id as string | undefined;
     }
 
-    try {
-      const unsubUrl  = `${SITE_URL}/api/forms/newsletter/unsubscribe?token=${unsubToken(sub.email)}`;
-      const html      = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email, logId);
-      await t.sendMail({
-        from:    `"${FROM_NAME}" <${FROM_EMAIL}>`,
-        to:      sub.email,
-        subject,
-        text:    `${subject}\n\nVisit ${SITE_URL} for the full newsletter.\n\nUnsubscribe: ${unsubUrl}`,
-        html,
-      });
+    const unsubUrl = `${SITE_URL}/api/forms/newsletter/unsubscribe?token=${unsubToken(sub.email)}`;
+    const html     = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email, logId);
+
+    const { data, error } = await resend.emails.send({
+      from:    `${FROM_NAME} <${FROM_EMAIL}>`,
+      to:      sub.email,
+      subject,
+      text:    `${subject}\n\nVisit ${SITE_URL} for the full newsletter.\n\nUnsubscribe: ${unsubUrl}`,
+      html,
+    });
+
+    if (error) {
+      const errMsg = JSON.stringify(error);
+      console.error("[newsletter] Resend error for", sub.email, errMsg);
       if (logId && isSupabaseEnabled()) {
-        await sb().from("email_logs").update({ status: "sent", sent_at: new Date().toISOString(), last_event: "sent" }).eq("id", logId);
-      }
-      result.sent++;
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (logId && isSupabaseEnabled()) {
-        await sb().from("email_logs").update({ status: "failed", last_event: "failed", metadata: { error: errMsg } }).eq("id", logId);
+        await sb().from("email_logs").update({ status: "failed", last_event: "api_error", metadata: { error } }).eq("id", logId);
       }
       result.failed++;
       result.errors.push({ email: sub.email, error: errMsg });
+    } else {
+      if (logId && isSupabaseEnabled()) {
+        await sb().from("email_logs").update({
+          resend_id:  data?.id ?? null,
+          status:     "sent",
+          sent_at:    new Date().toISOString(),
+          last_event: "sent",
+        }).eq("id", logId);
+      }
+      result.sent++;
     }
   }
 
