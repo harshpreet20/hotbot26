@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
   try {
     const payload = (await req.json()) as TrackPayload;
 
+    // Drop any tracking from internal dashboard/admin paths
+    const page = "page" in payload ? payload.page : ("firstPage" in payload ? payload.firstPage : "");
+    if (page && page.startsWith("/enter/")) return NextResponse.json({ ok: true });
+
     if (!isSupabaseEnabled()) return NextResponse.json({ ok: true });
 
     // Vercel injects geo headers

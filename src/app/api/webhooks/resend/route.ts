@@ -82,11 +82,12 @@ async function handleEvent(event: ResendEvent) {
 
   const update = eventToStatusUpdate(event.type);
   if (!update) {
-    console.log("[resend-webhook] unhandled event type:", event.type);
-    return;
+    return; // unrecognised event — silently ignore
   }
 
-  console.log("[resend-webhook]", event.type, resendId);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[resend-webhook]", event.type, resendId);
+  }
 
   if (!isSupabaseEnabled()) return;
 

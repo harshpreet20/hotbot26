@@ -559,6 +559,7 @@ export default function AnalyticsPage() {
   const [liveItems,  setLiveItems] = useState<LiveItem[]>([]);
   const [liveTs,     setLiveTs]    = useState<string>(new Date().toISOString());
   const [lastPollAt, setLastPollAt] = useState<string>(new Date().toISOString());
+  const [clearing,   setClearing]  = useState(false);
   const secretRef = useRef("");
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -653,6 +654,21 @@ export default function AnalyticsPage() {
   }, []);
 
   // ── AI Debrief ────────────────────────────────────────────────────────────
+  async function clearAnalyticsData() {
+    if (!confirm("This will permanently delete ALL site tracking data (sessions, page views, events). This cannot be undone. Continue?")) return;
+    setClearing(true);
+    try {
+      await fetch("/api/dashboard/analytics/clear", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${secretRef.current}` },
+      });
+      setBundle(null);
+      loadData(secretRef.current);
+    } catch { /* ignore */ } finally {
+      setClearing(false);
+    }
+  }
+
   async function runAI() {
     if (!bundle) return;
     setAnalyzing(true);
@@ -738,6 +754,22 @@ export default function AnalyticsPage() {
                 <span style={{ color: "#64748b", fontSize: 12 }}>/10 health</span>
               </div>
             )}
+
+            <button
+              onClick={clearAnalyticsData}
+              disabled={clearing || loading}
+              title="Clear all tracking data"
+              style={{
+                padding: "9px 14px", borderRadius: 12, border: "1px solid rgba(239,68,68,0.3)",
+                cursor: clearing || loading ? "not-allowed" : "pointer",
+                background: "rgba(239,68,68,0.06)",
+                color: clearing ? "#ef4444" : "#94a3b8", fontWeight: 600, fontSize: 13,
+                display: "flex", alignItems: "center", gap: 6,
+                transition: "color 0.2s, background 0.2s",
+              }}
+            >
+              {clearing ? "Clearing…" : "🗑 Clear Data"}
+            </button>
 
             <button
               onClick={() => loadData(secretRef.current, true)}

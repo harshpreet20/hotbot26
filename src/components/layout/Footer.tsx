@@ -9,7 +9,7 @@ export function Footer() {
   const [email, setEmail] = useState("");
   const [subDone, setSubDone] = useState(false);
   const openForm = useAppStore((s) => s.openForm);
-  const { getToken } = useRecaptcha();
+  const { getToken, prime } = useRecaptcha();
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +60,7 @@ export function Footer() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={prime}
                   placeholder="Your email"
                   className="flex-1 min-w-0 px-4 py-2.5 rounded-xl text-sm text-white bg-white/[0.05] border border-white/10 focus:border-blue-500/50 outline-none transition-colors"
                 />

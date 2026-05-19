@@ -8,15 +8,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock("nodemailer", () => ({
-  default: {
-    createTransport: vi.fn().mockReturnValue({
-      sendMail: vi.fn().mockResolvedValue({ messageId: "test-msg-id" }),
-    }),
-  },
+const mockSend = vi.fn().mockResolvedValue({ data: { id: "resend-test-id" }, error: null });
+
+vi.mock("resend", () => ({
+  Resend: vi.fn().mockImplementation(function() {
+    return { emails: { send: mockSend } };
+  }),
 }));
 
-import nodemailer from "nodemailer";
+vi.mock("@/lib/supabase", () => ({
+  isSupabaseEnabled: vi.fn().mockReturnValue(false),
+  sb: vi.fn(),
+}));
 
 // Import the module under test AFTER mocks are set up
 import {
@@ -45,26 +48,20 @@ function makeSubscriber(email: string, name = ""): NewsletterSubscriber {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("isNewsletterEmailConfigured()", () => {
-  const origFrom = process.env.GMAIL_FROM_EMAIL;
-  const origPass = process.env.GMAIL_APP_PASSWORD;
+  const origKey = process.env.RESEND_API_KEY;
 
   afterEach(() => {
-    if (origFrom === undefined) delete process.env.GMAIL_FROM_EMAIL;
-    else process.env.GMAIL_FROM_EMAIL = origFrom;
-
-    if (origPass === undefined) delete process.env.GMAIL_APP_PASSWORD;
-    else process.env.GMAIL_APP_PASSWORD = origPass;
+    if (origKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = origKey;
   });
 
-  it("returns false when GMAIL_FROM_EMAIL is unset", () => {
-    delete process.env.GMAIL_FROM_EMAIL;
-    delete process.env.GMAIL_APP_PASSWORD;
+  it("returns false when RESEND_API_KEY is unset", () => {
+    delete process.env.RESEND_API_KEY;
     expect(isNewsletterEmailConfigured()).toBe(false);
   });
 
-  it("returns true when both GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD are set", () => {
-    process.env.GMAIL_FROM_EMAIL    = "from@example.com";
-    process.env.GMAIL_APP_PASSWORD  = "secret-app-password";
+  it("returns true when RESEND_API_KEY is set", () => {
+    process.env.RESEND_API_KEY = "re_test_key";
     expect(isNewsletterEmailConfigured()).toBe(true);
   });
 });
@@ -85,13 +82,9 @@ describe("emailFromToken(token)", () => {
   });
 
   it("returns null on garbage input that throws", () => {
-    // In Node.js Buffer.from() with base64url doesn't throw for arbitrary strings,
-    // so we spy on Buffer.from to simulate a throw for this test.
-    const originalFrom = Buffer.from.bind(Buffer);
     const spy = vi.spyOn(Buffer, "from").mockImplementationOnce(() => {
       throw new Error("decode error");
     });
-
     expect(emailFromToken("!!invalid!!")).toBeNull();
     spy.mockRestore();
   });
@@ -118,42 +111,31 @@ describe("generateNewsletterHtml(subject, bodyHtml, name, email)", () => {
 
 describe("sendNewsletter()", () => {
   beforeEach(() => {
-    process.env.GMAIL_FROM_EMAIL   = "from@example.com";
-    process.env.GMAIL_APP_PASSWORD = "secret";
+    process.env.RESEND_API_KEY = "re_test_key";
+    mockSend.mockClear();
   });
 
   afterEach(() => {
-    delete process.env.GMAIL_FROM_EMAIL;
-    delete process.env.GMAIL_APP_PASSWORD;
+    delete process.env.RESEND_API_KEY;
   });
 
   it("returns { sent: 0, failed: 0, errors: [] } without sending when subscriber list is empty", async () => {
     const result = await sendNewsletter("Hello", "<p>Hi</p>", []);
-
     expect(result).toEqual({ sent: 0, failed: 0, errors: [] });
-
-    // nodemailer.createTransport should not even be needed but sendMail definitely not called
-    const mockTransport = vi.mocked(nodemailer.createTransport)();
-    expect(vi.mocked(mockTransport.sendMail)).not.toHaveBeenCalled();
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("calls nodemailer sendMail once per subscriber and increments sent count", async () => {
+  it("calls Resend send once per subscriber and increments sent count", async () => {
     const subscribers = [
       makeSubscriber("alice@example.com", "Alice"),
       makeSubscriber("bob@example.com",   "Bob"),
     ];
-
-    // Reset mock call counts
-    const mockSendMail = vi.fn().mockResolvedValue({ messageId: "msg-id" });
-    vi.mocked(nodemailer.createTransport).mockReturnValue({
-      sendMail: mockSendMail,
-    } as ReturnType<typeof nodemailer.createTransport>);
 
     const result = await sendNewsletter("Newsletter", "<p>Content</p>", subscribers);
 
     expect(result.sent).toBe(2);
     expect(result.failed).toBe(0);
     expect(result.errors).toHaveLength(0);
-    expect(mockSendMail).toHaveBeenCalledTimes(2);
+    expect(mockSend).toHaveBeenCalledTimes(2);
   });
 });
