@@ -105,7 +105,12 @@ async function send(to: string, subject: string, html: string, text: string): Pr
   const resend = client();
   if (!resend) { console.warn("[resend] RESEND_API_KEY not set — email skipped"); return; }
   try {
-    await resend.emails.send({ from: FROM, to, subject, html, text });
+    const { data, error } = await resend.emails.send({ from: FROM, to, subject, html, text });
+    if (error) {
+      console.error("[resend] delivery error:", JSON.stringify(error));
+    } else {
+      console.log("[resend] sent:", data?.id, "to:", to, "subject:", subject);
+    }
   } catch (err) {
     console.error("[resend] send error:", err instanceof Error ? err.message : err);
   }
