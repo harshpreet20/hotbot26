@@ -103,9 +103,7 @@ declare global {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function SiteTracker() {
-  const pathname = usePathname();
-
+function TrackerInner({ pathname }: { pathname: string }) {
   const sessionIdRef    = useRef<string>("");
   const pageCountRef    = useRef<number>(0);
   const sessionStartRef = useRef<number>(0);
@@ -282,4 +280,10 @@ export default function SiteTracker() {
   }, [pathname]);
 
   return null;
+}
+
+export default function SiteTracker() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/enter/")) return null;
+  return <TrackerInner pathname={pathname} />;
 }
