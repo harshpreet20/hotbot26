@@ -2,8 +2,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Role } from "@/types/dashboard";
+
+interface BadgeCounts { tickets: number; leads: number; callbacks: number; chats: number; }
 
 interface NavItem {
   href: string;
@@ -248,6 +250,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string>("");
   const [impersonatingAs, setImpersonatingAs] = useState<string | null>(null);
   const [originalUser,    setOriginalUser]    = useState<string>("");
+  const [badges, setBadges]     = useState<BadgeCounts>({ tickets: 0, leads: 0, callbacks: 0, chats: 0 });
+  const badgeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -280,12 +284,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           setRole((data.role as Role | undefined) ?? null);
           setUsername(data.username ?? "");
         } else {
-          // Cookie invalid or expired - middleware should have caught this, but guard anyway
           router.replace("/enter/backdrop");
         }
       })
       .catch(() => router.replace("/enter/backdrop"));
   }, [router]);
+
+  // Poll badge counts every 30 s
+  useEffect(() => {
+    function fetchBadges() {
+      const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") : null;
+      if (!secret) return;
+      fetch("/api/dashboard/badge-counts", { headers: { Authorization: `Bearer ${secret}` } })
+        .then((r) => r.ok ? r.json() as Promise<BadgeCounts> : Promise.reject())
+        .then((d) => setBadges(d))
+        .catch(() => {});
+    }
+    fetchBadges();
+    badgeTimer.current = setInterval(fetchBadges, 30_000);
+    return () => { if (badgeTimer.current) clearInterval(badgeTimer.current); };
+  }, []);
 
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href;
@@ -324,6 +342,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   const badge = role ? ROLE_BADGE[role] : null;
+
+  const NAV_BADGES: Partial<Record<string, number>> = {
+    "/enter/backdrop/dashboard/tickets":  badges.tickets,
+    "/enter/backdrop/dashboard/leads":    badges.leads,
+    "/enter/backdrop/dashboard/callbacks": badges.callbacks,
+    "/enter/backdrop/dashboard/chats":    badges.chats,
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: "#0a0e1a" }}>
@@ -364,7 +389,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5" aria-label="Dashboard navigation">
           {NAV.filter(canSee).map((item) => {
-            const active = isActive(item);
+            const active  = isActive(item);
+            const count   = NAV_BADGES[item.href] ?? 0;
             return (
               <Link
                 key={item.href}
@@ -377,7 +403,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 }}
               >
                 <span style={{ color: active ? "#818cf8" : "#475569" }}>{item.icon}</span>
-                {item.label}
+                <span className="flex-1 min-w-0 truncate">{item.label}</span>
+                {count > 0 && (
+                  <span style={{
+                    minWidth: 18, height: 18, borderRadius: 9,
+                    background: item.href.includes("chats") ? "#ef4444" : "#6366f1",
+                    color: "#fff", fontSize: 10, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 5px", lineHeight: 1, flexShrink: 0,
+                  }}>
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
               </Link>
             );
           })}

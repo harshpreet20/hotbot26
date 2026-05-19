@@ -127,8 +127,13 @@ async function send(
     } catch { /* non-fatal */ }
   }
 
+  // Inject our own tracking pixel (independent of Resend's built-in tracking)
+  const htmlFinal = logId
+    ? html.replace(/<\/body>/i, `<img src="${SITE_URL}/api/track/pixel?id=${logId}" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;" alt="" /></body>`)
+    : html;
+
   try {
-    const { data, error } = await resend.emails.send({ from: FROM, to, subject, html, text });
+    const { data, error } = await resend.emails.send({ from: FROM, to, subject, html: htmlFinal, text });
     if (error) {
       console.error("[resend] delivery error:", JSON.stringify(error));
       if (logId && isSupabaseEnabled()) {

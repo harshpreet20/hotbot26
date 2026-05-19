@@ -303,9 +303,9 @@ export function HotBotChat() {
     }
   }, [open]);
 
-  // Poll for agent replies when handoff is requested
+  // Poll for agent replies — starts on handoff, keeps running after agent joins
   useEffect(() => {
-    if (!needsHuman || !sessionId) return;
+    if ((!needsHuman && !agentJoined) || !sessionId) return;
     const poll = async () => {
       try {
         const res = await fetch(`/api/chat/session?id=${sessionId}`);
@@ -315,16 +315,17 @@ export function HotBotChat() {
         if (remoteMsgs.length > lastMsgCountRef.current) {
           lastMsgCountRef.current = remoteMsgs.length;
           setMsgs(remoteMsgs.map((m) => ({ role: m.role, text: m.text, ts: m.ts })));
-          if (data.session?.agentUsername) {
-            setAgentJoined(true);
-            setNeedsHuman(false);
-          }
+        }
+        if (data.session?.agentUsername && !agentJoined) {
+          setAgentJoined(true);
+          setNeedsHuman(false);
         }
       } catch { /* ignore */ }
     };
     pollRef.current = setInterval(poll, 4000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [needsHuman, sessionId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsHuman, agentJoined, sessionId]);
 
   const sendMsg = useCallback(async (text: string) => {
     if (!text.trim()) return;
