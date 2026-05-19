@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // Insert with session_id as extra field for DB tracking
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await insert<any>("leads", { ...lead, sessionId: sessionId || undefined });
-    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service ?? "", message: lead.message ?? "", formType: lead.formType ?? "" }).catch(() => {});
+    sendLeadConfirmation({ name: lead.name, email: lead.email, service: lead.service ?? "", message: lead.message ?? "", formType: lead.formType ?? "" }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     // Fire-and-forget journey event
     fireJourneyEvent({
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       source: body.source ?? page ?? "direct",
       page: req.headers.get("referer") ?? null,
       metadata: { service: lead.service, budget: lead.budget },
-    }).catch(() => {});
+    }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     // Fire-and-forget analytics event
     if (sessionId) {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "event", sessionId, eventName: "lead_generated", page: page || undefined, properties: { service, formType } }),
-      }).catch(() => {});
+      }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     }
 
     return NextResponse.json({ success: true, leadId: lead.id, message: "We'll be in touch within 24 hours!" });

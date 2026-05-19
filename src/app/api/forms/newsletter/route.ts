@@ -94,10 +94,10 @@ export async function POST(req: NextRequest) {
       source: resolvedSource,
       page: req.headers.get("referer") ?? null,
       metadata: { formType: "newsletter", whatsappOptIn },
-    }).catch(() => {});
+    }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     const unsubUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com"}/api/forms/newsletter/unsubscribe?token=${unsubToken(email.trim())}`;
-    sendNewsletterWelcome({ name: name?.trim() || "", email: email.trim(), unsubUrl }).catch(() => {});
+    sendNewsletterWelcome({ name: name?.trim() || "", email: email.trim(), unsubUrl }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     // Fire-and-forget analytics event
     if (sessionId) {
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "event", sessionId, eventName: "newsletter_signup", properties: { source: resolvedSource } }),
-      }).catch(() => {});
+      }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     }
 
     return NextResponse.json({ success: true, message: "You're subscribed! We'll be in touch." });

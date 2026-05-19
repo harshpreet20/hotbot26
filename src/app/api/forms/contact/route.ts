@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       console.error("[contact] lead insert failed:", err)
     );
 
-    sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch(() => {});
+    sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     const sessionId = req.headers.get("x-site-sid");
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       source: "contact-page",
       page: req.headers.get("referer") ?? null,
       metadata: { formType: "contact", subject },
-    }).catch(() => {});
+    }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     // Fire-and-forget analytics event
     if (sessionId) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "event", sessionId, eventName: "contact_form_submit", page: "/contact", properties: { subject } }),
-      }).catch(() => {});
+      }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     }
 
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });

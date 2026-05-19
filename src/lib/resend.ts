@@ -49,11 +49,7 @@ function wrap(title: string, preheader: string, body: string): string {
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td width="44">
-                <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-                  <td width="40" height="40" style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);text-align:center;vertical-align:middle;">
-                    <span style="color:#ffffff;font-size:20px;font-weight:900;font-family:Arial,sans-serif;line-height:40px;display:block;">H</span>
-                  </td>
-                </tr></table>
+                <img src="${SITE_URL}/logos/hotbot-logo.svg" width="120" height="30" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" />
               </td>
               <td style="padding-left:12px;">
                 <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.3px;">${FROM_NAME}</p>
@@ -218,7 +214,7 @@ export async function sendContactConfirmation(opts: {
   const { name, email, subject, message } = opts;
   const html = wrap("Message Received", `Thanks for reaching out, ${name}!`, `
     ${greeting(name)}
-    ${para(`We&apos;ve received your message and will get back to you within <strong>24 hours</strong>. Here&apos;s a copy of what you sent:`)}
+    ${para(`We've received your message and will get back to you within <strong>24 hours</strong>. Here's a copy of what you sent:`)}
     ${infoBox([["Subject", subject || "General Enquiry"]])}
     ${message ? quoteBox("Your Message", message) : ""}
     ${para(`In the meantime, feel free to reach us on WhatsApp for a faster response.`)}
@@ -243,7 +239,7 @@ export async function sendLeadConfirmation(opts: {
   const subjectLine = service ? `Your ${service} enquiry` : "Your enquiry";
   const html = wrap("Enquiry Received", `Thanks for your interest, ${name}!`, `
     ${greeting(name)}
-    ${para(`Thanks for getting in touch! We&apos;ve received your enquiry about <strong>${service || "our services"}</strong> and will send you a personalised response within <strong>24 hours</strong>.`)}
+    ${para(`Thanks for getting in touch! We've received your enquiry about <strong>${service || "our services"}</strong> and will send you a personalised response within <strong>24 hours</strong>.`)}
     ${infoBox([
       ...(service ? [["Service", service] as [string, string]] : []),
       ...(formType && formType !== "get-started" ? [["Enquiry type", formType.replace(/-/g, " ")] as [string, string]] : []),
@@ -268,7 +264,7 @@ export async function sendNewsletterWelcome(opts: {
   const { name, email, unsubUrl } = opts;
   const html = wrap("Welcome to the Newsletter", `You're in, ${name || "there"}!`, `
     ${greeting(name || "there")}
-    ${para(`You&apos;re now subscribed to the <strong>${FROM_NAME}</strong> newsletter. Expect insights on AI automation, digital marketing, and growth strategies — no fluff, just value.`)}
+    ${para(`You're now subscribed to the <strong>${FROM_NAME}</strong> newsletter. Expect insights on AI automation, digital marketing, and growth strategies — no fluff, just value.`)}
     <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border-radius:12px;padding:20px 24px;margin-bottom:24px;">
       <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e1b4b;">What to expect:</p>
       <ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#374151;line-height:2;">
@@ -299,7 +295,7 @@ export async function sendCallbackConfirmation(opts: {
   if (!opts.email) return;
   const html = wrap("Callback Requested", "We'll call you shortly!", `
     ${greeting(opts.name)}
-    ${para(`We&apos;ve received your callback request. Our AI voice agent (powered by Sarvam) will call <strong>${opts.phone}</strong> within <strong>2 minutes</strong>. Please make sure you&apos;re available.`)}
+    ${para(`We've received your callback request. Our AI voice agent (powered by Sarvam) will call <strong>${opts.phone}</strong> within <strong>2 minutes</strong>. Please make sure you're available.`)}
     ${infoBox([["Your number", opts.phone], ["Expected call", "Within 2 minutes"]])}
     ${para(`Calls come from <strong>+91 97000 01534</strong>. If we miss you, we'll try again or you can request another callback.`)}
     ${btn("Request Another Callback", `${SITE_URL}/#contact`, "#8b5cf6")}
@@ -331,7 +327,7 @@ export async function sendChatTranscript(opts: {
 
   const html = wrap("Your Chat Transcript", `Your conversation with ${FROM_NAME} AI`, `
     ${greeting(name)}
-    ${para(`Here&apos;s a transcript of your conversation with <strong>${FROM_NAME} AI</strong>. A member of our team will follow up with you shortly.`)}
+    ${para(`Here's a transcript of your conversation with <strong>${FROM_NAME} AI</strong>. A member of our team will follow up with you shortly.`)}
     <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${msgHtml}</table>
     </div>
@@ -352,7 +348,7 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
   const viewUrl = `${SITE_URL}/tickets?id=${ticket.id}`;
   const html = wrap(`Ticket ${ticket.ticketNumber} Received`, `We got your ticket, ${ticket.requesterName}!`, `
     ${greeting(ticket.requesterName)}
-    ${para(`We&apos;ve received your support request. Our team will get back to you as soon as possible.`)}
+    ${para(`We've received your support request. Our team will get back to you as soon as possible.`)}
     ${infoBox([
       ["Ticket #", `<strong>${ticket.ticketNumber}</strong>`],
       ["Subject", ticket.title],

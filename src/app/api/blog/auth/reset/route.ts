@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       log.warn("auth.reset", `Reset failed for "${email}" — ${error.message}`, { ip });
     } else {
       log.info("auth.reset", `Password reset email sent to "${email}"`, { ip });
-      sendPasswordResetAcknowledgment(email).catch(() => {});
+      sendPasswordResetAcknowledgment(email).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     }
     // Always return success to prevent email enumeration
     return NextResponse.json({

@@ -587,7 +587,7 @@ export default function AnalyticsPage() {
   // ── Live feed polling (every 10s) ─────────────────────────────────────────
   const pollLive = useCallback(async () => {
     try {
-      const supabaseUrl  = "https://wsucqpunleplgyrrroae.supabase.co";
+      const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://wsucqpunleplgyrrroae.supabase.co";
       const anonKey      = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
       if (!anonKey) {
@@ -688,7 +688,7 @@ export default function AnalyticsPage() {
   const trendWColor = secondHalf > firstHalf ? COLORS.green : secondHalf < firstHalf ? COLORS.red : "#64748b";
   const peakDay    = ts.length ? ts.reduce((a, b) => (b.visitors > a.visitors ? b : a), ts[0]) : null;
 
-  const isEmpty = !loading && !error && ov && ov.pageviews === 0;
+  const isEmpty = !loading && !error && ov && ov.pageviews === 0 && ov.sessions === 0 && (bundle?.totalEvents ?? 0) === 0;
 
   const hscore = aiResult?.healthScore ?? 0;
   const liveLabel = `Last updated ${new Date(liveTs).toLocaleTimeString()}`;

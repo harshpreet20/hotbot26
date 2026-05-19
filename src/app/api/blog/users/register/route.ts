@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   if (dbError) {
     // Clean up orphaned auth user on DB failure
-    await sb().auth.admin.deleteUser(authData.user.id).catch(() => {});
+    await sb().auth.admin.deleteUser(authData.user.id).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     if (dbError.code === "23505") {
       return NextResponse.json({ success: false, error: "An account with this email already exists." }, { status: 409 });
     }
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
   log.info("register.success", `New registration: "${email}" (${requestedRole})`, { ip, details: { status } });
 
-  sendRegistrationConfirmation({ name, email, role: requestedRole, needsVerification: !emailConfirmed }).catch(() => {});
+  sendRegistrationConfirmation({ name, email, role: requestedRole, needsVerification: !emailConfirmed }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
   if (emailConfirmed) {
     return NextResponse.json({

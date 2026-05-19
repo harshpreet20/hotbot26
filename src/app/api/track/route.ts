@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sb } from "@/lib/supabase";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 // ── In-memory rate limiter: ~60 req/min per IP ────────────────────────────────
 const ipHits = new Map<string, number[]>();
@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const payload = (await req.json()) as TrackPayload;
+
+    if (!isSupabaseEnabled()) return NextResponse.json({ ok: true });
 
     // Vercel injects geo headers
     const country = req.headers.get("x-vercel-ip-country") ?? undefined;
