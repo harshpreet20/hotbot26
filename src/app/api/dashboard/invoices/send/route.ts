@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import PDFDocument from "pdfkit";
+import path from "path";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
@@ -40,9 +41,16 @@ function buildInvoicePdf(inv: Invoice): Promise<Buffer> {
 
     // Header band
     doc.rect(0, 0, doc.page.width, 100).fill("#1e1b4b");
-    doc.fillColor("#ffffff").fontSize(22).font("Helvetica-Bold").text(FROM_NAME, 50, 28);
-    doc.fillColor("#a5b4fc").fontSize(10).font("Helvetica").text("INVOICE", 50, 54);
-    doc.fillColor("#ffffff").fontSize(16).font("Helvetica-Bold").text(inv.invoiceNumber, 50, 68);
+    // Logo — use extracted PNG so PDFKit can embed it directly
+    try {
+      const logoPath = path.join(process.cwd(), "public", "logos", "hotbot-logo.png");
+      doc.image(logoPath, 50, 22, { height: 36 });
+    } catch {
+      // Fallback to text if logo file missing
+      doc.fillColor("#ffffff").fontSize(22).font("Helvetica-Bold").text(FROM_NAME, 50, 28);
+    }
+    doc.fillColor("#a5b4fc").fontSize(10).font("Helvetica").text("INVOICE", 50, 62);
+    doc.fillColor("#ffffff").fontSize(16).font("Helvetica-Bold").text(inv.invoiceNumber, 50, 75);
     const totalStr = fmt(inv.total);
     doc.fillColor("#c7d2fe").fontSize(13).font("Helvetica-Bold").text(totalStr, 0, 54, { align: "right" });
     doc.fillColor("#a5b4fc").fontSize(10).font("Helvetica").text(inv.status.toUpperCase(), 0, 72, { align: "right" });
