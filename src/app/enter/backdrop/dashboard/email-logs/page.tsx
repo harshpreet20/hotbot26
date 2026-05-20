@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
@@ -139,31 +138,16 @@ export default function EmailLogsPage() {
 
   useEffect(() => { load(page, search, typeFilter, statusFilter); }, [load, page, search, typeFilter, statusFilter]);
 
-  // Supabase realtime — instant refresh when any email_log row changes
+  // Auto-poll every 10 s — Supabase RLS blocks anon realtime so we poll via our auth'd API instead
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) return;
-    const sb = createClient(url, key);
-    const channel = sb
-      .channel("email-logs-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "email_logs" }, (payload) => {
-        const ev = payload.eventType;
-        const row = payload.new as EmailLog | undefined;
-        const msg = ev === "INSERT"
-          ? `New email → ${row?.to_email ?? ""}`
-          : ev === "UPDATE"
-          ? `${row?.status?.toUpperCase() ?? "Updated"} → ${row?.to_email ?? ""}`
-          : "Row deleted";
-        if (flashTimer.current) clearTimeout(flashTimer.current);
-        setLiveFlash(msg);
-        flashTimer.current = setTimeout(() => setLiveFlash(null), 4000);
-        load(page, search, typeFilter, statusFilter);
-      })
-      .subscribe();
-    return () => { void sb.removeChannel(channel); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, typeFilter, statusFilter]);
+    const id = setInterval(() => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      setLiveFlash("Auto-refreshed");
+      flashTimer.current = setTimeout(() => setLiveFlash(null), 2000);
+      load(page, search, typeFilter, statusFilter);
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [load, page, search, typeFilter, statusFilter]);
 
   const totalPages = Math.ceil(total / limit);
 
