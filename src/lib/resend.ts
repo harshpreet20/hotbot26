@@ -539,7 +539,47 @@ export async function sendFeatureBroadcast(opts: {
   }
 }
 
-// ── 14. Task assigned notification ───────────────────────────────────────────
+// ── 14. Client welcome ───────────────────────────────────────────────────────
+
+export async function sendClientWelcomeEmail(opts: {
+  name: string;
+  email: string;
+  company?: string;
+  service?: string;
+  convertedBy: string;
+}): Promise<void> {
+  const { name, email, company, service, convertedBy } = opts;
+  const waText = encodeURIComponent(`Hi, I just became a client of ${FROM_NAME} and wanted to say hello!`);
+  const infoRows: [string, string][] = [];
+  if (company) infoRows.push(["Company", company]);
+  if (service) infoRows.push(["Service", service]);
+  infoRows.push(["Account manager", convertedBy]);
+
+  const html = wrap("Welcome Aboard", `Welcome to ${FROM_NAME}, ${name}!`, `
+    ${greeting(name)}
+    ${para(`We're thrilled to welcome you as a <strong>${FROM_NAME}</strong> client! Our team is ready to get started and make sure you see real results.`)}
+    ${infoRows.length ? infoBox(infoRows) : ""}
+    ${para(`Here's what to expect next: your account manager will reach out shortly to kick things off, walk you through the onboarding process, and answer any questions you have.`)}
+    ${para(`In the meantime, feel free to reach us on WhatsApp for a faster response — we're always happy to chat.`)}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
+      ${btn("Chat on WhatsApp", `${SITE_URL}/api/wa?text=${waText}`, "#22c55e")}
+      &nbsp;&nbsp;
+      ${btn("Visit Our Website", SITE_URL)}
+    </div>
+    ${para(`Welcome to the family!`)}
+  `);
+
+  await send(
+    email,
+    `${FROM_NAME}: Welcome aboard, ${name}!`,
+    html,
+    `Hi ${name},\n\nWelcome to ${FROM_NAME}! We're excited to have you on board.\n\n${service ? `Service: ${service}\n` : ""}${company ? `Company: ${company}\n` : ""}Your account manager (${convertedBy}) will reach out shortly.\n\nChat with us: ${SITE_URL}/api/wa\nWebsite: ${SITE_URL}\n\n${FROM_NAME}`,
+    "client_welcome",
+    { ...(company ? { company } : {}), ...(service ? { service } : {}), convertedBy },
+  );
+}
+
+// ── 15. Task assigned notification ───────────────────────────────────────────
 
 export async function sendTaskAssignedEmail(opts: {
   assigneeEmail: string;

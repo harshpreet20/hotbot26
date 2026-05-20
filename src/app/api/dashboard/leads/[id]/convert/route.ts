@@ -3,6 +3,7 @@ import { extractToken, authorizeRole } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
 import { newId } from "@/lib/store";
 import { fireJourneyEvent } from "@/lib/journey";
+import { sendClientWelcomeEmail } from "@/lib/resend";
 
 export async function POST(
   req: NextRequest,
@@ -63,7 +64,16 @@ export async function POST(
     console.error("[convert] lead update error:", updateError.message);
   }
 
-  // 5. Fire journey event (fire-and-forget)
+  // 5. Send client welcome email (fire-and-forget)
+  sendClientWelcomeEmail({
+    name:        lead.name,
+    email:       lead.email,
+    company:     lead.company ?? undefined,
+    service:     lead.service ?? undefined,
+    convertedBy: session.username,
+  }).catch(() => {});
+
+  // 6. Fire journey event (fire-and-forget)
   fireJourneyEvent({
     sessionId: lead.session_id ?? null,
     email: lead.email,

@@ -71,6 +71,7 @@ const TYPE_LABELS: Record<string, string> = {
   user_rejected:        "User Rejected",
   feature_broadcast:    "Broadcast",
   task_assigned:        "Task Assigned",
+  client_welcome:       "Client Welcome",
   invoice:              "Invoice",
   transactional:        "Transactional",
 };

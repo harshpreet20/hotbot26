@@ -79,6 +79,16 @@ export function generateNewsletterHtml(
 </html>`;
 }
 
+function wrapLinks(html: string, logId: string): string {
+  return html.replace(/(<a\s[^>]*href=")([^"]+)(")/gi, (match, pre, href, post) => {
+    if (href.startsWith("mailto:") || href.startsWith("tel:") || href.includes("/api/track/")) {
+      return match;
+    }
+    const tracked = `${SITE_URL}/api/track/click?id=${logId}&url=${encodeURIComponent(href)}`;
+    return `${pre}${tracked}${post}`;
+  });
+}
+
 export interface SendNewsletterResult {
   sent:   number;
   failed: number;
@@ -110,7 +120,8 @@ export async function sendNewsletter(
     }
 
     const unsubUrl = `${SITE_URL}/api/forms/newsletter/unsubscribe?token=${unsubToken(sub.email)}`;
-    const html     = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email, logId);
+    let html       = generateNewsletterHtml(subject, bodyHtml, sub.name, sub.email, logId);
+    if (logId) html = wrapLinks(html, logId);
 
     const { data, error } = await resend.emails.send({
       from:    `${FROM_NAME} <${FROM_EMAIL}>`,
