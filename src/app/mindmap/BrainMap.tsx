@@ -201,6 +201,10 @@ const CSS = `
   @keyframes scrollBounce  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
   @keyframes borderPulse   { 0%,100%{border-color:rgba(99,102,241,0.3)} 50%{border-color:rgba(99,102,241,0.8)} }
   @keyframes glowText      { 0%,100%{text-shadow:0 0 20px rgba(255,255,255,0.3)} 50%{text-shadow:0 0 60px rgba(255,255,255,0.9),0 0 120px rgba(255,255,255,0.5)} }
+  @keyframes sweepLine     { from{width:0} to{width:100%} }
+  @keyframes grainShift    { 0%{transform:translate(0,0)} 25%{transform:translate(-1px,1px)} 50%{transform:translate(1px,-1px)} 75%{transform:translate(-1px,-1px)} 100%{transform:translate(0,0)} }
+  @keyframes counterUp     { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .grain-overlay::after { content:""; position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; opacity:0.3; animation:grainShift 0.15s steps(1) infinite; }
 `;
 
 // ── Character SVG ─────────────────────────────────────────────────────────────
@@ -321,6 +325,151 @@ function CinematicWords({ text, inView, delay = 0, style }: {
   );
 }
 
+// ── Case study strip (editorial bottom bar) ───────────────────────────────────
+
+function CaseStudyStrip({ label, insight, inView, delay = 1.2 }: {
+  label: string; insight: string; inView: boolean; delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity:0, y:16 }}
+      animate={inView ? { opacity:1, y:0 } : { opacity:0, y:16 }}
+      transition={{ duration:0.6, delay }}
+      style={{ position:"absolute", bottom:0, left:0, right:0, display:"flex", alignItems:"center", gap:0, borderTop:"1px solid rgba(255,255,255,0.06)", background:"rgba(0,0,0,0.5)", backdropFilter:"blur(8px)", overflow:"hidden" }}
+    >
+      <div style={{ background:"rgba(255,255,255,0.05)", padding:"10px 20px", borderRight:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+        <span style={{ color:"#334155", fontSize:9, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" }}>{label}</span>
+      </div>
+      <div style={{ padding:"10px 20px", flex:1 }}>
+        <span style={{ color:"#94a3b8", fontSize:11, fontWeight:600, fontStyle:"italic" }}>{insight}</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Section 0: Opening Title Card ─────────────────────────────────────────────
+
+function Section0({ onSkip }: { onSkip: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once:false, amount:0.45 });
+
+  return (
+    <div ref={ref} style={{
+      height:"100vh", scrollSnapAlign:"start", flexShrink:0,
+      position:"relative", overflow:"hidden",
+      background:"#000",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+    }}>
+      {/* Grain texture */}
+      <div className="grain-overlay" style={{ position:"absolute", inset:0, pointerEvents:"none" }} />
+
+      {/* Subtle radial highlight */}
+      <div style={{ position:"absolute", top:"40%", left:"50%", transform:"translate(-50%,-50%)", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.06) 0%,transparent 65%)", pointerEvents:"none" }} />
+
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, zIndex:1, textAlign:"center", padding:"0 10%" }}>
+        {/* Pre-title */}
+        <motion.div
+          initial={{ opacity:0, letterSpacing:"0.4em" }}
+          animate={inView ? { opacity:1, letterSpacing:"0.22em" } : { opacity:0, letterSpacing:"0.4em" }}
+          transition={{ duration:1.2, delay:0.1 }}
+          style={{ color:"#334155", fontSize:10, fontWeight:700, textTransform:"uppercase", marginBottom:28 }}
+        >
+          Case Study · 2024–2025
+        </motion.div>
+
+        {/* Name — editorial massive */}
+        <div style={{ overflow:"hidden", marginBottom:8 }}>
+          <motion.h1
+            initial={{ y:"110%" }}
+            animate={inView ? { y:"0%" } : { y:"110%" }}
+            transition={{ duration:0.8, delay:0.3, ease:[0.22,1,0.36,1] }}
+            style={{ fontSize:"clamp(52px,10vw,128px)", fontWeight:900, letterSpacing:"-0.03em", color:"white", margin:0, lineHeight:1 }}
+          >
+            HARSHPREET
+          </motion.h1>
+        </div>
+        <div style={{ overflow:"hidden", marginBottom:20 }}>
+          <motion.h1
+            initial={{ y:"110%" }}
+            animate={inView ? { y:"0%" } : { y:"110%" }}
+            transition={{ duration:0.8, delay:0.42, ease:[0.22,1,0.36,1] }}
+            style={{ fontSize:"clamp(52px,10vw,128px)", fontWeight:900, letterSpacing:"-0.03em", color:"#6366f1", margin:0, lineHeight:1 }}
+          >
+            SINGH
+          </motion.h1>
+        </div>
+
+        {/* Sweep line */}
+        <motion.div
+          initial={{ opacity:0 }}
+          animate={inView ? { opacity:1 } : { opacity:0 }}
+          transition={{ delay:0.9 }}
+          style={{ width:"100%", maxWidth:560, height:1, background:"linear-gradient(90deg,transparent,rgba(99,102,241,0.6),transparent)", marginBottom:20, position:"relative", overflow:"hidden" }}
+        >
+          {inView && <div style={{ position:"absolute", top:0, left:0, height:"100%", background:"linear-gradient(90deg,transparent,#6366f1,transparent)", animation:"sweepLine 1s 0.9s ease-out forwards", width:0 }} />}
+        </motion.div>
+
+        {/* Role */}
+        <motion.div
+          initial={{ opacity:0, y:16 }}
+          animate={inView ? { opacity:1, y:0 } : { opacity:0, y:16 }}
+          transition={{ duration:0.6, delay:1.0 }}
+          style={{ color:"#64748b", fontSize:"clamp(14px,2vw,20px)", fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:16 }}
+        >
+          Founder · AI Engineer · Full-Stack Developer
+        </motion.div>
+
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity:0, y:12 }}
+          animate={inView ? { opacity:1, y:0 } : { opacity:0, y:12 }}
+          transition={{ duration:0.7, delay:1.15 }}
+          style={{ color:"#475569", fontSize:"clamp(13px,1.8vw,17px)", fontStyle:"italic", margin:"0 0 40px", maxWidth:520, lineHeight:1.7 }}
+        >
+          "From a Sabudh Foundation AI class notification to a 100-page,<br/>
+          AI-native platform — in 90 days. Solo."
+        </motion.p>
+
+        {/* Stat pills */}
+        <motion.div
+          initial={{ opacity:0 }}
+          animate={inView ? { opacity:1 } : { opacity:0 }}
+          transition={{ delay:1.35, duration:0.6 }}
+          style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center", marginBottom:48 }}
+        >
+          {[["90","Days"],["100+","Pages"],["Claude Code","Powered"],["MCP","Servers"]].map(([val,lbl],i) => (
+            <motion.div
+              key={lbl}
+              initial={{ opacity:0, scale:0.7 }}
+              animate={inView ? { opacity:1, scale:1 } : { opacity:0, scale:0.7 }}
+              transition={{ delay:1.4+i*0.06, type:"spring", stiffness:200, damping:18 }}
+              style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"8px 16px", textAlign:"center" }}
+            >
+              <div style={{ color:"white", fontSize:15, fontWeight:800 }}>{val}</div>
+              <div style={{ color:"#334155", fontSize:9, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase" }}>{lbl}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Skip button */}
+        <button onClick={onSkip} style={{ position:"absolute", top:20, right:24, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"7px 16px", color:"#475569", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+          Skip →
+        </button>
+      </div>
+
+      {/* Scroll hint */}
+      <motion.div
+        initial={{ opacity:0 }}
+        animate={inView ? { opacity:0.5 } : { opacity:0 }}
+        transition={{ delay:1.6 }}
+        style={{ position:"absolute", bottom:24, left:"50%", transform:"translateX(-50%)", color:"#6366f1", fontSize:11, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", animation:"scrollBounce 2s ease-in-out infinite" }}
+      >
+        ↓ scroll
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Section 1: The Notification ───────────────────────────────────────────────
 
 function Section1({ onEnterMap }: { onEnterMap: () => void }) {
@@ -408,12 +557,14 @@ function Section1({ onEnterMap }: { onEnterMap: () => void }) {
         <p style={{ color:"#4c1d95", fontSize:13, fontWeight:600, margin:0, letterSpacing:"0.06em" }}>One notification. One decision.</p>
       </motion.div>
 
+      <CaseStudyStrip label="Insight" insight="AI education events = untapped B2B lead pools. One notification changed everything." inView={inView} delay={1.3} />
+
       {/* Scroll hint */}
       <motion.div
         initial={{ opacity:0 }}
         animate={inView ? { opacity:0.5 } : { opacity:0 }}
         transition={{ delay:1.4 }}
-        style={{ position:"absolute", bottom:24, left:"50%", transform:"translateX(-50%)", color:"#6366f1", fontSize:11, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", animation:"scrollBounce 2s ease-in-out infinite" }}
+        style={{ position:"absolute", bottom:44, left:"50%", transform:"translateX(-50%)", color:"#6366f1", fontSize:11, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", animation:"scrollBounce 2s ease-in-out infinite" }}
       >
         ↓ scroll
       </motion.div>
@@ -491,6 +642,8 @@ function Section2() {
           One question rewired everything.
         </motion.p>
       </div>
+
+      <CaseStudyStrip label="Decision" insight="Ship it. Learn fast. Automate everything. The loss? Zero — the gain was a platform." inView={inView} delay={1.6} />
     </div>
   );
 }
@@ -580,6 +733,8 @@ function Section3() {
           <HarshCharacter pose="pointing" scale={1.1} />
         </motion.div>
       </div>
+
+      <CaseStudyStrip label="Tech" insight="N8N orchestrated 12+ automated workflows in week 1 — CRM → Email → AI → WhatsApp, fully wired." inView={inView} delay={1.7} />
     </div>
   );
 }
@@ -674,6 +829,8 @@ function Section4() {
       >
         Claude Code changed the game.
       </motion.p>
+
+      <CaseStudyStrip label="Breakthrough" insight="MCP servers cut deployment & DB migration time by ~90%. AI session → live schema change → deployed." inView={inView} delay={1.4} />
     </div>
   );
 }
@@ -741,10 +898,10 @@ function Section5() {
 
       {/* Glowing center divider */}
       <motion.div
-        initial={{ opacity:0 }}
-        animate={inView ? { opacity:1 } : { opacity:0 }}
-        transition={{ delay:0.3, duration:0.6 }}
-        style={{ position:"absolute", left:"50%", top:0, bottom:0, width:2, background:"linear-gradient(to bottom,transparent,#818cf8,#a855f7,#818cf8,transparent)", boxShadow:"0 0 20px #818cf888, 0 0 60px #818cf844", zIndex:5 }}
+        initial={{ opacity:0, scaleY:0 }}
+        animate={inView ? { opacity:1, scaleY:1 } : { opacity:0, scaleY:0 }}
+        transition={{ delay:0.3, duration:0.8, ease:[0.22,1,0.36,1] }}
+        style={{ position:"absolute", left:"50%", top:0, bottom:0, width:2, background:"linear-gradient(to bottom,transparent,#818cf8,#a855f7,#818cf8,transparent)", boxShadow:"0 0 20px #818cf888, 0 0 60px #818cf844", zIndex:5, transformOrigin:"top" }}
       />
 
       {/* Right half — OpenAI */}
@@ -768,6 +925,8 @@ function Section5() {
           ))}
         </div>
       </motion.div>
+
+      <CaseStudyStrip label="Stack" insight="Sarvam for voice (11 Indian languages). OpenAI for intelligence. Zero vendor lock-in. Dual-engine AI." inView={inView} delay={1.0} />
     </div>
   );
 }
@@ -841,18 +1000,44 @@ function Section6({ onEnterMap }: { onEnterMap: () => void }) {
         </div>
       </motion.div>
 
-      {/* CTA */}
-      <motion.button
+      {/* CTAs */}
+      <motion.div
         initial={{ opacity:0, y:20 }}
         animate={inView ? { opacity:1, y:0 } : { opacity:0, y:20 }}
         transition={{ duration:0.6, delay:1.1 }}
-        onClick={onEnterMap}
-        whileHover={{ scale:1.05, boxShadow:"0 0 50px rgba(99,102,241,0.5)" }}
-        whileTap={{ scale:0.97 }}
-        style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.25),rgba(99,102,241,0.08))", border:"1.5px solid rgba(99,102,241,0.6)", borderRadius:14, padding:"16px 36px", color:"#818cf8", fontSize:15, fontWeight:800, cursor:"pointer", letterSpacing:"0.04em", boxShadow:"0 0 30px rgba(99,102,241,0.2)", zIndex:1, animation:"borderPulse 2.5s ease-in-out infinite" }}
+        style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center", zIndex:1 }}
       >
-        Explore The Architecture →
-      </motion.button>
+        <motion.button
+          onClick={onEnterMap}
+          whileHover={{ scale:1.05, boxShadow:"0 0 50px rgba(99,102,241,0.5)" }}
+          whileTap={{ scale:0.97 }}
+          style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.25),rgba(99,102,241,0.08))", border:"1.5px solid rgba(99,102,241,0.6)", borderRadius:14, padding:"14px 28px", color:"#818cf8", fontSize:14, fontWeight:800, cursor:"pointer", letterSpacing:"0.03em", boxShadow:"0 0 30px rgba(99,102,241,0.2)", animation:"borderPulse 2.5s ease-in-out infinite" }}
+        >
+          Explore The Architecture →
+        </motion.button>
+        <motion.a
+          href="https://wa.me/919700001534"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale:1.05 }}
+          whileTap={{ scale:0.97 }}
+          style={{ background:"rgba(34,197,94,0.1)", border:"1.5px solid rgba(34,197,94,0.4)", borderRadius:14, padding:"14px 28px", color:"#4ade80", fontSize:14, fontWeight:800, cursor:"pointer", letterSpacing:"0.03em", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}
+        >
+          💬 Book a Call
+        </motion.a>
+        <motion.a
+          href="https://linkedin.com/in/harshpreetsingh"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale:1.05 }}
+          whileTap={{ scale:0.97 }}
+          style={{ background:"rgba(59,130,246,0.1)", border:"1.5px solid rgba(59,130,246,0.4)", borderRadius:14, padding:"14px 28px", color:"#60a5fa", fontSize:14, fontWeight:800, cursor:"pointer", letterSpacing:"0.03em", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}
+        >
+          🔗 LinkedIn
+        </motion.a>
+      </motion.div>
+
+      <CaseStudyStrip label="Result" insight="Solo-built. 100+ pages. 55+ API routes. Production-grade. 90 days. This is what obsession looks like." inView={inView} delay={1.3} />
     </div>
   );
 }
@@ -1311,6 +1496,7 @@ export default function BrainMap() {
       <div style={{ position:"fixed", inset:0, overflowY:"scroll", scrollSnapType:"y mandatory" }}>
         <style>{CSS}</style>
         <div style={{ display:"flex", flexDirection:"column" }}>
+          <Section0 onSkip={enterMap} />
           <Section1 onEnterMap={enterMap} />
           <Section2 />
           <Section3 />
