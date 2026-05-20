@@ -26,7 +26,7 @@ const nextConfig = {
       "/api/blog/users": ["./data/admin.defaults.json"],
       "/api/dashboard/invoices/send": [
         "./node_modules/pdfkit/js/**/*",
-        "./public/logos/hotbot-logo.png",
+        "./public/logos/brand-logo.png",
       ],
     },
   },

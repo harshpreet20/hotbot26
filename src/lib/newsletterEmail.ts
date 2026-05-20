@@ -42,7 +42,7 @@ export function generateNewsletterHtml(
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
         <tr><td style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%);padding:32px 40px;border-radius:16px 16px 0 0;">
           <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:12px;"><tr>
-            <td><img src="${SITE_URL}/logos/hotbot-logo.svg" width="120" height="30" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
+            <td><img src="${SITE_URL}/logos/brand-logo.png" width="160" height="40" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
           </tr></table>
           <p style="margin:0 0 4px;color:#a5b4fc;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;">Newsletter</p>
           <p style="margin:0;color:#818cf8;font-size:13px;">AI Automation &amp; Digital Marketing</p>

@@ -43,7 +43,7 @@ function buildInvoicePdf(inv: Invoice): Promise<Buffer> {
     doc.rect(0, 0, doc.page.width, 100).fill("#1e1b4b");
     // Logo — use extracted PNG so PDFKit can embed it directly
     try {
-      const logoPath = path.join(process.cwd(), "public", "logos", "hotbot-logo.png");
+      const logoPath = path.join(process.cwd(), "public", "logos", "brand-logo.png");
       doc.image(logoPath, 50, 22, { height: 36 });
     } catch {
       // Fallback to text if logo file missing
@@ -164,7 +164,7 @@ function buildInvoiceHtml(inv: Invoice, logId?: string): string {
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 <tr><td style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%);padding:36px 40px;border-radius:16px 16px 0 0;">
 <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:12px;"><tr>
-<td><img src="${SITE_URL}/logos/hotbot-logo.svg" width="120" height="30" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
+<td><img src="${SITE_URL}/logos/brand-logo.png" width="160" height="40" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" /></td>
 </tr></table>
 <table width="100%" cellpadding="0" cellspacing="0"><tr>
 <td><p style="margin:0;color:#a5b4fc;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Invoice</p>

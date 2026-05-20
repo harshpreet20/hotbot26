@@ -49,7 +49,7 @@ function wrap(title: string, preheader: string, body: string): string {
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td width="44">
-                <img src="${SITE_URL}/logos/hotbot-logo.svg" width="120" height="30" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" />
+                <img src="${SITE_URL}/logos/brand-logo.png" width="160" height="40" alt="${FROM_NAME}" style="display:block;border:0;outline:none;text-decoration:none;" />
               </td>
               <td style="padding-left:12px;">
                 <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.3px;">${FROM_NAME}</p>
