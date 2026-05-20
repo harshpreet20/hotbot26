@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+
+type MicState = "idle" | "recording" | "transcribing";
 import { createClient } from "@supabase/supabase-js";
 import { ChatMessages } from "./ChatMessages";
 import { QuickReplies } from "./QuickReplies";
@@ -294,10 +296,13 @@ export function HotBotChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [needsHuman, setNeedsHuman] = useState(false);
   const [agentJoined, setAgentJoined] = useState(false);
+  const [micState, setMicState] = useState<MicState>("idle");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMsgCountRef = useRef(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -394,6 +399,39 @@ export function HotBotChat() {
       setTyping(false);
     }
   }, [msgs, guestName, guestEmail, guestPhone, sessionId]);
+
+  const handleMic = useCallback(async () => {
+    if (micState === "recording") {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    if (micState !== "idle") return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setMicState("transcribing");
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const form = new FormData();
+          form.append("audio", blob);
+          const res = await fetch("/api/sarvam/stt", { method: "POST", body: form });
+          if (res.ok) {
+            const data = await res.json() as { transcript?: string };
+            if (data.transcript) setInput(data.transcript);
+          }
+        } catch { /* ignore */ } finally {
+          setMicState("idle");
+        }
+      };
+      mr.start();
+      setMicState("recording");
+    } catch { setMicState("idle"); }
+  }, [micState]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -551,6 +589,34 @@ export function HotBotChat() {
                   className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-colors"
                   style={{ minHeight: 44 }}
                 />
+                <button
+                  onClick={handleMic}
+                  disabled={typing}
+                  title={micState === "recording" ? "Stop recording" : micState === "transcribing" ? "Transcribing…" : "Voice input"}
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background: micState === "recording"
+                      ? "rgba(239,68,68,0.2)"
+                      : "rgba(255,255,255,0.05)",
+                    border: micState === "recording" ? "1px solid rgba(239,68,68,0.5)" : "1px solid transparent",
+                    animation: micState === "recording" ? "micPulse 1s ease-in-out infinite" : "none",
+                  }}
+                >
+                  {micState === "transcribing" ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke={micState === "recording" ? "#f87171" : "#94a3b8"}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="2" width="6" height="11" rx="3"/>
+                      <path d="M19 10a7 7 0 01-14 0"/>
+                      <line x1="12" y1="19" x2="12" y2="22"/>
+                      <line x1="8" y1="22" x2="16" y2="22"/>
+                    </svg>
+                  )}
+                </button>
                 <button
                   onClick={() => sendMsg(input)}
                   disabled={!input.trim() || typing}
