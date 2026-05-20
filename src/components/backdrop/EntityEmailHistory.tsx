@@ -96,7 +96,7 @@ export function EntityEmailHistory({ entityType, entityId, role }: Props) {
   const [expanded, setExpanded]   = useState<string | null>(null);
   const intervalRef               = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (silent = false) => {
     const secret = getSecret();
     if (!secret) return;
     try {
@@ -114,13 +114,14 @@ export function EntityEmailHistory({ entityType, entityId, role }: Props) {
     } catch {
       /* ignore */
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     void fetchLogs();
-    intervalRef.current = setInterval(() => { void fetchLogs(); }, 5000);
+    // Silent background poll — no loading state flicker
+    intervalRef.current = setInterval(() => { void fetchLogs(true); }, 5000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };

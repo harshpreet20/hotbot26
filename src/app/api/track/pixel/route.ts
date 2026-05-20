@@ -24,15 +24,15 @@ export async function GET(req: NextRequest) {
     const history = (row?.open_history as string[] | null) ?? [];
     history.push(now);
 
-    void client
+    await client
       .from("email_logs")
       .update({
-        opened_at:    row?.opened_at ?? now,  // first open timestamp preserved
+        opened_at:      row?.opened_at ?? now,
         last_opened_at: now,
-        open_count:   openCount,
-        open_history: history,
-        status:       "opened",
-        last_event:   "opened",
+        open_count:     openCount,
+        open_history:   history,
+        status:         "opened",
+        last_event:     "opened",
       })
       .eq("id", id);
   }

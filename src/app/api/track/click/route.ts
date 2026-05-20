@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const history      = (row?.click_history as Array<{ url: string; at: string }> | null) ?? [];
     history.push({ url: url ?? "", at: now });
 
-    void client
+    await client
       .from("email_logs")
       .update({
         clicked_at:      row?.clicked_at ?? now,

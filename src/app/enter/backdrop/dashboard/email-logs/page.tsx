@@ -124,10 +124,10 @@ export default function EmailLogsPage() {
 
   const limit = 50;
 
-  const load = useCallback(async (p: number, q: string, t: string, s: string) => {
+  const load = useCallback(async (p: number, q: string, t: string, s: string, silent = false) => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    setLoading(true);
+    if (!silent) setLoading(true);
     const params = new URLSearchParams({ page: String(p), limit: String(limit) });
     if (q) params.set("q", q);
     if (t) params.set("type", t);
@@ -142,7 +142,7 @@ export default function EmailLogsPage() {
       setTotal(data.total ?? 0);
       setStats(data.stats ?? null);
     } catch { /* ignore */ }
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   }, [router]);
 
   useEffect(() => { load(page, search, typeFilter, statusFilter); }, [load, page, search, typeFilter, statusFilter]);
@@ -162,13 +162,10 @@ export default function EmailLogsPage() {
     } catch { /* ignore */ }
   }
 
-  // Auto-poll every 5 s — Supabase RLS blocks anon realtime so we poll via our auth'd API instead
+  // Silent background poll every 5 s — no spinner, no UI disruption
   useEffect(() => {
     const id = setInterval(() => {
-      if (flashTimer.current) clearTimeout(flashTimer.current);
-      setLiveFlash("Auto-refreshed");
-      flashTimer.current = setTimeout(() => setLiveFlash(null), 2000);
-      load(page, search, typeFilter, statusFilter);
+      load(page, search, typeFilter, statusFilter, true);
     }, 5_000);
     return () => clearInterval(id);
   }, [load, page, search, typeFilter, statusFilter]);

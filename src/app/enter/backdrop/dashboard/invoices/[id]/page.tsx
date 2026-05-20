@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
+import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Invoice, InvoiceLineItem, InvoiceStatus, CRMTask } from "@/types/dashboard";
 
 function getSecret() {
@@ -368,6 +369,11 @@ export default function InvoiceDetailPage() {
         .input-field:focus { border-color: rgba(99,102,241,0.5); }
         .input-field option { background: #1e293b; }
       `}</style>
+
+      {/* Email tracking history for this invoice */}
+      <div className="mt-6">
+        <EntityEmailHistory entityType="invoice" entityId={invoice.id} />
+      </div>
     </DashboardShell>
   );
 }
