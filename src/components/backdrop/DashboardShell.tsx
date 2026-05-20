@@ -38,16 +38,6 @@ const NAV: NavItem[] = [
     ),
   },
   {
-    href: "/enter/backdrop/dashboard/ai-analyst",
-    label: "AI Analyst",
-    roles: ["super_admin", "admin"],
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
-      </svg>
-    ),
-  },
-  {
     href: "/enter/backdrop/dashboard/analytics",
     label: "Analytics",
     roles: ["super_admin", "admin"],
@@ -56,6 +46,16 @@ const NAV: NavItem[] = [
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6"  y1="20" x2="6"  y2="14" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/ai-analyst",
+    label: "AI Analyst",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
       </svg>
     ),
   },
@@ -169,6 +169,18 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/email-logs",
+    label: "Email Logs",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+        <circle cx="18" cy="18" r="4" fill="currentColor" stroke="none" opacity="0" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/blog",
     label: "Blog",
     roles: ["super_admin", "admin", "editor", "contributor"],
@@ -191,6 +203,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/broadcasts",
+    label: "Broadcasts",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/knowledge",
     label: "Knowledge",
     roles: ["super_admin", "admin"],
@@ -198,28 +220,6 @@ const NAV: NavItem[] = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
         <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/enter/backdrop/dashboard/email-logs",
-    label: "Email Logs",
-    roles: ["super_admin", "admin"],
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-        <polyline points="22,6 12,13 2,6" />
-        <circle cx="18" cy="18" r="4" fill="currentColor" stroke="none" opacity="0" />
-      </svg>
-    ),
-  },
-  {
-    href: "/enter/backdrop/dashboard/broadcasts",
-    label: "Broadcasts",
-    roles: ["super_admin", "admin"],
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
       </svg>
     ),
   },
