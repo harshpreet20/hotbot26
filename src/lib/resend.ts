@@ -131,6 +131,8 @@ async function send(
   text: string,
   emailType = "transactional",
   metadata: Record<string, unknown> = {},
+  entityType?: string,
+  entityId?: string,
 ): Promise<void> {
   const resend = client();
   if (!resend) { console.warn("[resend] RESEND_API_KEY not set, email skipped"); return; }
@@ -142,11 +144,13 @@ async function send(
       const { data: row } = await sb()
         .from("email_logs")
         .insert({
-          to_email:   to,
+          to_email:    to,
           subject,
-          email_type: emailType,
-          status:     "queued",
-          metadata:   Object.keys(metadata).length ? metadata : null,
+          email_type:  emailType,
+          status:      "queued",
+          metadata:    Object.keys(metadata).length ? metadata : null,
+          entity_type: entityType ?? null,
+          entity_id:   entityId ?? null,
         })
         .select("id")
         .single();
@@ -264,8 +268,9 @@ export async function sendLeadConfirmation(opts: {
   service: string;
   message: string;
   formType: string;
+  leadId?: string;
 }): Promise<void> {
-  const { name, email, service, message, formType } = opts;
+  const { name, email, service, message, formType, leadId } = opts;
   const subjectLine = service ? `Your ${service} enquiry` : "Your enquiry";
   const html = wrap("Enquiry Received", `Thanks for your interest, ${name}!`, `
     ${greeting(name)}
@@ -282,6 +287,8 @@ export async function sendLeadConfirmation(opts: {
     `Hi ${name},\n\nThanks for your interest in ${service || "our services"}. We'll reply within 24 hours.\n\n${FROM_NAME}`,
     "lead_confirmation",
     { service, formType },
+    "lead",
+    leadId,
   );
 }
 
@@ -322,6 +329,7 @@ export async function sendCallbackConfirmation(opts: {
   name: string;
   phone: string;
   email?: string;
+  callbackId?: string;
 }): Promise<void> {
   if (!opts.email) return;
   const html = wrap("Callback Requested", "We'll call you shortly!", `
@@ -334,6 +342,9 @@ export async function sendCallbackConfirmation(opts: {
   await send(opts.email, `${FROM_NAME}: Callback Confirmed`, html,
     `Hi ${opts.name},\n\nWe'll call ${opts.phone} within 2 minutes. Calls come from +91 97000 01534.\n\n${FROM_NAME}`,
     "callback_confirmation",
+    {},
+    "callback",
+    opts.callbackId,
   );
 }
 
@@ -398,6 +409,8 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
     `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber}: ${ticket.title}\nCategory: ${ticket.category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_confirmation",
     { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+    "ticket",
+    ticket.id,
   );
 }
 
@@ -419,6 +432,8 @@ export async function sendStaffReplyNotification(ticket: Ticket, comment: Ticket
     `Hi ${ticket.requesterName},\n\nNew reply on ticket ${ticket.ticketNumber}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_reply",
     { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+    "ticket",
+    ticket.id,
   );
 }
 
@@ -453,6 +468,8 @@ export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: st
     `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_status_update",
     { ticketId: ticket.id, ticketNumber: ticket.ticketNumber, newStatus },
+    "ticket",
+    ticket.id,
   );
 }
 
@@ -462,8 +479,9 @@ export async function sendUserApprovedEmail(opts: {
   email: string;
   username: string;
   resetLink: string;
+  userId?: string;
 }): Promise<void> {
-  const { email, username, resetLink } = opts;
+  const { email, username, resetLink, userId } = opts;
   const html = wrap("Account Approved", `Your access has been approved, ${username}!`, `
     ${greeting(username)}
     ${para(`Great news! Your access request to the <strong>${FROM_NAME}</strong> dashboard has been <strong style="color:#22c55e;">approved</strong>.`)}
@@ -478,6 +496,9 @@ export async function sendUserApprovedEmail(opts: {
   await send(email, `${FROM_NAME}: Your Account Has Been Approved`, html,
     `Hi ${username},\n\nYour access has been approved! Set your password here: ${resetLink}\n\nAfter that, log in at: ${SITE_URL}/enter/backdrop\n\n${FROM_NAME}`,
     "user_approved",
+    {},
+    "user",
+    userId,
   );
 }
 
@@ -486,8 +507,9 @@ export async function sendUserApprovedEmail(opts: {
 export async function sendUserRejectedEmail(opts: {
   email: string;
   username: string;
+  userId?: string;
 }): Promise<void> {
-  const { email, username } = opts;
+  const { email, username, userId } = opts;
   const html = wrap("Access Request Update", `Regarding your access request`, `
     ${greeting(username)}
     ${para(`Thank you for your interest in joining the <strong>${FROM_NAME}</strong> team dashboard. Unfortunately, your access request has not been approved at this time.`)}
@@ -500,6 +522,9 @@ export async function sendUserRejectedEmail(opts: {
   await send(email, `${FROM_NAME}: Access Request Update`, html,
     `Hi ${username},\n\nYour access request to the ${FROM_NAME} dashboard was not approved. If you believe this is a mistake, contact your administrator.\n\n${FROM_NAME}`,
     "user_rejected",
+    {},
+    "user",
+    userId,
   );
 }
 
