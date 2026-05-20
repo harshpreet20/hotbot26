@@ -87,8 +87,9 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: '/logos/favicon.svg',
+    shortcut: '/logos/favicon.svg',
+    apple: '/logos/hotbot-logo.png',
   },
 };
 
