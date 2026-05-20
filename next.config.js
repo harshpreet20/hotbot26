@@ -20,10 +20,13 @@ const nextConfig = {
   compress: true,
   ...(process.env.VERCEL ? {} : { output: "standalone" }),
   experimental: {
-    serverComponentsExternalPackages: ["firebase-admin"],
+    serverComponentsExternalPackages: ["firebase-admin", "pdfkit"],
     outputFileTracingIncludes: {
       "/api/blog/auth": ["./data/admin.defaults.json"],
       "/api/blog/users": ["./data/admin.defaults.json"],
+      "/api/dashboard/invoices/send": [
+        "./node_modules/pdfkit/js/**/*",
+      ],
     },
   },
   images: {

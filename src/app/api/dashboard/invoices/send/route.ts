@@ -278,12 +278,13 @@ export async function POST(req: NextRequest) {
     logId = logRow?.id as string | undefined;
   }
 
-  // Generate PDF attachment
+  // Generate PDF attachment — fail loudly so we know if bundling broke pdfkit
   let pdfBuffer: Buffer | undefined;
   try {
     pdfBuffer = await buildInvoicePdf(inv);
+    console.log(`[Invoice Send] PDF generated, ${pdfBuffer.length} bytes`);
   } catch (pdfErr) {
-    console.error("[Invoice Send] PDF generation failed:", pdfErr);
+    console.error("[Invoice Send] PDF generation failed:", pdfErr instanceof Error ? pdfErr.stack : pdfErr);
   }
 
   // Instrument invoice HTML with internal click + open trackers
