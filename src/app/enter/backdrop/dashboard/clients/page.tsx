@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
+import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Client, ClientStatus } from "@/types/dashboard";
 
 function getToken() {
@@ -45,6 +46,7 @@ export default function ClientsPage() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState<string | null>(null);
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   // Edit state
   const [editing, setEditing]   = useState<Client | null>(null);
@@ -319,78 +321,96 @@ export default function ClientsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((c) => (
-                    <tr key={c.id} className="hover:bg-white/[0.02] transition-colors" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      {/* Client ID */}
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => copyId(c.clientId)}
-                          className="flex items-center gap-1.5 font-mono text-sm font-bold transition-colors hover:text-indigo-300"
-                          style={{ color: copied === c.clientId ? "#34d399" : "#818cf8" }}
-                          title="Click to copy"
-                        >
-                          {c.clientId}
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            {copied === c.clientId
-                              ? <polyline points="20 6 9 17 4 12" />
-                              : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></>}
-                          </svg>
-                        </button>
-                      </td>
-                      {/* Name */}
-                      <td className="py-3 px-4 text-slate-200 font-medium">{c.name}</td>
-                      {/* Company */}
-                      <td className="py-3 px-4 text-slate-500 text-xs">{c.company || <span className="text-slate-700">—</span>}</td>
-                      {/* Email */}
-                      <td className="py-3 px-4">
-                        {c.email
-                          ? <a href={`mailto:${c.email}`} className="text-blue-400 hover:text-blue-300 text-sm">{c.email}</a>
-                          : <span className="text-slate-700">—</span>}
-                      </td>
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        {canWrite ? (
-                          <select
-                            value={c.status}
-                            onChange={(e) => handleStatusChange(c.id, e.target.value as ClientStatus)}
-                            className="bg-transparent border-none outline-none text-xs cursor-pointer"
-                            style={{ color: STATUS_META[c.status].color }}
+                  {filtered.map((c) => {
+                    const isEmailExpanded = expandedClient === c.id;
+                    return [
+                      <tr key={c.id} className="hover:bg-white/[0.02] transition-colors" style={{ borderBottom: isEmailExpanded ? "none" : "1px solid rgba(255,255,255,0.04)" }}>
+                        {/* Client ID */}
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => copyId(c.clientId)}
+                            className="flex items-center gap-1.5 font-mono text-sm font-bold transition-colors hover:text-indigo-300"
+                            style={{ color: copied === c.clientId ? "#34d399" : "#818cf8" }}
+                            title="Click to copy"
                           >
-                            <option value="active">Active</option>
-                            <option value="old">Old</option>
-                            <option value="reactivation_needed">Reactivation Needed</option>
-                          </select>
-                        ) : (
-                          <StatusBadge status={c.status} />
-                        )}
-                      </td>
-                      {/* Date */}
-                      <td className="py-3 px-4 text-slate-600 text-xs whitespace-nowrap">
-                        {new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                      {/* Actions */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {canWrite && (
-                            <button
-                              onClick={() => { setEditing(c); setError(""); }}
-                              className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
+                            {c.clientId}
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              {copied === c.clientId
+                                ? <polyline points="20 6 9 17 4 12" />
+                                : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></>}
+                            </svg>
+                          </button>
+                        </td>
+                        {/* Name */}
+                        <td className="py-3 px-4 text-slate-200 font-medium">{c.name}</td>
+                        {/* Company */}
+                        <td className="py-3 px-4 text-slate-500 text-xs">{c.company || <span className="text-slate-700">—</span>}</td>
+                        {/* Email */}
+                        <td className="py-3 px-4">
+                          {c.email
+                            ? <a href={`mailto:${c.email}`} className="text-blue-400 hover:text-blue-300 text-sm">{c.email}</a>
+                            : <span className="text-slate-700">—</span>}
+                        </td>
+                        {/* Status */}
+                        <td className="py-3 px-4">
+                          {canWrite ? (
+                            <select
+                              value={c.status}
+                              onChange={(e) => handleStatusChange(c.id, e.target.value as ClientStatus)}
+                              className="bg-transparent border-none outline-none text-xs cursor-pointer"
+                              style={{ color: STATUS_META[c.status].color }}
                             >
-                              Edit
-                            </button>
+                              <option value="active">Active</option>
+                              <option value="old">Old</option>
+                              <option value="reactivation_needed">Reactivation Needed</option>
+                            </select>
+                          ) : (
+                            <StatusBadge status={c.status} />
                           )}
-                          {isAdmin && (
+                        </td>
+                        {/* Date */}
+                        <td className="py-3 px-4 text-slate-600 text-xs whitespace-nowrap">
+                          {new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </td>
+                        {/* Actions */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleDelete(c.id, c.name)}
-                              className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+                              onClick={() => setExpandedClient(isEmailExpanded ? null : c.id)}
+                              className="text-xs transition-colors"
+                              style={{ color: isEmailExpanded ? "#a78bfa" : "#475569" }}
+                              title="Email history"
                             >
-                              Delete
+                              ✉ Emails
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {canWrite && (
+                              <button
+                                onClick={() => { setEditing(c); setError(""); }}
+                                className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDelete(c.id, c.name)}
+                                className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>,
+                      isEmailExpanded && (
+                        <tr key={`${c.id}-emails`} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td colSpan={7} style={{ padding: "0 16px 16px" }}>
+                            <EntityEmailHistory entityType="client" entityId={c.id} role={getRole()} />
+                          </td>
+                        </tr>
+                      ),
+                    ];
+                  })}
                 </tbody>
               </table>
             </div>

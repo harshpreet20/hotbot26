@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/backdrop/DashboardShell";
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
 }
+function getRole() {
+  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+}
 
 type ClickEvent = { url: string; at: string };
 
@@ -30,6 +33,8 @@ type EmailLog = {
   bounced_at: string | null;
   complained_at: string | null;
   metadata: Record<string, unknown> | null;
+  entity_type: string | null;
+  entity_id: string | null;
   created_at: string;
 };
 
@@ -112,7 +117,10 @@ export default function EmailLogsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [expanded,     setExpanded]     = useState<string | null>(null);
   const [liveFlash,    setLiveFlash]    = useState<string | null>(null);
+  const [role,         setRole]         = useState("");
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { setRole(getRole()); }, []);
 
   const limit = 50;
 
@@ -139,14 +147,29 @@ export default function EmailLogsPage() {
 
   useEffect(() => { load(page, search, typeFilter, statusFilter); }, [load, page, search, typeFilter, statusFilter]);
 
-  // Auto-poll every 10 s — Supabase RLS blocks anon realtime so we poll via our auth'd API instead
+  async function deleteLog(id: string) {
+    if (!window.confirm("Delete this email log entry?")) return;
+    const secret = getSecret();
+    try {
+      const res = await fetch(`/api/dashboard/email-logs?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      if (res.ok) {
+        setLogs((prev) => prev.filter((l) => l.id !== id));
+        if (expanded === id) setExpanded(null);
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Auto-poll every 5 s — Supabase RLS blocks anon realtime so we poll via our auth'd API instead
   useEffect(() => {
     const id = setInterval(() => {
       if (flashTimer.current) clearTimeout(flashTimer.current);
       setLiveFlash("Auto-refreshed");
       flashTimer.current = setTimeout(() => setLiveFlash(null), 2000);
       load(page, search, typeFilter, statusFilter);
-    }, 10_000);
+    }, 5_000);
     return () => clearInterval(id);
   }, [load, page, search, typeFilter, statusFilter]);
 
@@ -346,11 +369,12 @@ export default function EmailLogsPage() {
                           </div>
 
                           {/* Metadata row */}
-                          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", flexWrap: "wrap", gap: "4px 24px" }}>
+                          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", flexWrap: "wrap", gap: "4px 24px", alignItems: "center" }}>
                             {[
-                              ["ID",         log.id],
-                              ["Resend ID",  log.resend_id ?? "—"],
-                              ["Last event", log.last_event ?? "—"],
+                              ["ID",          log.id],
+                              ["Resend ID",   log.resend_id ?? "—"],
+                              ["Last event",  log.last_event ?? "—"],
+                              ...(log.entity_type ? [["Entity", `${log.entity_type}:${log.entity_id ?? "—"}`]] : []),
                               ...(log.metadata ? Object.entries(log.metadata).map(([k, v]) => [k, String(v)]) : []),
                             ].map(([label, value]) => (
                               <span key={label as string} style={{ fontSize: 11, color: "#475569" }}>
@@ -358,6 +382,16 @@ export default function EmailLogsPage() {
                                 <span style={{ color: "#64748b", fontFamily: "monospace" }}>{value as string}</span>
                               </span>
                             ))}
+                            {role === "super_admin" && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); void deleteLog(log.id); }}
+                                style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                                title="Delete log entry"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                Delete log
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
+import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Lead, LeadStatus, CRMUpdate, CRMTask, Invoice, UpdateType, TaskPriority } from "@/types/dashboard";
 
 function getSecret() {
@@ -10,6 +11,9 @@ function getSecret() {
 }
 function getUsername() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : "";
+}
+function getRole() {
+  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
 
 const STATUS_META: Record<LeadStatus, { label: string; color: string }> = {
@@ -413,6 +417,9 @@ export default function LeadDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Email history */}
+            <EntityEmailHistory entityType="lead" entityId={lead.id} role={getRole()} />
           </div>
         </div>
       </div>

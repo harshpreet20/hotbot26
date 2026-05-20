@@ -71,6 +71,8 @@ export async function POST(
     company:     lead.company ?? undefined,
     service:     lead.service ?? undefined,
     convertedBy: session.username,
+    clientId,
+    leadId:      lead.id,
   }).catch(() => {});
 
   // 6. Fire journey event (fire-and-forget)

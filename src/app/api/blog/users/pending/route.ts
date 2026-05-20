@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest) {
     log.info("users.reject", `User rejected: "${userRow.email}" by "${session.username}"`, {
       details: { targetId: id },
     });
-    sendUserRejectedEmail({ email: userRow.email, username: userRow.username || userRow.email }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
+    sendUserRejectedEmail({ email: userRow.email, username: userRow.username || userRow.email, userId: id }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
     return NextResponse.json({ success: true });
   }
 
@@ -100,7 +100,7 @@ export async function PATCH(req: NextRequest) {
     });
 
     const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com"}/enter/backdrop`;
-    sendUserApprovedEmail({ email: userRow.email, username: userRow.username || userRow.email, resetLink }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
+    sendUserApprovedEmail({ email: userRow.email, username: userRow.username || userRow.email, resetLink, userId: id }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 
     return NextResponse.json({
       success: true,

@@ -267,11 +267,13 @@ export async function POST(req: NextRequest) {
   let logId: string | undefined;
   if (isSupabaseEnabled()) {
     const { data: logRow } = await sb().from("email_logs").insert({
-      to_email:   toEmail,
+      to_email:    toEmail,
       subject,
-      email_type: "invoice",
-      status:     "queued",
-      metadata:   { invoiceNumber: inv.invoiceNumber, invoiceId: inv.id },
+      email_type:  "invoice",
+      status:      "queued",
+      metadata:    { invoiceNumber: inv.invoiceNumber, invoiceId: inv.id },
+      entity_type: "invoice",
+      entity_id:   inv.id,
     }).select("id").single();
     logId = logRow?.id as string | undefined;
   }

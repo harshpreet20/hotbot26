@@ -572,8 +572,10 @@ export async function sendClientWelcomeEmail(opts: {
   company?: string;
   service?: string;
   convertedBy: string;
+  clientId?: string;
+  leadId?: string;
 }): Promise<void> {
-  const { name, email, company, service, convertedBy } = opts;
+  const { name, email, company, service, convertedBy, clientId } = opts;
   const waText = encodeURIComponent(`Hi, I just became a client of ${FROM_NAME} and wanted to say hello!`);
   const infoRows: [string, string][] = [];
   if (company) infoRows.push(["Company", company]);
@@ -601,6 +603,8 @@ export async function sendClientWelcomeEmail(opts: {
     `Hi ${name},\n\nWelcome to ${FROM_NAME}! We're excited to have you on board.\n\n${service ? `Service: ${service}\n` : ""}${company ? `Company: ${company}\n` : ""}Your account manager (${convertedBy}) will reach out shortly.\n\nChat with us: ${SITE_URL}/api/wa\nWebsite: ${SITE_URL}\n\n${FROM_NAME}`,
     "client_welcome",
     { ...(company ? { company } : {}), ...(service ? { service } : {}), convertedBy },
+    "client",
+    clientId,
   );
 }
 
@@ -616,8 +620,9 @@ export async function sendTaskAssignedEmail(opts: {
   assignedBy: string;
   linkedEntityType?: string;
   linkedEntityLabel?: string;
+  taskId?: string;
 }): Promise<void> {
-  const { assigneeEmail, assigneeName, taskTitle, taskDescription, priority, dueDate, assignedBy, linkedEntityType, linkedEntityLabel } = opts;
+  const { assigneeEmail, assigneeName, taskTitle, taskDescription, priority, dueDate, assignedBy, linkedEntityType, linkedEntityLabel, taskId } = opts;
   const dashUrl = `${SITE_URL}/enter/backdrop/dashboard/tasks`;
   const priorityColors: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e", urgent: "#dc2626" };
   const priorityColor = priorityColors[priority] ?? "#6366f1";
@@ -644,5 +649,8 @@ export async function sendTaskAssignedEmail(opts: {
     html,
     `Hi ${assigneeName},\n\nYou have a new task assigned by ${assignedBy}:\n\n${taskTitle}${taskDescription ? `\n${taskDescription}` : ""}\n\nPriority: ${priority}${dueDate ? `\nDue: ${dueDate}` : ""}\n\nView: ${dashUrl}\n\n${FROM_NAME}`,
     "task_assigned",
+    {},
+    "task",
+    taskId,
   );
 }

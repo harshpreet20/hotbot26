@@ -110,11 +110,13 @@ export async function sendNewsletter(
     let logId: string | undefined;
     if (isSupabaseEnabled()) {
       const { data: logRow } = await sb().from("email_logs").insert({
-        to_email:   sub.email,
+        to_email:    sub.email,
         subject,
-        email_type: "newsletter",
-        status:     "queued",
-        metadata:   { name: sub.name },
+        email_type:  "newsletter",
+        status:      "queued",
+        metadata:    { name: sub.name },
+        entity_type: "newsletter",
+        entity_id:   sub.email,
       }).select("id").single();
       logId = logRow?.id as string | undefined;
     }
