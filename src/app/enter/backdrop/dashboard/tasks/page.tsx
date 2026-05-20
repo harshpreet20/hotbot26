@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
@@ -101,21 +101,54 @@ export default function TasksPage() {
 
   // ── load tasks ──────────────────────────────────────────────────────────────
 
-  const loadTasks = useCallback(() => {
+  const taskIdsRef = useRef<Set<string>>(new Set());
+
+  // Request browser notification permission on first load
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      void Notification.requestPermission();
+    }
+  }, []);
+
+  const loadTasks = useCallback((silent = false) => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
-    setLoading(true);
+    if (!silent) setLoading(true);
     fetch("/api/dashboard/tasks", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
         return r.json();
       })
-      .then((d) => { if (d) setTasks((d as { tasks: CRMTask[] }).tasks); })
+      .then((d) => {
+        if (!d) return;
+        const incoming = (d as { tasks: CRMTask[] }).tasks;
+        // Fire browser notification for any new tasks added since last poll
+        if (silent && taskIdsRef.current.size > 0) {
+          for (const t of incoming) {
+            if (!taskIdsRef.current.has(t.id)) {
+              if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+                new Notification("New task assigned", {
+                  body: t.title,
+                  icon: "/logos/hotbot-logo.svg",
+                });
+              }
+            }
+          }
+        }
+        taskIdsRef.current = new Set(incoming.map((t) => t.id));
+        setTasks(incoming);
+      })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }, [router]);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
+
+  // Silent background poll every 30 s with browser notification on new tasks
+  useEffect(() => {
+    const id = setInterval(() => loadTasks(true), 30_000);
+    return () => clearInterval(id);
+  }, [loadTasks]);
 
   useEffect(() => {
     const secret = getSecret();
