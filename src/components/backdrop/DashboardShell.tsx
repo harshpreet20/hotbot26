@@ -497,7 +497,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-150"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-150"
                 style={{
                   color: active ? "#e2e8f0" : "#64748b",
                   background: active ? "rgba(99,102,241,0.12)" : "transparent",
