@@ -14,7 +14,7 @@ const CLIENTS: { name: string; short: string; logo?: string }[] = [
   { name: "Times Internet", short: "TI", logo: "times internet logo.png" },
   { name: "Tribes India",   short: "Ti" },
   { name: "Wings 4 Fashion",short: "W4", logo: "wings4fashion-logo-removebg-preview.png" },
-  { name: "WSCC",           short: "WS" },
+  { name: "WSCC",           short: "WS", logo: "WSCC Logo In.png" },
   { name: "Namo E Waste",   short: "NE", logo: "Namo Logo.jpg" },
   { name: "Salt and Smoke",  short: "SS" },
   { name: "Your Brand",     short: "+" },
