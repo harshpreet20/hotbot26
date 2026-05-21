@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
-export default function SetupPage() {
+function SetupPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const token        = searchParams.get("token") ?? "";
@@ -163,5 +163,13 @@ export default function SetupPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SetupPage() {
+  return (
+    <Suspense fallback={<div style={{ background: "#0a0a0f", minHeight: "100vh" }} />}>
+      <SetupPageInner />
+    </Suspense>
   );
 }

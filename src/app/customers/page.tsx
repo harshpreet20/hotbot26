@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
-export default function CustomerLoginPage() {
+function CustomerLoginPageInner() {
   const router        = useRouter();
   const searchParams  = useSearchParams();
   const [mode, setMode]         = useState<"password" | "magic">("password");
@@ -301,5 +301,13 @@ export default function CustomerLoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CustomerLoginPage() {
+  return (
+    <Suspense fallback={<div style={{ background: "#0a0a0f", minHeight: "100vh" }} />}>
+      <CustomerLoginPageInner />
+    </Suspense>
   );
 }

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { sb } from "@/lib/supabase";
 import { verifyPortalSession } from "@/lib/portal-session";
@@ -40,12 +41,14 @@ export async function POST(req: NextRequest) {
   const { data: ticket, error } = await sb()
     .from("tickets")
     .insert({
-      subject:      subject.trim(),
-      description:  description?.trim() ?? "",
-      status:       "open",
-      client_email: email,
-      client_name:  user?.name ?? email,
-      priority:     priority ?? "medium",
+      subject:          subject.trim(),
+      description:      description?.trim() ?? "",
+      status:           "open",
+      client_email:     email,
+      client_name:      user?.name ?? email,
+      priority:         priority ?? "medium",
+      approval_status:  "pending_approval",   // requires manager+ to approve
+      source:           "portal",
     })
     .select()
     .single();

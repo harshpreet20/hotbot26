@@ -97,7 +97,7 @@ export default function TicketsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    {["Ticket #", "Title", "Requester", "Priority", "Status", "Assignee", "Labels", "Created"].map((h) => (
+                    {["Ticket #", "Title", "Requester", "Priority", "Status", "Assignee", "Labels", "Created", "Approval"].map((h) => (
                       <th key={h} className="text-left py-3 px-3 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -148,6 +148,46 @@ export default function TicketsPage() {
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap text-slate-600 text-xs">
                           {new Date(t.createdAt).toLocaleDateString()}
+                        </td>
+                        {/* Approval actions — only shown for pending_approval tickets */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          {(t as unknown as Record<string,unknown>).approval_status === "pending_approval" ? (
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={async () => {
+                                  const secret = sessionStorage.getItem("backdrop_secret") ?? "";
+                                  await fetch("/api/dashboard/tickets/approve", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+                                    body: JSON.stringify({ ticket_id: t.id, action: "approve" }),
+                                  });
+                                  window.location.reload();
+                                }}
+                                className="px-2 py-1 text-[11px] font-medium rounded-md text-green-300 hover:bg-green-500/20 transition-colors"
+                                style={{ border: "1px solid rgba(74,222,128,0.3)" }}
+                                title="Approve request (manager+ only)"
+                              >✓ Approve</button>
+                              <button
+                                onClick={async () => {
+                                  const reason = prompt("Rejection reason (optional):");
+                                  const secret = sessionStorage.getItem("backdrop_secret") ?? "";
+                                  await fetch("/api/dashboard/tickets/approve", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+                                    body: JSON.stringify({ ticket_id: t.id, action: "reject", reason }),
+                                  });
+                                  window.location.reload();
+                                }}
+                                className="px-2 py-1 text-[11px] font-medium rounded-md text-red-400 hover:bg-red-500/20 transition-colors"
+                                style={{ border: "1px solid rgba(248,113,113,0.3)" }}
+                                title="Reject request (manager+ only)"
+                              >✗ Reject</button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-600">
+                              {String((t as unknown as Record<string,unknown>).approval_status ?? "—")}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );

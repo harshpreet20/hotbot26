@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { sb } from "@/lib/supabase";
 import { createPortalSession, buildPortalCookie } from "@/lib/portal-session";
