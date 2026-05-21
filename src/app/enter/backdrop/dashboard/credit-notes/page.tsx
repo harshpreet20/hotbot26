@@ -64,6 +64,9 @@ export default function CreditNotesPage() {
   const [updating, setUpdating]       = useState<string | null>(null);
   const [showModal, setShowModal]     = useState(false);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
+  const [deleting, setDeleting]       = useState<string | null>(null);
+  const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+  const canDelete = role === "super_admin";
 
   // Modal form state
   const [form, setForm] = useState({
@@ -97,6 +100,18 @@ export default function CreditNotesPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
+
+  async function deleteCreditNote(id: string, number: string) {
+    if (!confirm(`Permanently delete credit note ${number}? This cannot be undone.`)) return;
+    const secret = getSecret();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/credit-notes?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+      setCreditNotes((prev) => prev.filter((cn) => cn.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  }
 
   async function updateStatus(id: string, status: CreditNoteStatus) {
     const secret = getSecret();
@@ -238,7 +253,7 @@ export default function CreditNotesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    {["Credit Note #", "Client", "Linked Invoice", "Total", "Status", "Issued Date", "Actions"].map((h) => (
+                    {["Credit Note #", "Client", "Linked Invoice", "Total", "Status", "Issued Date", "Actions", ...(canDelete ? [""] : [])].map((h) => (
                       <th key={h} className="text-left py-3 px-3 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -307,10 +322,22 @@ export default function CreditNotesPage() {
                               )}
                             </div>
                           </td>
+                          {canDelete && (
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <button
+                                onClick={() => deleteCreditNote(cn.id, cn.credit_note_number)}
+                                disabled={deleting === cn.id}
+                                className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+                                title="Delete credit note"
+                              >
+                                {deleting === cn.id ? "…" : "✕"}
+                              </button>
+                            </td>
+                          )}
                         </tr>
                         {isExpanded && (
                           <tr key={`${cn.id}-expanded`} style={{ borderColor: "rgba(255,255,255,0.04)" }} className="border-b">
-                            <td colSpan={7} className="px-6 py-4" style={{ background: "rgba(255,255,255,0.02)" }}>
+                            <td colSpan={canDelete ? 8 : 7} className="px-6 py-4" style={{ background: "rgba(255,255,255,0.02)" }}>
                               <div className="space-y-3">
                                 <p className="text-slate-400 text-sm"><span className="text-slate-500">Reason:</span> {cn.reason}</p>
                                 {cn.notes && <p className="text-slate-400 text-sm"><span className="text-slate-500">Notes:</span> {cn.notes}</p>}

@@ -53,6 +53,19 @@ export default function NewsletterPage() {
   } | null>(null);
 
   const isAdmin = ["admin", "super_admin", "manager"].includes(getRole());
+  const canDelete = getRole() === "super_admin";
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function deleteSub(id: string, email: string) {
+    if (!confirm(`Permanently delete subscriber "${email}"? This cannot be undone.`)) return;
+    const token = getToken();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/newsletter?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      setSubs((prev) => prev.filter((s) => s.id !== id));
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  }
 
   const loadSubs = useCallback(() => {
     const token = getToken();
@@ -172,7 +185,7 @@ export default function NewsletterPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-                        {["Name", "Email", "WhatsApp", "Source", "Subscribed"].map((h) => (
+                        {["Name", "Email", "WhatsApp", "Source", "Subscribed", ...(canDelete ? [""] : [])].map((h) => (
                           <th key={h} className="text-left py-3 px-4 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -202,6 +215,18 @@ export default function NewsletterPage() {
                           <td className="py-3 px-4 text-slate-600 text-xs whitespace-nowrap">
                             {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </td>
+                          {canDelete && (
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <button
+                                onClick={() => deleteSub(s.id, s.email)}
+                                disabled={deleting === s.id}
+                                className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+                                title="Delete subscriber"
+                              >
+                                {deleting === s.id ? "…" : "✕"}
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

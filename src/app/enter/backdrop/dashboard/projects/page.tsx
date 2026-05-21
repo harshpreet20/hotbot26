@@ -46,6 +46,9 @@ export default function ProjectsPage() {
   const [creating, setCreating]   = useState(false);
   const [createError, setCreateError] = useState("");
   const [clients, setClients]     = useState<ClientOption[]>([]);
+  const [deleting, setDeleting]   = useState<string | null>(null);
+  const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+  const canDelete = role === "super_admin";
 
   const [form, setForm] = useState({
     client_id: "",
@@ -130,13 +133,18 @@ export default function ProjectsPage() {
   }
 
   async function archiveProject(id: string, name: string) {
-    if (!confirm(`Archive project "${name}"?`)) return;
+    if (!confirm(`Archive project "${name}"? This will set the project status to cancelled.`)) return;
     const secret = getSecret();
-    await fetch(`/api/dashboard/projects/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${secret}` },
-    });
-    load();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/projects/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      load();
+    } finally {
+      setDeleting(null);
+    }
   }
 
   const stats = {
@@ -300,12 +308,16 @@ export default function ProjectsPage() {
                             >
                               View
                             </Link>
-                            <button
-                              onClick={() => archiveProject(p.id, p.name)}
-                              className="text-xs text-slate-600 hover:text-red-400 transition-colors"
-                            >
-                              Archive
-                            </button>
+                            {canDelete && (
+                              <button
+                                onClick={() => archiveProject(p.id, p.name)}
+                                disabled={deleting === p.id}
+                                className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+                                title="Archive project (sets status to cancelled)"
+                              >
+                                {deleting === p.id ? "…" : "✕"}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
