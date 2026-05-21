@@ -13,6 +13,9 @@ export default function CallbacksPage() {
   const [items, setItems]     = useState<CallbackRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+  const canDelete = role === "super_admin";
 
   useEffect(() => {
     const secret = getSecret();
@@ -32,6 +35,17 @@ export default function CallbacksPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
+
+  async function deleteCallback(id: string, name: string) {
+    if (!confirm(`Permanently delete callback request from "${name}"? This cannot be undone.`)) return;
+    const secret = getSecret();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/callbacks?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+      setItems((prev) => prev.filter((c) => c.id !== id));
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  }
 
   async function markCalled(id: string) {
     const secret = getSecret();

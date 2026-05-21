@@ -174,3 +174,21 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ creditNote: data });
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await authorizeRole(extractToken(req), "super_admin");
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!isSupabaseEnabled()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const { error } = await sb()
+    .from("credit_notes")
+    .delete()
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

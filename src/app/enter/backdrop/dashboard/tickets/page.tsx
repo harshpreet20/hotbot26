@@ -26,6 +26,9 @@ export default function TicketsPage() {
   const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState<TicketStatus | "">("");
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+  const canDelete = role === "super_admin";
 
   useEffect(() => {
     const secret = getSecret();
@@ -36,6 +39,17 @@ export default function TicketsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
+
+  async function deleteTicket(id: string, title: string) {
+    if (!confirm(`Permanently delete ticket "${title}"? This cannot be undone.`)) return;
+    const secret = getSecret();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/tickets?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+      setTickets((prev) => prev.filter((t) => t.id !== id));
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  }
 
   const filtered = tickets.filter((t) => {
     const q = search.toLowerCase();
@@ -97,7 +111,7 @@ export default function TicketsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    {["Ticket #", "Title", "Requester", "Priority", "Status", "Assignee", "Labels", "Created", "Approval"].map((h) => (
+                    {["Ticket #", "Title", "Requester", "Priority", "Status", "Assignee", "Labels", "Created", "Approval", ...(canDelete ? [""] : [])].map((h) => (
                       <th key={h} className="text-left py-3 px-3 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -189,6 +203,18 @@ export default function TicketsPage() {
                             </span>
                           )}
                         </td>
+                        {canDelete && (
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <button
+                              onClick={() => deleteTicket(t.id, t.title)}
+                              disabled={deleting === t.id}
+                              className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+                              title="Delete ticket"
+                            >
+                              {deleting === t.id ? "…" : "✕"}
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
