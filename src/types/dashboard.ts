@@ -383,6 +383,22 @@ export interface Client {
   updatedAt: string;
 }
 
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  currency: string;
+  gateway: "razorpay" | "paypal" | "manual";
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  paidAt?: string;
+  payerEmail?: string;
+  createdAt: string;
+}
+
 // ── Dashboard Overview ────────────────────────────────────────────────────────
 
 export interface DashboardOverview {

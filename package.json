@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@paypal/paypal-server-sdk": "^2.3.0",
     "@supabase/supabase-js": "^2.100.0",
     "@tiptap/extension-code-block": "^3.20.1",
     "@tiptap/extension-color": "^3.20.1",
@@ -37,6 +38,7 @@
     "next": "14.2.5",
     "openai": "^6.38.0",
     "pdfkit": "^0.18.0",
+    "razorpay": "^2.9.6",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.12.3",

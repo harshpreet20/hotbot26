@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
-import type { Invoice, InvoiceStatus } from "@/types/dashboard";
+import type { Invoice, InvoiceStatus, Payment } from "@/types/dashboard";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -25,11 +25,12 @@ function formatCurrency(amount: number, currency: string) {
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
-  const [filter, setFilter]     = useState<InvoiceStatus | "">("");
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [invoices, setInvoices]         = useState<Invoice[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState("");
+  const [filter, setFilter]             = useState<InvoiceStatus | "">("");
+  const [updating, setUpdating]         = useState<string | null>(null);
+  const [paymentsMap, setPaymentsMap]   = useState<Record<string, Payment[]>>({});
 
   useEffect(() => {
     const secret = getSecret();
@@ -43,7 +44,24 @@ export default function InvoicesPage() {
         }
         return r.json();
       })
-      .then((d) => { if (d) setInvoices((d as { invoices: Invoice[] }).invoices); })
+      .then((d) => {
+        if (d) {
+          const inv = (d as { invoices: Invoice[] }).invoices;
+          setInvoices(inv);
+          // Fetch payment counts for all invoices (fire-and-forget)
+          const paidInvoices = inv.filter((i) => i.status === "paid");
+          paidInvoices.forEach((i) => {
+            fetch(`/api/payments/status/${i.id}`, { headers: { Authorization: `Bearer ${secret}` } })
+              .then((r) => r.ok ? r.json() : null)
+              .then((pd: { payments?: Payment[] } | null) => {
+                if (pd?.payments?.length) {
+                  setPaymentsMap((prev) => ({ ...prev, [i.id]: pd.payments! }));
+                }
+              })
+              .catch(() => {});
+          });
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
@@ -146,7 +164,7 @@ export default function InvoicesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    {["Invoice #", "Client", "Amount", "Status", "Issued", "Due", "Actions"].map((h) => (
+                    {["Invoice #", "Client", "Amount", "Status", "Payments", "Issued", "Due", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-3 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -167,6 +185,28 @@ export default function InvoicesPage() {
                         </td>
                         <td className="py-3 px-3 text-white font-medium whitespace-nowrap tabular-nums">
                           {formatCurrency(inv.total, inv.currency)}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          {paymentsMap[inv.id]?.length ? (
+                            <span
+                              title={`${paymentsMap[inv.id].length} payment(s) via ${[...new Set(paymentsMap[inv.id].map((p) => p.gateway))].join(", ")}`}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "2px 8px",
+                                borderRadius: 100,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: "rgba(34,197,94,0.15)",
+                                color: "#22c55e",
+                              }}
+                            >
+                              ✓ {paymentsMap[inv.id].length}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#475569", fontSize: 12 }}>—</span>
+                          )}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
                           <select

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import type { Invoice } from "@/types/dashboard";
 
@@ -30,12 +30,300 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   cancelled: { label: "Cancelled", color: "#475569", bg: "#f8fafc" },
 };
 
+// ── Razorpay global type ──────────────────────────────────────────────────────
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: { name: string; email: string };
+  theme: { color: string };
+  handler: (response: RazorpayResponse) => void;
+  modal?: { ondismiss?: () => void };
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, handler: () => void) => void;
+}
+
+// ── PaymentSection ────────────────────────────────────────────────────────────
+
+interface PaymentSectionProps {
+  invoice: Invoice;
+  onPaid: () => void;
+}
+
+function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
+  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [activeGateway, setActiveGateway] = useState<"razorpay" | "paypal" | null>(null);
+
+  const handleRazorpay = useCallback(async () => {
+    setPaymentState("loading");
+    setActiveGateway("razorpay");
+    setErrorMsg("");
+    try {
+      // 1. Create Razorpay order
+      const res = await fetch("/api/payments/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: invoice.total,
+          currency: invoice.currency,
+          customer_email: invoice.clientEmail,
+          customer_name: invoice.clientName,
+        }),
+      });
+
+      const data = await res.json() as {
+        orderId?: string;
+        amount?: number;
+        currency?: string;
+        keyId?: string;
+        customerEmail?: string;
+        customerName?: string;
+        error?: string;
+      };
+
+      if (!res.ok || !data.orderId) {
+        throw new Error(data.error ?? "Failed to create order");
+      }
+
+      // 2. Load Razorpay checkout.js dynamically
+      await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+
+      if (typeof window.Razorpay === "undefined") {
+        throw new Error("Razorpay checkout failed to load");
+      }
+
+      // 3. Open Razorpay modal
+      const rzp = new window.Razorpay({
+        key: data.keyId!,
+        amount: Math.round((data.amount ?? invoice.total) * 100),
+        currency: data.currency ?? invoice.currency,
+        name: "Hotbot Studios LLP",
+        description: `Invoice ${invoice.invoiceNumber}`,
+        order_id: data.orderId,
+        prefill: {
+          name: data.customerName ?? invoice.clientName,
+          email: data.customerEmail ?? invoice.clientEmail,
+        },
+        theme: { color: "#ff7a00" },
+        handler: async (response: RazorpayResponse) => {
+          // 4. Verify payment
+          try {
+            const verifyRes = await fetch("/api/payments/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                invoice_id: invoice.id,
+              }),
+            });
+            const verifyData = await verifyRes.json() as { success?: boolean; error?: string };
+            if (verifyData.success) {
+              setPaymentState("success");
+              onPaid();
+            } else {
+              throw new Error(verifyData.error ?? "Verification failed");
+            }
+          } catch (verifyErr) {
+            setErrorMsg(verifyErr instanceof Error ? verifyErr.message : "Payment verification failed");
+            setPaymentState("error");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            if (paymentState === "loading") {
+              setPaymentState("idle");
+              setActiveGateway(null);
+            }
+          },
+        },
+      });
+      rzp.open();
+      setPaymentState("idle"); // reset while modal is open; handler will set success
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Payment failed");
+      setPaymentState("error");
+    }
+  }, [invoice, onPaid, paymentState]);
+
+  const handlePayPal = useCallback(async () => {
+    setPaymentState("loading");
+    setActiveGateway("paypal");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/payments/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: invoice.total,
+          currency: invoice.currency,
+          customer_email: invoice.clientEmail,
+        }),
+      });
+
+      const data = await res.json() as { approvalUrl?: string; orderId?: string; error?: string };
+      if (!res.ok || !data.approvalUrl) {
+        throw new Error(data.error ?? "Failed to create PayPal order");
+      }
+
+      // Redirect to PayPal approval page
+      window.location.href = data.approvalUrl;
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "PayPal setup failed");
+      setPaymentState("error");
+    }
+  }, [invoice]);
+
+  return (
+    <div
+      className="no-print"
+      style={{
+        marginTop: 32,
+        padding: "28px 24px",
+        borderRadius: 12,
+        background: "linear-gradient(135deg, #f0f7ff 0%, #fef9f0 100%)",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#1a1a1a" }}>
+        Pay Online
+      </h3>
+      <p style={{ margin: "0 0 20px", fontSize: 13, color: "#64748b" }}>
+        Secure payment via Razorpay (UPI / Cards / Netbanking) or PayPal
+      </p>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {/* Razorpay button */}
+        <button
+          onClick={handleRazorpay}
+          disabled={paymentState === "loading" && activeGateway === "razorpay"}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 24px",
+            borderRadius: 10,
+            border: "none",
+            background: activeGateway === "razorpay" && paymentState === "loading"
+              ? "#e5712a"
+              : "#ff6914",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: paymentState === "loading" && activeGateway === "razorpay" ? "not-allowed" : "pointer",
+            fontFamily: "'Inter', Arial, sans-serif",
+            boxShadow: "0 2px 8px rgba(255,105,20,0.35)",
+            transition: "all 0.15s",
+            opacity: paymentState === "loading" && activeGateway === "razorpay" ? 0.75 : 1,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>🟠</span>
+          {paymentState === "loading" && activeGateway === "razorpay"
+            ? "Processing…"
+            : `Pay with Razorpay  ${fmtAmount(invoice.total, invoice.currency)}`}
+        </button>
+
+        {/* PayPal button */}
+        <button
+          onClick={handlePayPal}
+          disabled={paymentState === "loading" && activeGateway === "paypal"}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 24px",
+            borderRadius: 10,
+            border: "none",
+            background: activeGateway === "paypal" && paymentState === "loading"
+              ? "#0056a3"
+              : "#0070e0",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: paymentState === "loading" && activeGateway === "paypal" ? "not-allowed" : "pointer",
+            fontFamily: "'Inter', Arial, sans-serif",
+            boxShadow: "0 2px 8px rgba(0,112,224,0.35)",
+            transition: "all 0.15s",
+            opacity: paymentState === "loading" && activeGateway === "paypal" ? 0.75 : 1,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>🔵</span>
+          {paymentState === "loading" && activeGateway === "paypal"
+            ? "Redirecting…"
+            : "Pay with PayPal"}
+        </button>
+      </div>
+
+      {paymentState === "error" && errorMsg && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: "10px 14px",
+            borderRadius: 8,
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#dc2626",
+            fontSize: 13,
+          }}
+        >
+          ⚠️ {errorMsg}
+        </div>
+      )}
+
+      <p style={{ marginTop: 16, fontSize: 11, color: "#94a3b8" }}>
+        🔒 Payments are processed securely. We never store your card details.
+      </p>
+    </div>
+  );
+}
+
+// ── Script loader helper ──────────────────────────────────────────────────────
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function PublicInvoicePage() {
   const { id } = useParams() as { id: string };
+  const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [paid, setPaid] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,10 +332,45 @@ export default function PublicInvoicePage() {
         if (r.status === 404) { setNotFound(true); return null; }
         return r.json() as Promise<{ invoice: Invoice }>;
       })
-      .then((d) => { if (d) setInvoice(d.invoice); })
+      .then((d) => {
+        if (d) {
+          setInvoice(d.invoice);
+          if (d.invoice.status === "paid") setPaid(true);
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Handle PayPal return — auto-capture if paypal_order_id param is present
+  useEffect(() => {
+    const paypalOrderId = searchParams.get("paypal_order_id");
+    const invoiceId = searchParams.get("invoice_id");
+    if (!paypalOrderId || !invoiceId) return;
+
+    // Avoid double-capture
+    const captureKey = `paypal_captured_${paypalOrderId}`;
+    if (sessionStorage.getItem(captureKey)) return;
+    sessionStorage.setItem(captureKey, "1");
+
+    fetch("/api/payments/paypal/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: paypalOrderId, invoice_id: invoiceId }),
+    })
+      .then((r) => r.json())
+      .then((data: { success?: boolean }) => {
+        if (data.success) {
+          setPaid(true);
+          setInvoice((prev) =>
+            prev ? { ...prev, status: "paid", paidDate: new Date().toISOString().split("T")[0] } : prev
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        console.error("[PayPal capture]", err);
+      });
+  }, [searchParams]);
 
   function handlePrint() {
     window.print();
@@ -95,7 +418,11 @@ export default function PublicInvoicePage() {
   }
 
   const sym = currencySymbol(invoice.currency);
+  void sym;
   const sm = STATUS_META[invoice.status] ?? STATUS_META.draft;
+  const currentStatus = paid ? "paid" : invoice.status;
+  const currentSm = STATUS_META[currentStatus] ?? STATUS_META.draft;
+  const showPaymentSection = !["paid", "cancelled"].includes(currentStatus) && !paid;
 
   return (
     <>
@@ -110,6 +437,24 @@ export default function PublicInvoicePage() {
           .invoice-container { margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
         }
       `}</style>
+
+      {/* Payment success banner */}
+      {paid && (
+        <div
+          className="no-print"
+          style={{
+            background: "#16a34a",
+            color: "#fff",
+            padding: "14px 24px",
+            textAlign: "center",
+            fontSize: 15,
+            fontWeight: 600,
+            fontFamily: "'Inter', Arial, sans-serif",
+          }}
+        >
+          ✅ Payment Received — Thank you! Your invoice has been marked as paid.
+        </div>
+      )}
 
       {/* Share toolbar */}
       <div className="no-print" style={{ background: "#1e1b4b", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
@@ -155,8 +500,8 @@ export default function PublicInvoicePage() {
             <div style={{ textAlign: "right" }}>
               <h1 style={{ margin: 0, color: "#ff7a00", fontSize: 28, fontWeight: 700 }}>INVOICE</h1>
               <p style={{ margin: "4px 0 0", fontSize: 14, color: "#555", fontWeight: 500 }}>#{invoice.invoiceNumber}</p>
-              <span style={{ display: "inline-block", marginTop: 6, padding: "3px 12px", borderRadius: 100, fontSize: 12, fontWeight: 600, color: sm.color, background: sm.bg }}>
-                {sm.label}
+              <span style={{ display: "inline-block", marginTop: 6, padding: "3px 12px", borderRadius: 100, fontSize: 12, fontWeight: 600, color: currentSm.color, background: currentSm.bg }}>
+                {currentSm.label}
               </span>
             </div>
           </div>
@@ -190,7 +535,7 @@ export default function PublicInvoicePage() {
             </div>
             <div style={{ textAlign: "right" }}>
               {invoice.terms && <p style={{ margin: "3px 0", fontSize: 13 }}><strong>Payment Terms:</strong> {invoice.terms}</p>}
-              <p style={{ margin: "3px 0", fontSize: 13 }}><strong>Status:</strong> <span style={{ color: sm.color, fontWeight: 600 }}>{sm.label}</span></p>
+              <p style={{ margin: "3px 0", fontSize: 13 }}><strong>Status:</strong> <span style={{ color: currentSm.color, fontWeight: 600 }}>{currentSm.label}</span></p>
             </div>
           </div>
 
@@ -253,6 +598,21 @@ export default function PublicInvoicePage() {
             <p style={{ margin: "5px 0", fontSize: 13 }}><strong>UPI:</strong> hotbotstudios@axl</p>
             <p style={{ margin: "5px 0", fontSize: 13 }}><strong>Branch:</strong> Meera Bagh, Outer Ring Road, New Delhi - 110087</p>
           </div>
+
+          {/* Online payment section — only shown when invoice is not paid/cancelled */}
+          {showPaymentSection && (
+            <PaymentSection
+              invoice={invoice}
+              onPaid={() => {
+                setPaid(true);
+                setInvoice((prev) =>
+                  prev
+                    ? { ...prev, status: "paid", paidDate: new Date().toISOString().split("T")[0] }
+                    : prev
+                );
+              }}
+            />
+          )}
 
           {/* Notes */}
           {invoice.notes && (
