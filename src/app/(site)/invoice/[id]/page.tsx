@@ -61,17 +61,22 @@ interface RazorpayInstance {
   on: (event: string, handler: () => void) => void;
 }
 
-// ── Razorpay fee calculation ──────────────────────────────────────────────────
+// ── Fee calculation ──────────────────────────────────────────────────────────
 // Standard rate: 2% base + 18% GST on the base = 2.36% effective
-const RAZORPAY_BASE_RATE = 0.02;     // 2%
-const RAZORPAY_GST_RATE  = 0.18;     // 18% GST on the fee
+// Used for both Razorpay and Stripe
+const GATEWAY_BASE_RATE = 0.02;   // 2%
+const GATEWAY_GST_RATE  = 0.18;   // 18% GST on the fee
 
-function calcRazorpayFee(invoiceAmount: number) {
-  const baseFee  = Math.ceil(invoiceAmount * RAZORPAY_BASE_RATE * 100) / 100;
-  const gst      = Math.ceil(baseFee * RAZORPAY_GST_RATE * 100) / 100;
+function calcGatewayFee(invoiceAmount: number) {
+  const baseFee  = Math.ceil(invoiceAmount * GATEWAY_BASE_RATE * 100) / 100;
+  const gst      = Math.ceil(baseFee * GATEWAY_GST_RATE * 100) / 100;
   const totalFee = Math.ceil((baseFee + gst) * 100) / 100;
   return { baseFee, gst, totalFee, total: Math.ceil((invoiceAmount + totalFee) * 100) / 100 };
 }
+
+// Keep the old name as an alias so nothing else breaks
+const calcRazorpayFee = calcGatewayFee;
+void calcRazorpayFee; // suppress unused warning
 
 // ── PaymentSection ────────────────────────────────────────────────────────────
 
@@ -83,8 +88,8 @@ interface PaymentSectionProps {
 function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
   const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [activeGateway, setActiveGateway] = useState<"razorpay" | "paypal" | null>(null);
-  const fee = calcRazorpayFee(invoice.total);
+  const [activeGateway, setActiveGateway] = useState<"razorpay" | "paypal" | "stripe" | null>(null);
+  const fee = calcGatewayFee(invoice.total);
 
   const handleRazorpay = useCallback(async () => {
     setPaymentState("loading");
@@ -182,6 +187,32 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
     }
   }, [invoice, onPaid, paymentState]);
 
+  const handleStripe = useCallback(async () => {
+    setPaymentState("loading");
+    setActiveGateway("stripe");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/payments/stripe/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: invoice.total,
+          currency: invoice.currency,
+          customer_email: invoice.clientEmail,
+          customer_name: invoice.clientName,
+          invoice_number: invoice.invoiceNumber,
+        }),
+      });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok || !data.url) throw new Error(data.error ?? "Failed to create Stripe session");
+      window.location.href = data.url; // redirect to Stripe Checkout
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Stripe payment failed");
+      setPaymentState("error");
+    }
+  }, [invoice]);
+
   const handlePayPal = useCallback(async () => {
     setPaymentState("loading");
     setActiveGateway("paypal");
@@ -211,6 +242,23 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
     }
   }, [invoice]);
 
+  // Derive gateway fee label
+  const gatewayFeeLabel = activeGateway === "paypal"
+    ? "PayPal Gateway Fee"
+    : activeGateway === "stripe"
+    ? "Stripe Gateway Fee"
+    : activeGateway === "razorpay"
+    ? "Razorpay Gateway Fee"
+    : "Gateway Fee";
+
+  const gatewayFeeNote = activeGateway === "paypal"
+    ? "(original amount)"
+    : "(2% + 18% GST)";
+
+  const gatewayFeeValue = activeGateway === "paypal"
+    ? "included"
+    : `+ ${fmtAmount(fee.totalFee, invoice.currency)}`;
+
   return (
     <div
       className="no-print"
@@ -226,7 +274,7 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
         Pay Online
       </h3>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "#64748b" }}>
-        Secure payment via Razorpay (UPI / Cards / Netbanking) or PayPal
+        Secure payment via Razorpay (UPI / Cards / Netbanking), PayPal, or Stripe
       </p>
 
       {/* Fee breakdown table */}
@@ -244,10 +292,10 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: "#475569" }}>
           <span>
-            Razorpay Gateway Fee{" "}
-            <span style={{ fontSize: 11, color: "#94a3b8" }}>(2% + 18% GST)</span>
+            {gatewayFeeLabel}{" "}
+            <span style={{ fontSize: 11, color: "#94a3b8" }}>{gatewayFeeNote}</span>
           </span>
-          <span>+ {fmtAmount(fee.totalFee, invoice.currency)}</span>
+          <span>{gatewayFeeValue}</span>
         </div>
         <div style={{
           display: "flex", justifyContent: "space-between",
@@ -258,7 +306,7 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
           <span>{fmtAmount(fee.total, invoice.currency)}</span>
         </div>
         <p style={{ margin: "8px 0 0", fontSize: 11, color: "#94a3b8" }}>
-          Gateway fee is charged by Razorpay and passed to the payment processor.
+          Razorpay &amp; Stripe charge 2% + 18% GST on the fee (2.36% effective).
           PayPal payment uses the original invoice amount only.
         </p>
       </div>
@@ -323,6 +371,36 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
             ? "Redirecting…"
             : "Pay with PayPal"}
         </button>
+
+        {/* Stripe button */}
+        <button
+          onClick={handleStripe}
+          disabled={paymentState === "loading" && activeGateway === "stripe"}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 24px",
+            borderRadius: 10,
+            border: "none",
+            background: activeGateway === "stripe" && paymentState === "loading"
+              ? "#4f52c4"
+              : "#6366f1",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: paymentState === "loading" && activeGateway === "stripe" ? "not-allowed" : "pointer",
+            fontFamily: "'Inter', Arial, sans-serif",
+            boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+            transition: "all 0.15s",
+            opacity: paymentState === "loading" && activeGateway === "stripe" ? 0.75 : 1,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>💳</span>
+          {paymentState === "loading" && activeGateway === "stripe"
+            ? "Redirecting…"
+            : `Pay ${fmtAmount(fee.total, invoice.currency)} via Stripe`}
+        </button>
       </div>
 
       {paymentState === "error" && errorMsg && (
@@ -373,6 +451,7 @@ export default function PublicInvoicePage() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [stripeProcessing, setStripeProcessing] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -420,6 +499,28 @@ export default function PublicInvoicePage() {
         console.error("[PayPal capture]", err);
       });
   }, [searchParams]);
+
+  // Handle Stripe return — show processing banner when ?stripe=success
+  useEffect(() => {
+    const stripeStatus = searchParams.get("stripe");
+    if (stripeStatus !== "success") return;
+
+    setStripeProcessing(true);
+    // Reload invoice status after a short delay to pick up webhook-updated status
+    const timer = setTimeout(() => {
+      fetch(`/api/invoice/${id}`)
+        .then((r) => r.ok ? r.json() as Promise<{ invoice: Invoice }> : null)
+        .then((d) => {
+          if (d?.invoice?.status === "paid") {
+            setPaid(true);
+            setInvoice(d.invoice);
+            setStripeProcessing(false);
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [searchParams, id]);
 
   function handlePrint() {
     window.print();
@@ -469,6 +570,7 @@ export default function PublicInvoicePage() {
   const sym = currencySymbol(invoice.currency);
   void sym;
   const sm = STATUS_META[invoice.status] ?? STATUS_META.draft;
+  void sm;
   const currentStatus = paid ? "paid" : invoice.status;
   const currentSm = STATUS_META[currentStatus] ?? STATUS_META.draft;
   const showPaymentSection = !["paid", "cancelled"].includes(currentStatus) && !paid;
@@ -502,6 +604,24 @@ export default function PublicInvoicePage() {
           }}
         >
           ✅ Payment Received — Thank you! Your invoice has been marked as paid.
+        </div>
+      )}
+
+      {/* Stripe processing banner */}
+      {stripeProcessing && !paid && (
+        <div
+          className="no-print"
+          style={{
+            background: "#16a34a",
+            color: "#fff",
+            padding: "14px 24px",
+            textAlign: "center",
+            fontSize: 15,
+            fontWeight: 600,
+            fontFamily: "'Inter', Arial, sans-serif",
+          }}
+        >
+          ⏳ Payment processing — please wait while we confirm your payment…
         </div>
       )}
 
