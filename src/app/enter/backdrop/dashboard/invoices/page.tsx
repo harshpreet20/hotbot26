@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
@@ -25,12 +25,46 @@ function formatCurrency(amount: number, currency: string) {
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const [invoices, setInvoices]         = useState<Invoice[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState("");
-  const [filter, setFilter]             = useState<InvoiceStatus | "">("");
-  const [updating, setUpdating]         = useState<string | null>(null);
-  const [paymentsMap, setPaymentsMap]   = useState<Record<string, Payment[]>>({});
+  const [invoices, setInvoices]           = useState<Invoice[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [search, setSearch]               = useState("");
+  const [filter, setFilter]               = useState<InvoiceStatus | "">("");
+  const [updating, setUpdating]           = useState<string | null>(null);
+  const [paymentsMap, setPaymentsMap]     = useState<Record<string, Payment[]>>({});
+  const [reminderOpen, setReminderOpen]   = useState<string | null>(null);
+  const [reminding, setReminding]         = useState<string | null>(null);
+  const reminderRef                       = useRef<HTMLDivElement | null>(null);
+
+  // Close reminder dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (reminderRef.current && !reminderRef.current.contains(e.target as Node)) {
+        setReminderOpen(null);
+      }
+    }
+    if (reminderOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [reminderOpen]);
+
+  async function sendReminder(invoiceId: string, channel: "email" | "whatsapp") {
+    setReminding(invoiceId);
+    setReminderOpen(null);
+    try {
+      const secret = getSecret();
+      const res = await fetch("/api/dashboard/invoices/remind", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ invoice_id: invoiceId, channel }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok) alert(data.error ?? "Failed to send reminder");
+      else alert(`Reminder sent via ${channel}!`);
+    } catch {
+      alert("Failed to send reminder");
+    } finally {
+      setReminding(null);
+    }
+  }
 
   useEffect(() => {
     const secret = getSecret();
@@ -133,6 +167,20 @@ export default function InvoicesPage() {
               ))}
             </select>
             <Link
+              href="/enter/backdrop/dashboard/invoices/reports"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              Reports
+            </Link>
+            <Link
+              href="/enter/backdrop/dashboard/invoice-schedules"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              Schedules
+            </Link>
+            <Link
               href="/enter/backdrop/dashboard/invoices/new"
               className="px-4 py-2 rounded-xl text-sm font-medium text-white"
               style={{ background: "rgba(99,102,241,0.8)" }}
@@ -164,7 +212,7 @@ export default function InvoicesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    {["Invoice #", "Client", "Amount", "Status", "Payments", "Issued", "Due", "Actions"].map((h) => (
+                    {["Invoice #", "Client", "Amount", "Status", "Payments", "Issued", "Due", "Remind", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-3 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -228,6 +276,34 @@ export default function InvoicesPage() {
                           <span style={{ color: inv.status === "overdue" ? "#ef4444" : undefined }}>
                             {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-"}
                           </span>
+                        </td>
+                        {/* Reminder dropdown */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          {["sent", "viewed", "overdue"].includes(inv.status) && (
+                            <div className="relative" ref={reminderOpen === inv.id ? reminderRef : undefined}>
+                              <button
+                                disabled={reminding === inv.id}
+                                onClick={() => setReminderOpen((prev) => prev === inv.id ? null : inv.id)}
+                                className="px-2 py-1 rounded-lg text-xs font-medium text-amber-400 disabled:opacity-50 transition-colors hover:text-amber-300"
+                                style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)" }}
+                              >
+                                {reminding === inv.id ? "Sending…" : "Remind ▾"}
+                              </button>
+                              {reminderOpen === inv.id && (
+                                <div className="absolute z-50 top-8 right-0 rounded-xl overflow-hidden shadow-xl min-w-[140px]"
+                                  style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)" }}>
+                                  <button onClick={() => sendReminder(inv.id, "email")}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors">
+                                    ✉ Email
+                                  </button>
+                                  <button onClick={() => sendReminder(inv.id, "whatsapp")}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors">
+                                    💬 WhatsApp
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
                           <div className="flex items-center gap-2">
