@@ -150,7 +150,7 @@ export default function PublicInvoicePage() {
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #eee", paddingBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Image src="/logos/hotbot-logo.svg" alt="HotBot Studios - AI Automation & Digital Marketing Agency" width={240} height={80} style={{ objectFit: "contain" }} />
+              <Image src="/logos/brand-logo.png" alt="HotBot Studios - AI Automation & Digital Marketing Agency" width={240} height={80} style={{ objectFit: "contain" }} />
             </div>
             <div style={{ textAlign: "right" }}>
               <h1 style={{ margin: 0, color: "#ff7a00", fontSize: 28, fontWeight: 700 }}>INVOICE</h1>

@@ -174,7 +174,7 @@ function BackdropLoginContent() {
         <div className="text-center mb-5">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3 mx-auto"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}>
-            <Image src="/logos/hotbot-logo.svg" alt="HotBot Studios" width={40} height={40} className="object-contain" />
+            <Image src="/logos/brand-logo.png" alt="HotBot Studios" width={40} height={40} className="object-contain" />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Backdrop</h1>
           <p className="text-slate-500 text-xs mt-0.5">HotBot Studios · Admin</p>

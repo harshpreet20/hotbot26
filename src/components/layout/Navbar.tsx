@@ -45,7 +45,7 @@ export function Navbar() {
           className="flex items-center hover:opacity-80 transition-opacity shrink-0"
         >
           <Image
-            src="/logos/hotbot-logo.svg"
+            src="/logos/brand-logo.png"
             alt="HotBot Studios - AI Automation & Digital Marketing Agency"
             width={200}
             height={48}

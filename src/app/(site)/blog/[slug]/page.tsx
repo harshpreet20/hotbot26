@@ -169,7 +169,7 @@ export default function BlogPostPage({ params }: PageProps) {
           url: SITE_URL,
           logo: {
             "@type": "ImageObject",
-            url: `${SITE_URL}/logos/hotbot-logo.svg`,
+            url: `${SITE_URL}/logos/brand-logo.png`,
           },
         },
     publisher: {
@@ -178,7 +178,7 @@ export default function BlogPostPage({ params }: PageProps) {
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/logos/hotbot-logo.svg`,
+        url: `${SITE_URL}/logos/brand-logo.png`,
         width: 160,
         height: 40,
       },

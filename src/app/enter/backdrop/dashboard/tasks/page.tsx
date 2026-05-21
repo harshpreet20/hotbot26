@@ -129,7 +129,7 @@ export default function TasksPage() {
               if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
                 new Notification("New task assigned", {
                   body: t.title,
-                  icon: "/logos/hotbot-logo.svg",
+                  icon: "/logos/brand-logo.png",
                 });
               }
             }

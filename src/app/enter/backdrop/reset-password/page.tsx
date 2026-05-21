@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#070b17", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ marginBottom: 28, textAlign: "center" }}>
-        <Image src="/hotbot-logo.png" alt="HotBot Studios" width={48} height={48} style={{ borderRadius: 12, marginBottom: 12 }} />
+        <Image src="/logos/brand-logo.png" alt="HotBot Studios" width={48} height={48} style={{ borderRadius: 12, marginBottom: 12 }} />
         <p style={{ color: "#475569", fontSize: 13 }}>Backdrop Dashboard</p>
       </div>
 

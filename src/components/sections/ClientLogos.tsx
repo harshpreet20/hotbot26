@@ -6,17 +6,17 @@ import { Reveal } from "@/components/shared/Reveal";
 // logo: filename inside /public/logos/ (without leading slash).
 // When a logo file is present it renders as an image; otherwise falls back to the short text abbreviation.
 const CLIENTS: { name: string; short: string; logo?: string }[] = [
-  { name: "BADIANI",        short: "B",  logo: "badiani.png" },
-  { name: "MINISO",         short: "M",  logo: "miniso.png" },
-  { name: "Our Chemist",    short: "OC", logo: "our-chemist.png" },
-  { name: "Mudra",          short: "Mu", logo: "mudra.png" },
-  { name: "Oysters",        short: "Oy", logo: "oysters.png" },
-  { name: "Times Internet", short: "TI", logo: "times-internet.png" },
-  { name: "Tribes India",   short: "Ti", logo: "tribes-india.png" },
-  { name: "Wings 4 Fashion",short: "W4", logo: "wings4fashion.png" },
-  { name: "WSCC",           short: "WS", logo: "wscc.png" },
-  { name: "Namo E Waste",   short: "NE", logo: "namo-ewaste.png" },
-  { name: "Timekeeperz",    short: "TK", logo: "timekeeperz.png" },
+  { name: "BADIANI",        short: "B",  logo: "Badiani New York.png" },
+  { name: "MINISO",         short: "M",  logo: "Miniso_2023.svg.png" },
+  { name: "Our Chemist",    short: "OC", logo: "Our Chemist Logo.png" },
+  { name: "Mudra",          short: "Mu", logo: "Mudra.svg" },
+  { name: "Oysters",        short: "Oy", logo: "oysters.jpg" },
+  { name: "Times Internet", short: "TI", logo: "times internet logo.png" },
+  { name: "Tribes India",   short: "Ti" },
+  { name: "Wings 4 Fashion",short: "W4", logo: "wings4fashion-logo-removebg-preview.png" },
+  { name: "WSCC",           short: "WS" },
+  { name: "Namo E Waste",   short: "NE", logo: "Namo Logo.jpg" },
+  { name: "Timekeeperz",    short: "TK" },
   { name: "Your Brand",     short: "+" },
 ];
 
