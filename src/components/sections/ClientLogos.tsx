@@ -16,7 +16,7 @@ const CLIENTS: { name: string; short: string; logo?: string }[] = [
   { name: "Wings 4 Fashion",short: "W4", logo: "wings4fashion-logo-removebg-preview.png" },
   { name: "WSCC",           short: "WS" },
   { name: "Namo E Waste",   short: "NE", logo: "Namo Logo.jpg" },
-  { name: "Timekeeperz",    short: "TK" },
+  { name: "Salt and Smoke",  short: "SS" },
   { name: "Your Brand",     short: "+" },
 ];
 
@@ -36,8 +36,8 @@ function ClientCard({ c, hovered, onEnter, onLeave }: {
       className="flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-[14px] transition-all duration-300"
       style={{
         background: "rgba(255,255,255,0.95)",
-        padding: "16px 8px",
-        minHeight: 80,
+        padding: "21px 10px",
+        minHeight: 104,
         border: `1px solid ${hovered ? "rgba(59,130,246,0.3)" : "rgba(0,0,0,0.06)"}`,
         boxShadow: hovered
           ? "0 8px 30px rgba(0,0,0,0.12), 0 0 0 1px rgba(59,130,246,0.1)"
@@ -46,7 +46,7 @@ function ClientCard({ c, hovered, onEnter, onLeave }: {
       }}
     >
       <div
-        className="w-9 h-9 sm:w-11 sm:h-11 rounded-[8px] sm:rounded-[10px] flex items-center justify-center transition-all duration-300 overflow-hidden"
+        className="w-12 h-12 sm:w-14 sm:h-14 rounded-[10px] sm:rounded-[12px] flex items-center justify-center transition-all duration-300 overflow-hidden"
         style={{
           background: showImg ? "transparent" : hovered ? "linear-gradient(135deg, #3b82f6, #2563eb)" : "#f1f5f9",
           border: `1px solid ${showImg ? "rgba(0,0,0,0.06)" : hovered ? "transparent" : "#e2e8f0"}`,
@@ -56,8 +56,8 @@ function ClientCard({ c, hovered, onEnter, onLeave }: {
           <Image
             src={`/logos/${c.logo}`}
             alt={c.name}
-            width={44}
-            height={44}
+            width={56}
+            height={56}
             className="object-contain w-full h-full p-1"
             onError={() => setImgFailed(true)}
           />
