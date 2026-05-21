@@ -61,6 +61,18 @@ interface RazorpayInstance {
   on: (event: string, handler: () => void) => void;
 }
 
+// ── Razorpay fee calculation ──────────────────────────────────────────────────
+// Standard rate: 2% base + 18% GST on the base = 2.36% effective
+const RAZORPAY_BASE_RATE = 0.02;     // 2%
+const RAZORPAY_GST_RATE  = 0.18;     // 18% GST on the fee
+
+function calcRazorpayFee(invoiceAmount: number) {
+  const baseFee  = Math.ceil(invoiceAmount * RAZORPAY_BASE_RATE * 100) / 100;
+  const gst      = Math.ceil(baseFee * RAZORPAY_GST_RATE * 100) / 100;
+  const totalFee = Math.ceil((baseFee + gst) * 100) / 100;
+  return { baseFee, gst, totalFee, total: Math.ceil((invoiceAmount + totalFee) * 100) / 100 };
+}
+
 // ── PaymentSection ────────────────────────────────────────────────────────────
 
 interface PaymentSectionProps {
@@ -72,19 +84,22 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
   const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [activeGateway, setActiveGateway] = useState<"razorpay" | "paypal" | null>(null);
+  const fee = calcRazorpayFee(invoice.total);
 
   const handleRazorpay = useCallback(async () => {
     setPaymentState("loading");
     setActiveGateway("razorpay");
     setErrorMsg("");
     try {
-      // 1. Create Razorpay order
+      // 1. Create Razorpay order (amount includes gateway fee)
       const res = await fetch("/api/payments/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invoice_id: invoice.id,
-          amount: invoice.total,
+          invoice_amount: invoice.total,
+          gateway_fee: fee.totalFee,
+          amount: fee.total,
           currency: invoice.currency,
           customer_email: invoice.clientEmail,
           customer_name: invoice.clientName,
@@ -210,9 +225,43 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
       <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#1a1a1a" }}>
         Pay Online
       </h3>
-      <p style={{ margin: "0 0 20px", fontSize: 13, color: "#64748b" }}>
+      <p style={{ margin: "0 0 16px", fontSize: 13, color: "#64748b" }}>
         Secure payment via Razorpay (UPI / Cards / Netbanking) or PayPal
       </p>
+
+      {/* Fee breakdown table */}
+      <div style={{
+        background: "#fff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 10,
+        padding: "14px 18px",
+        marginBottom: 20,
+        fontSize: 13,
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: "#475569" }}>
+          <span>Invoice Amount</span>
+          <span>{fmtAmount(invoice.total, invoice.currency)}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: "#475569" }}>
+          <span>
+            Razorpay Gateway Fee{" "}
+            <span style={{ fontSize: 11, color: "#94a3b8" }}>(2% + 18% GST)</span>
+          </span>
+          <span>+ {fmtAmount(fee.totalFee, invoice.currency)}</span>
+        </div>
+        <div style={{
+          display: "flex", justifyContent: "space-between",
+          borderTop: "1px solid #e2e8f0", paddingTop: 8, marginTop: 4,
+          fontWeight: 700, fontSize: 15, color: "#1a1a1a",
+        }}>
+          <span>Total Payable</span>
+          <span>{fmtAmount(fee.total, invoice.currency)}</span>
+        </div>
+        <p style={{ margin: "8px 0 0", fontSize: 11, color: "#94a3b8" }}>
+          Gateway fee is charged by Razorpay and passed to the payment processor.
+          PayPal payment uses the original invoice amount only.
+        </p>
+      </div>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {/* Razorpay button */}
@@ -242,7 +291,7 @@ function PaymentSection({ invoice, onPaid }: PaymentSectionProps) {
           <span style={{ fontSize: 18 }}>🟠</span>
           {paymentState === "loading" && activeGateway === "razorpay"
             ? "Processing…"
-            : `Pay with Razorpay  ${fmtAmount(invoice.total, invoice.currency)}`}
+            : `Pay ${fmtAmount(fee.total, invoice.currency)} via Razorpay`}
         </button>
 
         {/* PayPal button */}

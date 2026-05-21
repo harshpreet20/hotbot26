@@ -23,13 +23,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as {
       invoice_id: string;
-      amount: number;
+      invoice_amount?: number;   // original invoice amount
+      gateway_fee?: number;      // razorpay fee passed to customer
+      amount: number;            // total charged (invoice_amount + gateway_fee)
       currency: string;
       customer_email?: string;
       customer_name?: string;
     };
 
-    const { invoice_id, amount, currency, customer_email, customer_name } = body;
+    const { invoice_id, invoice_amount, gateway_fee, amount, currency, customer_email, customer_name } = body;
     if (!invoice_id || !amount || !currency) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -63,16 +65,21 @@ export async function POST(req: NextRequest) {
       receipt: invoice_id,
     }) as { id: string };
 
-    // Insert pending payment row in Supabase
+    // Insert pending payment row in Supabase (amount = total including gateway fee)
     const supabase = getSupabase();
     const { error: dbError } = await supabase.from("payments").insert({
       invoice_id,
-      amount,
+      amount,          // total charged (invoice + fee)
       currency,
       gateway: "razorpay",
       gateway_order_id: order.id,
       status: "pending",
       payer_email: customer_email ?? invoice.clientEmail,
+      metadata: {
+        invoice_amount: invoice_amount ?? amount,
+        gateway_fee: gateway_fee ?? 0,
+        fee_rate: "2% + 18% GST",
+      },
     });
 
     if (dbError) {

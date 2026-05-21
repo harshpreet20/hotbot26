@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny, authorizeAdmin } from "@/lib/dashboardAuth";
 import { insert, readAll, updateById, removeById, newId } from "@/lib/store";
-import type { Client, ClientStatus } from "@/types/dashboard";
+import type { Client, ClientStatus, OnboardingStage, SubscriptionStatus } from "@/types/dashboard";
 import crypto from "crypto";
 
 function generateClientId(): string {
@@ -101,17 +101,37 @@ export async function PATCH(req: NextRequest) {
     company?: string;
     status?: ClientStatus;
     notes?: string;
+    onboardingStage?: OnboardingStage;
+    accountManager?: string;
+    portalEnabled?: boolean;
+    portalInviteSentAt?: string;
+    subscriptionStatus?: SubscriptionStatus;
+    industry?: string;
+    website?: string;
+    address?: string;
+    tags?: string[];
+    clientType?: string;
   };
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const update: Partial<Client> = { updatedAt: new Date().toISOString() };
-  if (body.name     !== undefined) update.name    = body.name.trim();
-  if (body.email    !== undefined) update.email   = body.email.trim();
-  if (body.phone    !== undefined) update.phone   = body.phone.trim();
-  if (body.company  !== undefined) update.company = body.company.trim();
-  if (body.status   !== undefined) update.status  = body.status;
-  if (body.notes    !== undefined) update.notes   = body.notes.trim();
+  if (body.name               !== undefined) update.name               = body.name.trim();
+  if (body.email              !== undefined) update.email              = body.email.trim();
+  if (body.phone              !== undefined) update.phone              = body.phone.trim();
+  if (body.company            !== undefined) update.company            = body.company.trim();
+  if (body.status             !== undefined) update.status             = body.status;
+  if (body.notes              !== undefined) update.notes              = body.notes.trim();
+  if (body.onboardingStage    !== undefined) update.onboardingStage    = body.onboardingStage;
+  if (body.accountManager     !== undefined) update.accountManager     = body.accountManager;
+  if (body.portalEnabled      !== undefined) update.portalEnabled      = body.portalEnabled;
+  if (body.portalInviteSentAt !== undefined) update.portalInviteSentAt = body.portalInviteSentAt;
+  if (body.subscriptionStatus !== undefined) update.subscriptionStatus = body.subscriptionStatus;
+  if (body.industry           !== undefined) update.industry           = body.industry;
+  if (body.website            !== undefined) update.website            = body.website;
+  if (body.address            !== undefined) update.address            = body.address;
+  if (body.tags               !== undefined) update.tags               = body.tags;
+  if (body.clientType         !== undefined) update.clientType         = body.clientType;
 
   await updateById<Client>("clients", body.id, update);
   return NextResponse.json({ success: true });

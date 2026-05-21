@@ -8,28 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeRole } from "@/lib/dashboardAuth";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rateLimit";
-
-type Frequency = "weekly" | "monthly" | "quarterly" | "annually";
+import { type Frequency, computeNextDate } from "@/lib/invoiceScheduleUtils";
 
 function getIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-}
-
-/** Compute next invoice date from a start date and frequency */
-function computeNextDate(startDate: string, frequency: Frequency): string {
-  const d = new Date(startDate);
-  switch (frequency) {
-    case "weekly":    d.setDate(d.getDate() + 7); break;
-    case "monthly":   d.setMonth(d.getMonth() + 1); break;
-    case "quarterly": d.setMonth(d.getMonth() + 3); break;
-    case "annually":  d.setFullYear(d.getFullYear() + 1); break;
-  }
-  return d.toISOString().split("T")[0];
-}
-
-/** Add one frequency interval to a date */
-export function addFrequencyInterval(date: string, frequency: Frequency): string {
-  return computeNextDate(date, frequency);
 }
 
 export async function GET(req: NextRequest) {

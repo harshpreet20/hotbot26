@@ -7,10 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { readAll, insert, newId } from "@/lib/store";
-import { addFrequencyInterval } from "@/app/api/dashboard/invoice-schedules/route";
+import { addFrequencyInterval, type Frequency } from "@/lib/invoiceScheduleUtils";
 import type { Invoice, InvoiceLineItem } from "@/types/dashboard";
-
-type Frequency = "weekly" | "monthly" | "quarterly" | "annually";
 
 function calcTotals(lineItems: InvoiceLineItem[], taxRate: number, discount: number) {
   const subtotal  = lineItems.reduce((s, li) => s + li.amount, 0);
