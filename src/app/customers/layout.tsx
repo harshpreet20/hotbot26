@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PortalShell from "@/components/backdrop/PortalShell";
 
 export const metadata: Metadata = {
   title: "Client Portal — HotBot Studios",
@@ -6,9 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CustomersLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff" }}>
-      {children}
-    </div>
-  );
+  return <PortalShell>{children}</PortalShell>;
 }

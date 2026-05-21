@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { readAll, update as storeUpdate } from "@/lib/store";
+import { readAll, updateById } from "@/lib/store";
 import type { Invoice } from "@/types/dashboard";
 
 function getSupabase() {
@@ -70,15 +70,19 @@ export async function POST(req: NextRequest) {
       .update({ status: "paid", paid_date: new Date().toISOString().split("T")[0] })
       .eq("id", invoice_id);
 
-    // Mark invoice as paid in file store (if Supabase not primary)
+    // Mark invoice as paid in file store (best-effort)
     try {
       const invoices = await readAll<Invoice>("invoices");
       const inv = invoices.find((i) => i.id === invoice_id);
       if (inv) {
-        await storeUpdate("invoices", invoice_id, { ...inv, status: "paid", paidDate: new Date().toISOString().split("T")[0] });
+        await updateById<Invoice>("invoices", invoice_id, {
+          ...inv,
+          status: "paid",
+          paidDate: new Date().toISOString().split("T")[0],
+        });
       }
     } catch {
-      // store update is best-effort
+      // non-fatal
     }
 
     console.log(`[stripe/webhook] Invoice ${invoice_id} marked paid`);
