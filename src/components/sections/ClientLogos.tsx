@@ -12,7 +12,7 @@ const CLIENTS: { name: string; short: string; logo?: string }[] = [
   { name: "Mudra",          short: "Mu", logo: "Mudra.svg" },
   { name: "Oysters",        short: "Oy", logo: "oysters.jpg" },
   { name: "Times Internet", short: "TI", logo: "times internet logo.png" },
-  { name: "Tribes India",   short: "Ti" },
+  { name: "Tribes India",   short: "Ti", logo: "tribes india logo.webp" },
   { name: "Wings 4 Fashion",short: "W4", logo: "wings4fashion-logo-removebg-preview.png" },
   { name: "WSCC",           short: "WS", logo: "WSCC Logo In.png" },
   { name: "Namo E Waste",   short: "NE", logo: "Namo Logo.jpg" },
