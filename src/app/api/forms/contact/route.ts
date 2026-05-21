@@ -3,6 +3,7 @@ import { insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendContactConfirmation } from "@/lib/resend";
 import { fireJourneyEvent } from "@/lib/journey";
+import { isSupabaseEnabled, sb } from "@/lib/supabase";
 import type { Contact, Lead } from "@/types/dashboard";
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -73,6 +74,32 @@ export async function POST(req: NextRequest) {
     await insert<Lead>("leads", lead).catch((err) =>
       console.error("[contact] lead insert failed:", err)
     );
+
+    // Mirror to Supabase tickets if the email belongs to a portal client user
+    if (isSupabaseEnabled()) {
+      try {
+        const { data: portalUser } = await sb()
+          .from("client_users")
+          .select("client_id")
+          .eq("email", email.trim())
+          .single();
+        if (portalUser) {
+          await sb().from("tickets").insert({
+            subject:          subject?.trim() || message?.trim() || "General Inquiry",
+            description:      message?.trim() ?? "",
+            status:           "open",
+            client_email:     email.trim(),
+            client_name:      name.trim(),
+            priority:         "medium",
+            approval_status:  "pending_approval",
+            source:           "contact_form",
+            client_id:        portalUser.client_id,
+          });
+        }
+      } catch (err) {
+        console.error("[contact] supabase ticket mirror failed:", err);
+      }
+    }
 
     sendContactConfirmation({ name: name.trim(), email: email.trim(), subject: subject || "General Enquiry", message: message || "" }).catch((err) => console.error("[email]", err instanceof Error ? err.message : err));
 

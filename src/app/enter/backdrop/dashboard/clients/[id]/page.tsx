@@ -699,6 +699,27 @@ export default function ClientDetailPage() {
                 </div>
               )}
 
+              {portalUser?.invite_accepted_at && (
+                <button
+                  onClick={() => {
+                    const token = getToken();
+                    window.open(
+                      `/api/customers/auth/admin-preview?client_id=${encodeURIComponent(client.clientId)}&token=${encodeURIComponent(token)}`,
+                      "_blank"
+                    );
+                  }}
+                  className="w-full py-2 rounded-xl text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #6366f1)" }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  View Portal
+                </button>
+              )}
+
               {canWrite && !portalUser?.invite_accepted_at && (
                 <button
                   onClick={() => {

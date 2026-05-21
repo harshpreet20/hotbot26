@@ -10,6 +10,8 @@ import { extractToken, authorizeAny, authorizeAdmin } from "@/lib/dashboardAuth"
 import { insert, readAll, updateById, removeById, newId } from "@/lib/store";
 import type { Client, ClientStatus, OnboardingStage, SubscriptionStatus } from "@/types/dashboard";
 import crypto from "crypto";
+import { sb } from "@/lib/supabase";
+import { sendPortalInvite, sendClientWelcomeEmail } from "@/lib/resend";
 
 function generateClientId(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -81,6 +83,55 @@ export async function POST(req: NextRequest) {
   };
 
   await insert<Client>("clients", client);
+
+  if (client.email) {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const setupLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://hotbotstudios.com"}/customers/setup?token=${token}`;
+
+    Promise.resolve(
+      sb()
+        .from("client_users")
+        .upsert(
+          {
+            email: client.email,
+            name: client.name,
+            client_id: client.clientId,
+            role: "owner",
+            invite_token: token,
+            invite_expires_at: expires,
+            is_active: true,
+          },
+          { onConflict: "email" },
+        ),
+    )
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] upsert client_users:", e));
+
+    Promise.resolve(
+      sb()
+        .from("clients")
+        .update({ portal_enabled: true })
+        .eq("client_id", client.clientId),
+    )
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] update clients portal_enabled:", e));
+
+    sendPortalInvite(client.email, client.name, client.name, setupLink)
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] sendPortalInvite:", e));
+
+    sendClientWelcomeEmail({
+      name: client.name,
+      email: client.email,
+      company: client.company,
+      convertedBy: session.username ?? "Team",
+      clientId: client.clientId,
+    })
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] sendClientWelcomeEmail:", e));
+  }
+
   return NextResponse.json({ client }, { status: 201 });
 }
 

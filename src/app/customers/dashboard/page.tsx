@@ -100,6 +100,7 @@ export default function CustomerDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [recentUpdates, setRecentUpdates] = useState<Update[]>([]);
   const [tickets, setTickets]   = useState<{ status: string }[]>([]);
+  const [invoices, setInvoices] = useState<{ status: string; amount: number; currency: string }[]>([]);
   const [notifCount, setNotifCount] = useState(0);
   const [loading, setLoading]   = useState(true);
   const [signingOut, setSigningOut] = useState(false);
@@ -110,15 +111,15 @@ export default function CustomerDashboard() {
       fetch("/api/customers/projects").then((r) => r.ok ? r.json() : null),
       fetch("/api/customers/tickets").then((r) => r.ok ? r.json() : null),
       fetch("/api/customers/notifications").then((r) => r.ok ? r.json() : null),
-    ]).then(([meData, projData, ticketData, notifData]) => {
+      fetch("/api/customers/invoices").then((r) => r.ok ? r.json() : null),
+    ]).then(([meData, projData, ticketData, notifData, invData]) => {
       if (!meData) { router.replace("/customers"); return; }
       setUser(meData.user);
       setClient(meData.client);
       const projs: Project[] = projData?.projects ?? [];
       setProjects(projs);
-
-      // Gather recent updates from first project (simplified)
       setTickets(ticketData?.tickets ?? []);
+      setInvoices(invData?.invoices ?? []);
       const notifications = notifData?.notifications ?? [];
       setNotifCount(notifications.filter((n: { read_at: string | null }) => !n.read_at).length);
       setLoading(false);
@@ -155,6 +156,9 @@ export default function CustomerDashboard() {
 
   const activeProjects = projects.filter((p) => p.status === "active").length;
   const openTickets    = tickets.filter((t: { status: string }) => t.status === "open").length;
+  const unpaidInvoices = invoices.filter((i) => i.status === "unpaid" || i.status === "overdue");
+  const totalDues      = unpaidInvoices.reduce((s, i) => s + (i.amount ?? 0), 0);
+  const currency       = invoices[0]?.currency ?? "INR";
 
   const sidebarStyle: React.CSSProperties = {
     width: 240,
@@ -313,8 +317,8 @@ export default function CustomerDashboard() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
               <SummaryCard label="Active Projects" value={String(activeProjects)} color="#22c55e" icon="◈" />
               <SummaryCard label="Open Tickets"    value={String(openTickets)}    color="#f59e0b" icon="◉" />
-              <SummaryCard label="Total Projects"  value={String(projects.length)} color="#6366f1" icon="⊞" />
-              <SummaryCard label="Portal Access"   value="Active"                 color="#22c55e" icon="✓" />
+              <SummaryCard label="Unpaid Invoices" value={String(unpaidInvoices.length)} color={unpaidInvoices.length > 0 ? "#ef4444" : "#22c55e"} icon="◎" />
+              <SummaryCard label="Total Dues"      value={totalDues > 0 ? `${currency === "INR" ? "₹" : "$"}${totalDues.toLocaleString()}` : "Clear"} color={totalDues > 0 ? "#ef4444" : "#22c55e"} icon="⊕" />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
@@ -417,13 +421,22 @@ export default function CustomerDashboard() {
                     }}>
                       + New Support Ticket
                     </Link>
-                    <Link href="/customers/invoices" style={{
+                    <Link href="/customers/tasks" style={{
                       display: "block", padding: "10px 14px",
-                      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: 10, color: "#94a3b8", fontSize: 13, fontWeight: 500,
+                      background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)",
+                      borderRadius: 10, color: "#86efac", fontSize: 13, fontWeight: 500,
                       textDecoration: "none",
                     }}>
-                      View Invoices
+                      + New Task Request
+                    </Link>
+                    <Link href="/customers/invoices" style={{
+                      display: "block", padding: "10px 14px",
+                      background: unpaidInvoices.length > 0 ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.03)",
+                      border: unpaidInvoices.length > 0 ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 10, color: unpaidInvoices.length > 0 ? "#fca5a5" : "#94a3b8", fontSize: 13, fontWeight: 500,
+                      textDecoration: "none",
+                    }}>
+                      {unpaidInvoices.length > 0 ? `⚠ ${unpaidInvoices.length} Unpaid Invoice${unpaidInvoices.length > 1 ? "s" : ""}` : "View Invoices"}
                     </Link>
                     {client?.account_manager && (
                       <a href={`mailto:${client.account_manager}`} style={{
