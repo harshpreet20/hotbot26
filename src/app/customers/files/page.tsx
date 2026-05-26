@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { portalClient } from "@/lib/supabase-portal";
 
 interface PortalFile {
   id: string;
@@ -120,40 +119,50 @@ export default function FilesPage() {
     if (!selectedFile || !resName.trim()) return;
     setUploading(true); setUploadError(""); setUploadSuccess("");
     try {
-      // Get client_id from the me endpoint
-      const meRes = await fetch("/api/customers/me");
-      if (!meRes.ok) { setUploadError("Authentication error"); return; }
-      const meData = await meRes.json() as { client_id?: string };
-      const clientId = meData.client_id ?? "unknown";
+      // Step 1: get a signed upload URL from the server (uses service role key)
+      const urlRes = await fetch(
+        `/api/customers/resources/upload-url?filename=${encodeURIComponent(selectedFile.name)}&content_type=${encodeURIComponent(selectedFile.type || "application/octet-stream")}`
+      );
+      if (!urlRes.ok) {
+        const d = await urlRes.json() as { error?: string };
+        setUploadError(d.error ?? "Could not get upload URL");
+        return;
+      }
+      const { signed_url, token, path, public_url } = await urlRes.json() as {
+        signed_url: string; token: string; path: string; public_url: string;
+      };
 
-      const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${clientId}/${Date.now()}_${safeName}`;
+      // Step 2: upload directly to Supabase Storage using the signed URL
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+      const uploadEndpoint = `${supabaseUrl}/storage/v1/object/upload/sign/client-resources/${path}?token=${encodeURIComponent(token)}`;
+      const uploadRes = await fetch(uploadEndpoint, {
+        method: "PUT",
+        headers: { "Content-Type": selectedFile.type || "application/octet-stream" },
+        body: selectedFile,
+      });
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text().catch(() => uploadRes.statusText);
+        setUploadError(`Storage upload failed: ${txt}`);
+        return;
+      }
 
-      const { error: storageErr } = await portalClient.storage
-        .from("client-resources")
-        .upload(path, selectedFile, { contentType: selectedFile.type, upsert: false });
-
-      if (storageErr) { setUploadError(storageErr.message); return; }
-
-      const { data: urlData } = portalClient.storage.from("client-resources").getPublicUrl(path);
-      const fileUrl = urlData.publicUrl;
-
-      const res = await fetch("/api/customers/resources", {
+      // Step 3: save the resource record to the database
+      const saveRes = await fetch("/api/customers/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: resName.trim(),
+          name:        resName.trim(),
           description: resDesc.trim() || undefined,
-          file_url: fileUrl,
-          file_name: selectedFile.name,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type || "application/octet-stream",
-          category: resCategory,
+          file_url:    public_url,
+          file_name:   selectedFile.name,
+          file_size:   selectedFile.size,
+          mime_type:   selectedFile.type || "application/octet-stream",
+          category:    resCategory,
         }),
       });
 
-      if (!res.ok) {
-        const d = await res.json() as { error?: string };
+      if (!saveRes.ok) {
+        const d = await saveRes.json() as { error?: string };
         setUploadError(d.error ?? "Failed to save resource");
         return;
       }

@@ -97,3 +97,34 @@ ALTER TABLE public.tickets
 -- FROM information_schema.columns
 -- WHERE table_schema = 'public' AND table_name = 'tickets'
 -- ORDER BY ordinal_position;
+
+
+-- ── 5. Create client-resources Supabase Storage bucket ────────────────────────
+-- The customer portal file upload uses this bucket via signed upload URLs
+-- (server-side, service role key). The anon public URL is used for serving.
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'client-resources',
+  'client-resources',
+  true,          -- public so file URLs work without auth
+  52428800,      -- 50 MB max per file
+  null           -- all mime types allowed
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow public read (bucket is public so this is automatic, but be explicit)
+CREATE POLICY "client_resources_public_read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'client-resources');
+
+-- Allow service role to insert (uploads go through our API, never direct anon)
+-- RLS is effectively bypassed by service role key — no additional policy needed.
+
+-- =============================================================================
+-- ALSO RUN: supabase/migrations_missing_tables.sql
+-- =============================================================================
+-- The customer portal also needs these tables that are defined there:
+--   tasks                — customer portal task tracking
+--   client_announcements — shared notes / announcements
+--   project_files        — files attached to projects
+-- Run that file in the SQL Editor if you haven't already.
