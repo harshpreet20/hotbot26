@@ -58,35 +58,44 @@ export async function createSession(
   };
 
   if (isSupabaseEnabled()) {
-    // Strip optional columns that may not exist yet on legacy schemas so we
-    // don't hit "column does not exist" errors on older Supabase projects.
+    // Strip optional impersonation columns from the base insert payload.
     // The fix_sessions_and_data.sql migration adds them; until then we omit them.
     const { is_impersonating, original_user_id, original_username, original_role, ...coreSession } = session;
-    const insertPayload = is_impersonating
-      ? session   // include impersonation fields only when actually impersonating
-      : coreSession;
+    const insertPayload = is_impersonating ? session : coreSession;
 
     const { error } = await sb().from("sessions").insert(insertPayload);
     if (error) {
-      // FK violation: sessions table still has a legacy user_id FK constraint.
-      // Run supabase/fix_sessions_and_data.sql to drop it permanently.
-      // Until then, retry with a safe TEXT user_id that satisfies any TEXT FK.
+      // FK violation: sessions table has a legacy user_id FK constraint that
+      // blocks Supabase Auth UUIDs (they live in backdrop_users, not users).
+      // Permanent fix: run supabase/fix_sessions_and_data.sql to drop the FK.
+      // Workaround: ensure the user row exists in backdrop_users, then retry.
       if (error.code === "23503" || error.message.includes("violates foreign key constraint")) {
-        // Create a safe placeholder row in the users table (TEXT id = fine)
         await Promise.resolve(
-          sb().from("users").upsert(
-            { id: userId, username, password_hash: "supabase-auth", role, created_at: new Date().toISOString() },
+          sb().from("backdrop_users").upsert(
+            {
+              id:         userId,
+              email:      `${username.toLowerCase()}@hotbotstudios.internal`,
+              username,
+              role,
+              status:     "approved",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
             { onConflict: "id", ignoreDuplicates: true }
           )
         ).catch(() => {});
 
         const { error: retryError } = await sb().from("sessions").insert(insertPayload);
         if (!retryError) return token;
+
+        // Retry also failed — FK is on users (not backdrop_users).
+        // Surface the error so login fails cleanly instead of fake-succeeding.
+        throw new Error(
+          `Session FK constraint unresolved. Run supabase/fix_sessions_and_data.sql. (${retryError.message})`
+        );
       }
 
-      // Any other Supabase error (column missing, table missing, etc.) —
-      // fall back to filesystem only in dev. On Vercel /tmp is ephemeral so
-      // this will cause session loss on cross-instance requests.
+      // Any other error (column missing, table missing, permissions, etc.)
       if (!process.env.VERCEL) {
         console.warn("[sessions] Supabase insert failed (dev), using filesystem:", error.message);
         const sessions = fsActive();
@@ -94,8 +103,12 @@ export async function createSession(
         _fsWrite("sessions", sessions);
         return token;
       }
-      // On Vercel: log the error clearly so it surfaces in function logs
-      console.error("[sessions] CRITICAL: Supabase session insert failed on Vercel — run fix_sessions_and_data.sql:", error.message);
+
+      // On Vercel: throw so login returns 500 rather than returning a fake token
+      // that will immediately cause 401 on every subsequent API call.
+      throw new Error(
+        `Supabase session insert failed — run fix_sessions_and_data.sql. (${error.message})`
+      );
     }
     return token;
   } else {
