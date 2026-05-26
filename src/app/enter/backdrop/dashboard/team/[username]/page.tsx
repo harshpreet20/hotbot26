@@ -115,7 +115,7 @@ export default function TeamMemberPage() {
   useEffect(() => {
     if (!username) return;
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
 
     fetch(`/api/dashboard/team/${encodeURIComponent(username)}`, {
       headers: { Authorization: `Bearer ${secret}` },

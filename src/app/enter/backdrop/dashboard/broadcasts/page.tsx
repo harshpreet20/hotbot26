@@ -40,7 +40,7 @@ export default function BroadcastsPage() {
 
   return (
     <>
-      <div className="p-6 max-w-2xl">
+      <div className="p-6">
         <div className="mb-6">
           <h1 className="text-white text-xl font-semibold">Feature Broadcast</h1>
           <p className="text-slate-500 text-sm mt-0.5">Send a feature update email to your team when you ship something new.</p>

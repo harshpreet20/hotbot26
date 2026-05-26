@@ -251,7 +251,7 @@ export default function CommunicationsPage() {
     filter === "all" ? items : items.filter((i) => i.type === filter);
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 900, position: "relative", minHeight: "100vh" }}>
+    <div style={{ padding: "32px 40px" }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 700, color: "#fff" }}>

@@ -65,7 +65,7 @@ export default function ProjectsPage() {
 
   const load = useCallback(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     setLoading(true);
     fetch("/api/dashboard/projects", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {

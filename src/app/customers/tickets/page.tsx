@@ -88,7 +88,7 @@ export default function SupportTicketsPage() {
   }
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 860 }}>
+    <div style={{ padding: "32px 40px" }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#fff" }}>Support Tickets</h1>
         <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Submit a request or track existing support tickets.</p>

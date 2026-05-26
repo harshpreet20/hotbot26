@@ -82,7 +82,7 @@ export default function InvoiceSchedulesPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     fetch("/api/dashboard/invoice-schedules", { headers: authHeaders() })
       .then((r) => {
         if (r.status === 401) { router.replace("/enter/backdrop"); return null; }

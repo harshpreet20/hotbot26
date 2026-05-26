@@ -111,7 +111,7 @@ export default function TasksPage() {
 
   const loadTasks = useCallback((silent = false) => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     if (!silent) setLoading(true);
     fetch("/api/dashboard/tasks", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {

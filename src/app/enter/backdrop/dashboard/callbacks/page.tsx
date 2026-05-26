@@ -18,7 +18,7 @@ export default function CallbacksPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     fetch('/api/dashboard/callbacks', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) {

@@ -106,7 +106,7 @@ export default function AiAnalystPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!getSecret()) router.replace("/enter/backdrop");
+    if (!getSecret()) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
   }, [router]);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function AiAnalystPage() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; } }, 200); return; }
 
     const userMsg: Message = { role: "user", content: text.trim() };
     const next = [...messages, userMsg];

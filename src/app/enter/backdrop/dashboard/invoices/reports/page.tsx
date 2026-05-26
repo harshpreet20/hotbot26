@@ -162,7 +162,7 @@ export default function InvoiceReportsPage() {
   const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
 
   useEffect(() => {
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
   }, [router, secret]);
 
   const loadReport = useCallback(async (type: Tab, extra = "") => {

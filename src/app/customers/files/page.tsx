@@ -62,7 +62,7 @@ export default function FilesPage() {
   }, [router]);
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 1200 }}>
+    <div style={{ padding: "32px 40px" }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 700, color: "#fff" }}>

@@ -46,7 +46,7 @@ export default function OverviewPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
     const dataRoles = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance"];
     if (!dataRoles.includes(role)) { setLoading(false); return; }

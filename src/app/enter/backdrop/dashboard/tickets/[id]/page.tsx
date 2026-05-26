@@ -67,7 +67,7 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     fetch(`/api/dashboard/tickets?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) { ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; }

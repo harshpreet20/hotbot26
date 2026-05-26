@@ -118,7 +118,7 @@ export default function AutomationsPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     fetch("/api/dashboard/automations", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) {
