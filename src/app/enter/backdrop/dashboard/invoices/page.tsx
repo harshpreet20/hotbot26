@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Invoice, InvoiceStatus } from "@/types/dashboard";
 
 function getSecret() {
@@ -37,7 +36,7 @@ export default function InvoicesPage() {
     fetch("/api/dashboard/invoices", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) {
-          sessionStorage.clear();
+          ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));
           router.replace("/enter/backdrop");
           return null;
         }
@@ -87,7 +86,7 @@ export default function InvoicesPage() {
   const pendingAmount = invoices.filter((i) => ["sent", "viewed"].includes(i.status)).reduce((s, i) => s + i.total, 0);
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
@@ -214,7 +213,7 @@ export default function InvoicesPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }
 

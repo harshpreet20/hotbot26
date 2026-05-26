@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Role } from "@/types/dashboard";
 
 function getSecret() {
@@ -40,7 +39,7 @@ export default function TeamPage() {
     })
       .then((r) => {
         if (r.status === 401) {
-          sessionStorage.clear();
+          ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));
           router.replace("/enter/backdrop");
           return null;
         }
@@ -59,7 +58,7 @@ export default function TeamPage() {
   );
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header
@@ -139,6 +138,6 @@ export default function TeamPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Lead, LeadStatus, CRMUpdate, CRMTask, Invoice, UpdateType, TaskPriority } from "@/types/dashboard";
 
@@ -172,13 +171,13 @@ export default function LeadDetailPage() {
     if (res.ok) setUpdates((p) => p.filter((u) => u.id !== updateId));
   }
 
-  if (loading) return <DashboardShell><div className="p-6 text-slate-500">Loading…</div></DashboardShell>;
+  if (loading) return <><div className="p-6 text-slate-500">Loading…</div></>;
   if (!lead)   return null;
 
   const sm = STATUS_META[lead.status ?? "new"];
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-7">
@@ -429,7 +428,7 @@ export default function LeadDetailPage() {
         .input-field:focus { border-color: rgba(99,102,241,0.5); }
         .input-field option { background: #1e293b; }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 

@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-function openai() {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("OPENAI_API_KEY is not set");
-  return new OpenAI({ apiKey: key });
-}
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -163,54 +159,47 @@ async function getRecentTickets(limit = 10) {
 
 // ── Tool definitions ──────────────────────────────────────────────────────────
 
-const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
+const TOOLS: Anthropic.Tool[] = [
   {
-    type: "function",
-    function: {
-      name: "get_analytics",
-      description: "Fetch website analytics for the last 30 days: visitors, pageviews, bounce rate, avg session duration, top pages, top events, devices, countries, referrers.",
-      parameters: { type: "object", properties: {} },
+    name: "get_analytics",
+    description: "Fetch website analytics for the last 30 days: visitors, pageviews, bounce rate, avg session duration, top pages, top events, devices, countries, referrers.",
+    input_schema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "get_crm_summary",
+    description: "Fetch CRM summary for the last 30 days: leads, tickets, callbacks, and live chat statistics with status breakdowns.",
+    input_schema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "get_email_stats",
+    description: "Fetch email marketing and transactional email statistics for the last 30 days: delivery, open, bounce rates, breakdown by type.",
+    input_schema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "get_recent_leads",
+    description: "Fetch the most recent leads from the CRM.",
+    input_schema: {
+      type: "object" as const,
+      properties: { limit: { type: "number", description: "Number of leads to return (default 10, max 25)" } },
     },
   },
   {
-    type: "function",
-    function: {
-      name: "get_crm_summary",
-      description: "Fetch CRM summary for the last 30 days: leads, tickets, callbacks, and live chat statistics with status breakdowns.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_email_stats",
-      description: "Fetch email marketing and transactional email statistics for the last 30 days: delivery, open, bounce rates, breakdown by type.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_recent_leads",
-      description: "Fetch the most recent leads from the CRM.",
-      parameters: {
-        type: "object",
-        properties: { limit: { type: "number", description: "Number of leads to return (default 10, max 25)" } },
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_recent_tickets",
-      description: "Fetch the most recent support tickets.",
-      parameters: {
-        type: "object",
-        properties: { limit: { type: "number", description: "Number of tickets to return (default 10, max 25)" } },
-      },
+    name: "get_recent_tickets",
+    description: "Fetch the most recent support tickets.",
+    input_schema: {
+      type: "object" as const,
+      properties: { limit: { type: "number", description: "Number of tickets to return (default 10, max 25)" } },
     },
   },
 ];
+
+const TOOL_LABELS: Record<string, string> = {
+  get_analytics:       "Website Analytics",
+  get_crm_summary:     "CRM Summary",
+  get_email_stats:     "Email Stats",
+  get_recent_leads:    "Recent Leads",
+  get_recent_tickets:  "Recent Tickets",
+};
 
 const SYSTEM_PROMPT = `You are the HotBot Studios AI Analyst — a data-grounded business intelligence assistant for the HotBot Studios dashboard.
 
@@ -227,73 +216,79 @@ RULES (non-negotiable):
 // ── POST: chat ────────────────────────────────────────────────────────────────
 
 type Message = { role: "user" | "assistant"; content: string };
-type ToolCall = { id: string; name: string; args: Record<string, unknown> };
 
 export async function POST(req: NextRequest) {
   const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as { messages: Message[] };
-  const history = (body.messages ?? []).slice(-20); // keep last 20 for context
+  const history = (body.messages ?? []).slice(-20);
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-  ];
+  const messages: Anthropic.MessageParam[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
 
   const toolsUsed: string[] = [];
 
   try {
-    // Agentic loop: keep calling until no more tool calls
     for (let iter = 0; iter < 5; iter++) {
-      const response = await openai().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages,
-        tools: TOOLS,
-        tool_choice: "auto",
-        temperature: 0.2,
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
         max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        tools: TOOLS,
+        messages,
       });
 
-      const msg = response.choices[0]?.message;
-      if (!msg) break;
-
-      messages.push(msg);
-
-      if (!msg.tool_calls || msg.tool_calls.length === 0) {
-        // Final text response
+      if (response.stop_reason === "end_turn") {
+        const textBlock = response.content.find((b) => b.type === "text");
         return NextResponse.json({
-          reply: msg.content ?? "",
+          reply: textBlock?.type === "text" ? textBlock.text : "",
           toolsUsed,
         });
       }
 
-      // Execute each tool call
-      const toolResults: OpenAI.Chat.ChatCompletionToolMessageParam[] = [];
-      for (const tc of msg.tool_calls) {
-        if (tc.type !== "function") continue;
-        const name = tc.function.name;
-        let args: Record<string, unknown> = {};
-        try { args = JSON.parse(tc.function.arguments) as Record<string, unknown>; } catch { /* ignore */ }
+      if (response.stop_reason === "tool_use") {
+        // Add assistant's response (including tool_use blocks) to messages
+        messages.push({ role: "assistant", content: response.content });
 
-        toolsUsed.push(name);
-        const call: ToolCall = { id: tc.id, name, args };
+        // Execute each tool call
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const block of response.content) {
+          if (block.type !== "tool_use") continue;
 
-        let result: unknown;
-        try {
-          if (call.name === "get_analytics")      result = await getAnalytics();
-          else if (call.name === "get_crm_summary") result = await getCrmSummary();
-          else if (call.name === "get_email_stats") result = await getEmailStats();
-          else if (call.name === "get_recent_leads") result = await getRecentLeads(Math.min((call.args.limit as number) ?? 10, 25));
-          else if (call.name === "get_recent_tickets") result = await getRecentTickets(Math.min((call.args.limit as number) ?? 10, 25));
-          else result = { error: "Unknown tool" };
-        } catch (err) {
-          result = { error: err instanceof Error ? err.message : "Tool error" };
+          const name = block.name;
+          const args = block.input as Record<string, unknown>;
+          toolsUsed.push(name);
+          const label = TOOL_LABELS[name] ?? name;
+          void label; // used for logging only
+
+          let result: unknown;
+          try {
+            if (name === "get_analytics")       result = await getAnalytics();
+            else if (name === "get_crm_summary")   result = await getCrmSummary();
+            else if (name === "get_email_stats")   result = await getEmailStats();
+            else if (name === "get_recent_leads")  result = await getRecentLeads(Math.min((args.limit as number) ?? 10, 25));
+            else if (name === "get_recent_tickets") result = await getRecentTickets(Math.min((args.limit as number) ?? 10, 25));
+            else result = { error: "Unknown tool" };
+          } catch (err) {
+            result = { error: err instanceof Error ? err.message : "Tool error" };
+          }
+
+          toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
         }
 
-        toolResults.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
+        messages.push({ role: "user", content: toolResults });
+        continue;
       }
-      messages.push(...toolResults);
+
+      // Any other stop reason — return final content
+      const textBlock = response.content.find((b) => b.type === "text");
+      return NextResponse.json({
+        reply: textBlock?.type === "text" ? textBlock.text : "",
+        toolsUsed,
+      });
     }
 
     return NextResponse.json({ reply: "I was unable to generate a response. Please try again.", toolsUsed });

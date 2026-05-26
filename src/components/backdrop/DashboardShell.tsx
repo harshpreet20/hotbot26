@@ -374,7 +374,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   function canSee(item: NavItem) {
     if (!item.roles) return true; // no restriction = all roles
-    if (!role) return true;       // role not loaded yet - show all (auth gate handles actual access)
+    if (!role) return false;      // hide restricted items while role is loading
     return item.roles.includes(role);
   }
 

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { ChatSession } from "@/types/dashboard";
 
 function getSecret() {
@@ -94,7 +93,7 @@ export default function ChatsPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex min-h-full">
         {/* Session list */}
         <div
@@ -296,6 +295,6 @@ export default function ChatsPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

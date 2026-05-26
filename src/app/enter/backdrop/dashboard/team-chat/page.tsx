@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { TeamMessage, TeamChannel } from "@/types/dashboard";
 
 function getSecret()   { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret")  || "" : ""; }
@@ -183,7 +182,7 @@ export default function TeamChatPage() {
   });
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex h-full overflow-hidden">
         {/* Channel sidebar */}
         <aside className="w-52 shrink-0 flex flex-col border-r" style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.01)" }}>
@@ -399,6 +398,6 @@ export default function TeamChatPage() {
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }

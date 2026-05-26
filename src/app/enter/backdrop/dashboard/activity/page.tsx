@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { AuditLog, Role } from "@/types/dashboard";
 
 function getSecret() {
@@ -78,7 +77,7 @@ export default function ActivityPage() {
   const roles = [...new Set(logs.map((l) => l.actorRole))].sort();
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
@@ -176,6 +175,6 @@ export default function ActivityPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

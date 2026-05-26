@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Ticket, TicketStatus } from "@/types/dashboard";
 
 function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
@@ -31,7 +30,7 @@ export default function TicketsPage() {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch("/api/dashboard/tickets", { headers: { Authorization: `Bearer ${secret}` } })
-      .then((r) => { if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; } return r.json(); })
+      .then((r) => { if (r.status === 401) { ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; } return r.json(); })
       .then((d) => { if (d) setTickets((d as { tickets: Ticket[] }).tickets); })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -49,7 +48,7 @@ export default function TicketsPage() {
   );
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -158,7 +157,7 @@ export default function TicketsPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }
 

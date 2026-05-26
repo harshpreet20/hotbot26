@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { User, Role, PendingUser } from "@/types/dashboard";
 
 function getSecret() {
@@ -366,7 +365,7 @@ export default function UsersPage() {
   const inputStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" };
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
@@ -885,6 +884,6 @@ export default function UsersPage() {
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { LogEntry, LogLevel } from "@/lib/logger";
 
 function getSecret() {
@@ -189,7 +188,7 @@ export default function LogsPage() {
   const EVENT_TABS = ["auth", "session", "all"];
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6 space-y-5">
 
         {/* Header */}
@@ -361,6 +360,6 @@ CREATE INDEX ON system_logs (event);`}</pre>
         </div>
 
       </div>
-    </DashboardShell>
+    </>
   );
 }

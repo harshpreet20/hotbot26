@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Invoice, InvoiceLineItem, InvoiceStatus, CRMTask } from "@/types/dashboard";
 
@@ -164,13 +163,13 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  if (loading) return <DashboardShell><div className="p-6 text-slate-500">Loading…</div></DashboardShell>;
+  if (loading) return <><div className="p-6 text-slate-500">Loading…</div></>;
   if (!invoice) return null;
 
   const sm = STATUS_META[status];
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6 max-w-3xl">
         <div className="flex items-center justify-between mb-7">
           <div>
@@ -374,7 +373,7 @@ export default function InvoiceDetailPage() {
       <div className="mt-6">
         <EntityEmailHistory entityType="invoice" entityId={invoice.id} />
       </div>
-    </DashboardShell>
+    </>
   );
 }
 

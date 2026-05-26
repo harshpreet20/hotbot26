@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { InvoiceLineItem } from "@/types/dashboard";
 
 function getSecret() {
@@ -112,7 +111,7 @@ export default function NewInvoicePage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6 max-w-3xl">
         <div className="flex items-center justify-between mb-7">
           <div>
@@ -325,7 +324,7 @@ export default function NewInvoicePage() {
           background: #1e293b;
         }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 

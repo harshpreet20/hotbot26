@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
 
@@ -40,7 +39,7 @@ export default function BroadcastsPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6 max-w-2xl">
         <div className="mb-6">
           <h1 className="text-white text-xl font-semibold">Feature Broadcast</h1>
@@ -103,6 +102,6 @@ export default function BroadcastsPage() {
           </button>
         </form>
       </div>
-    </DashboardShell>
+    </>
   );
 }
