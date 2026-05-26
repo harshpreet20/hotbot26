@@ -6,7 +6,7 @@ import type { Ticket, TicketComment, TicketStatus, TicketActivity, TicketPriorit
 
 function getNextTicketNumber(tickets: Ticket[]): string {
   const nums = tickets
-    .map((t) => parseInt(t.ticketNumber.replace(/\D/g, ""), 10))
+    .map((t) => parseInt((t.ticketNumber ?? "").replace(/\D/g, ""), 10))
     .filter((n) => !isNaN(n));
   const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
   return `TKT-${String(next).padStart(4, "0")}`;
