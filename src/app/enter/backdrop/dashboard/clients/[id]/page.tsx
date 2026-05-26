@@ -1,8 +1,41 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 import type { Client, ClientStatus, OnboardingStage, SubscriptionStatus, Invoice, Ticket, Project } from "@/types/dashboard";
+
+// ── Resource types ─────────────────────────────────────────────────────────────
+
+type ResourceCategory = "general" | "contract" | "design" | "report" | "deliverable" | "invoice" | "other";
+type ResourceVisibility = "internal" | "client";
+
+interface ClientResource {
+  id: string;
+  client_id: string;
+  project_id: string | null;
+  name: string;
+  description: string | null;
+  file_url: string;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string;
+  category: ResourceCategory;
+  uploaded_by: string;
+  uploaded_by_type: "team" | "client";
+  visibility: ResourceVisibility;
+  created_at: string;
+}
+
+const CATEGORY_COLORS: Record<ResourceCategory, { color: string; bg: string }> = {
+  general:     { color: "#94a3b8", bg: "rgba(148,163,184,0.12)" },
+  contract:    { color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
+  design:      { color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+  report:      { color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
+  deliverable: { color: "#38bdf8", bg: "rgba(56,189,248,0.12)"  },
+  invoice:     { color: "#fb923c", bg: "rgba(251,146,60,0.12)"  },
+  other:       { color: "#64748b", bg: "rgba(100,116,139,0.12)" },
+};
 
 function getToken() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -192,7 +225,23 @@ export default function ClientDetailPage() {
   const [tickets, setTickets]       = useState<Ticket[]>([]);
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [tab, setTab]               = useState<"overview" | "invoices" | "tickets" | "projects">("overview");
+  const [tab, setTab]               = useState<"overview" | "invoices" | "tickets" | "projects" | "resources">("overview");
+
+  // ── Resources state ──────────────────────────────────────────────────────────
+  const [resources, setResources]               = useState<ClientResource[]>([]);
+  const [resLoading, setResLoading]             = useState(false);
+  const [resError, setResError]                 = useState("");
+  const [uploading, setUploading]               = useState(false);
+  const [uploadError, setUploadError]           = useState("");
+  const [uploadSuccess, setUploadSuccess]       = useState("");
+  const [dragOver, setDragOver]                 = useState(false);
+  const [selectedFile, setSelectedFile]         = useState<File | null>(null);
+  const [resName, setResName]                   = useState("");
+  const [resDesc, setResDesc]                   = useState("");
+  const [resCategory, setResCategory]           = useState<ResourceCategory>("general");
+  const [resVisibility, setResVisibility]       = useState<ResourceVisibility>("client");
+  const [showUploadForm, setShowUploadForm]     = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [editing, setEditing]       = useState(false);
   const [editForm, setEditForm]     = useState<EditFormData | null>(null);
@@ -206,6 +255,77 @@ export default function ClientDetailPage() {
   const [inviteSuccess, setInviteSuccess] = useState("");
 
   const canWrite = ["admin", "super_admin", "manager", "sales"].includes(getRole());
+  const canDelete = ["admin", "super_admin"].includes(getRole());
+
+  const loadResources = useCallback(() => {
+    const token = getToken();
+    if (!token || !clientId) return;
+    setResLoading(true);
+    fetch(`/api/dashboard/resources?client_id=${clientId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.ok ? r.json() as Promise<{ resources: ClientResource[] }> : { resources: [] })
+      .then((d) => setResources(d.resources))
+      .catch(console.error)
+      .finally(() => setResLoading(false));
+  }, [clientId]);
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedFile || !resName.trim()) return;
+    setUploading(true); setUploadError(""); setUploadSuccess("");
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+      );
+      const ext = selectedFile.name.split(".").pop() ?? "";
+      const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${clientId}/${Date.now()}_${safeName}`;
+      const { error: storageErr } = await supabase.storage
+        .from("client-resources")
+        .upload(path, selectedFile, { contentType: selectedFile.type, upsert: false });
+      if (storageErr) { setUploadError(storageErr.message); return; }
+
+      const { data: urlData } = supabase.storage.from("client-resources").getPublicUrl(path);
+      const fileUrl = urlData.publicUrl;
+
+      const res = await fetch("/api/dashboard/resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          client_id: clientId,
+          name: resName.trim(),
+          description: resDesc.trim() || undefined,
+          file_url: fileUrl,
+          file_name: selectedFile.name,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type || `application/${ext}`,
+          category: resCategory,
+          visibility: resVisibility,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json() as { error?: string };
+        setUploadError(d.error ?? "Failed to save resource");
+        return;
+      }
+      setUploadSuccess("Resource uploaded successfully!");
+      setSelectedFile(null); setResName(""); setResDesc(""); setResCategory("general"); setResVisibility("client");
+      setShowUploadForm(false);
+      loadResources();
+      setTimeout(() => setUploadSuccess(""), 3000);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDeleteResource(id: string) {
+    if (!confirm("Delete this resource? This cannot be undone.")) return;
+    const token = getToken();
+    await fetch(`/api/dashboard/resources?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    loadResources();
+  }
 
   const load = useCallback(() => {
     const token = getToken();
@@ -250,6 +370,7 @@ export default function ClientDetailPage() {
   }, [router, clientId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (tab === "resources") loadResources(); }, [tab, loadResources]);
 
   // When client loads, also filter invoices/tickets by email
   const clientInvoices = client ? invoices.filter((inv) =>
@@ -455,7 +576,7 @@ export default function ClientDetailPage() {
 
             {/* Tabs */}
             <div className="flex gap-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-              {(["overview", "invoices", "tickets", "projects"] as const).map((t) => (
+              {(["overview", "invoices", "tickets", "projects", "resources"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -483,6 +604,12 @@ export default function ClientDetailPage() {
                     <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
                       style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80" }}>
                       {projects.length}
+                    </span>
+                  )}
+                  {t === "resources" && resources.length > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
+                      style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>
+                      {resources.length}
                     </span>
                   )}
                 </button>
@@ -664,6 +791,287 @@ export default function ClientDetailPage() {
                       </div>
                     );
                   })
+                )}
+              </div>
+            )}
+
+            {tab === "resources" && (
+              <div className="space-y-4">
+                {/* Header row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+                    Files and documents for this client.
+                  </p>
+                  {canWrite && (
+                    <button
+                      onClick={() => { setShowUploadForm((v) => !v); setUploadError(""); setUploadSuccess(""); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                        color: "#fff", background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                        border: "none", cursor: "pointer",
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      Upload File
+                    </button>
+                  )}
+                </div>
+
+                {uploadSuccess && (
+                  <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", color: "#34d399", fontSize: 13 }}>
+                    {uploadSuccess}
+                  </div>
+                )}
+
+                {/* Upload form */}
+                {showUploadForm && canWrite && (
+                  <form
+                    onSubmit={handleUpload}
+                    style={{
+                      padding: 20, borderRadius: 14,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                    }}
+                  >
+                    <p style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>Upload Resource</p>
+                    {uploadError && (
+                      <p style={{ margin: "0 0 12px", padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171", fontSize: 12 }}>
+                        {uploadError}
+                      </p>
+                    )}
+
+                    {/* Drag-drop zone */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault(); setDragOver(false);
+                        const f = e.dataTransfer.files[0];
+                        if (f) { setSelectedFile(f); if (!resName) setResName(f.name.replace(/\.[^.]+$/, "")); }
+                      }}
+                      style={{
+                        padding: "28px 20px", borderRadius: 10, textAlign: "center", cursor: "pointer",
+                        border: `2px dashed ${dragOver ? "#6366f1" : "rgba(255,255,255,0.12)"}`,
+                        background: dragOver ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.02)",
+                        marginBottom: 16, transition: "all 0.15s",
+                      }}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) { setSelectedFile(f); if (!resName) setResName(f.name.replace(/\.[^.]+$/, "")); }
+                        }}
+                      />
+                      {selectedFile ? (
+                        <div>
+                          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#a5b4fc" }}>{selectedFile.name}</p>
+                          <p style={{ margin: 0, fontSize: 11, color: "#64748b" }}>
+                            {selectedFile.size < 1024 * 1024 ? `${(selectedFile.size / 1024).toFixed(1)} KB` : `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`}
+                            {" · "}
+                            <span style={{ color: "#6366f1", cursor: "pointer" }}>Change file</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" style={{ margin: "0 auto 8px" }}>
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                          </svg>
+                          <p style={{ margin: "0 0 4px", fontSize: 13, color: "#94a3b8" }}>Drop file here or <span style={{ color: "#6366f1" }}>browse</span></p>
+                          <p style={{ margin: 0, fontSize: 11, color: "#475569" }}>Any file type up to 50 MB</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 6 }}>Display Name *</label>
+                        <input
+                          required
+                          value={resName}
+                          onChange={(e) => setResName(e.target.value)}
+                          placeholder="e.g. Project Contract"
+                          className="fi"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 6 }}>Category</label>
+                        <select value={resCategory} onChange={(e) => setResCategory(e.target.value as ResourceCategory)} className="fi">
+                          <option value="general">General</option>
+                          <option value="contract">Contract</option>
+                          <option value="design">Design</option>
+                          <option value="report">Report</option>
+                          <option value="deliverable">Deliverable</option>
+                          <option value="invoice">Invoice</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 6 }}>Description (optional)</label>
+                      <input
+                        value={resDesc}
+                        onChange={(e) => setResDesc(e.target.value)}
+                        placeholder="Brief description of this file…"
+                        className="fi"
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 8 }}>Visibility</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {(["client", "internal"] as const).map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setResVisibility(v)}
+                            style={{
+                              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+                              cursor: "pointer", border: "1px solid",
+                              color: resVisibility === v ? (v === "client" ? "#34d399" : "#f59e0b") : "#475569",
+                              background: resVisibility === v ? (v === "client" ? "rgba(52,211,153,0.1)" : "rgba(245,158,11,0.1)") : "rgba(255,255,255,0.03)",
+                              borderColor: resVisibility === v ? (v === "client" ? "rgba(52,211,153,0.3)" : "rgba(245,158,11,0.3)") : "rgba(255,255,255,0.1)",
+                            }}
+                          >
+                            {v === "client" ? "Client Visible" : "Internal Only"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        type="submit"
+                        disabled={uploading || !selectedFile}
+                        style={{
+                          flex: 1, padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                          color: "#fff", background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                          border: "none", cursor: uploading || !selectedFile ? "not-allowed" : "pointer",
+                          opacity: uploading || !selectedFile ? 0.6 : 1,
+                        }}
+                      >
+                        {uploading ? "Uploading…" : "Upload Resource"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowUploadForm(false); setSelectedFile(null); setResName(""); setResDesc(""); setUploadError(""); }}
+                        style={{
+                          padding: "9px 16px", borderRadius: 10, fontSize: 13, color: "#64748b",
+                          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Resource list */}
+                {resLoading ? (
+                  <p style={{ color: "#64748b", fontSize: 13, textAlign: "center", padding: "32px 0" }}>Loading…</p>
+                ) : resources.length === 0 ? (
+                  <div style={{
+                    padding: "48px 24px", borderRadius: 14, textAlign: "center",
+                    background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+                  }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
+                    <p style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 600, color: "#e2e8f0" }}>No resources yet</p>
+                    <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+                      Upload files to share with this client or keep internally.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {resources.map((r) => {
+                      const cat = CATEGORY_COLORS[r.category] ?? CATEGORY_COLORS.other;
+                      const sizeMB = r.file_size ? (r.file_size < 1024 * 1024 ? `${(r.file_size / 1024).toFixed(1)} KB` : `${(r.file_size / (1024 * 1024)).toFixed(1)} MB`) : "—";
+                      return (
+                        <div
+                          key={r.id}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 14,
+                            padding: "14px 16px", borderRadius: 12,
+                            background: "rgba(255,255,255,0.03)",
+                            border: "1px solid rgba(255,255,255,0.07)",
+                          }}
+                        >
+                          {/* File icon */}
+                          <div style={{ fontSize: 22, flexShrink: 0 }}>
+                            {r.mime_type?.includes("pdf") ? "📄"
+                              : r.mime_type?.includes("image") ? "🖼️"
+                              : r.mime_type?.includes("zip") ? "📦"
+                              : r.mime_type?.includes("video") ? "🎥"
+                              : r.mime_type?.includes("word") || r.mime_type?.includes("document") ? "📝"
+                              : "📎"}
+                          </div>
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>
+                                {r.name}
+                              </p>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, color: cat.color, background: cat.bg }}>
+                                {r.category}
+                              </span>
+                              <span style={{
+                                fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100,
+                                color: r.uploaded_by_type === "team" ? "#a5b4fc" : "#34d399",
+                                background: r.uploaded_by_type === "team" ? "rgba(165,180,252,0.12)" : "rgba(52,211,153,0.12)",
+                              }}>
+                                {r.uploaded_by_type === "team" ? "Team" : "Client"}
+                              </span>
+                              {r.visibility === "internal" && (
+                                <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, color: "#f59e0b", background: "rgba(245,158,11,0.12)" }}>
+                                  Internal
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#475569" }}>
+                              <span>{sizeMB}</span>
+                              <span>·</span>
+                              <span>{r.uploaded_by}</span>
+                              <span>·</span>
+                              <span>{fmtDate(r.created_at)}</span>
+                            </div>
+                          </div>
+                          {/* Actions */}
+                          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                            <a
+                              href={r.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+                                color: "#a5b4fc", background: "rgba(99,102,241,0.12)",
+                                border: "1px solid rgba(99,102,241,0.25)", textDecoration: "none",
+                              }}
+                            >
+                              ↓ Download
+                            </a>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteResource(r.id)}
+                                style={{
+                                  padding: "6px 10px", borderRadius: 8, fontSize: 12,
+                                  color: "#64748b", background: "rgba(255,255,255,0.04)",
+                                  border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer",
+                                }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}

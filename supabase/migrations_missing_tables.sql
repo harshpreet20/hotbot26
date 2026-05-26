@@ -618,6 +618,36 @@ ALTER TABLE ai_knowledge_base DISABLE ROW LEVEL SECURITY;
 -- But the old portal auth used customer_portal_tokens (created above, #21).
 
 
+-- ── 25. Client Resources (file/resource library per client) ──────────────────
+-- Referenced by: src/app/api/dashboard/resources/route.ts,
+--               src/app/api/customers/resources/route.ts
+
+CREATE TABLE IF NOT EXISTS client_resources (
+  id               TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  client_id        TEXT NOT NULL,                    -- FK → clients.client_id
+  project_id       TEXT,                             -- optional FK → projects.id
+  name             TEXT NOT NULL,
+  description      TEXT,
+  file_url         TEXT NOT NULL,
+  file_name        TEXT NOT NULL,
+  file_size        BIGINT,
+  mime_type        TEXT NOT NULL,
+  category         TEXT NOT NULL DEFAULT 'general' CHECK (category IN (
+    'general','contract','design','report','deliverable','invoice','other'
+  )),
+  uploaded_by      TEXT,
+  uploaded_by_type TEXT NOT NULL DEFAULT 'team' CHECK (uploaded_by_type IN ('team','client')),
+  visibility       TEXT NOT NULL DEFAULT 'client' CHECK (visibility IN ('internal','client')),
+  created_at       TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS client_resources_client_id_idx  ON client_resources(client_id);
+CREATE INDEX IF NOT EXISTS client_resources_project_id_idx ON client_resources(project_id);
+CREATE INDEX IF NOT EXISTS client_resources_created_at_idx ON client_resources(created_at DESC);
+
+ALTER TABLE client_resources DISABLE ROW LEVEL SECURITY;
+
+
 -- =============================================================================
 -- SUMMARY: Tables created by this migration
 -- =============================================================================
@@ -644,6 +674,7 @@ ALTER TABLE ai_knowledge_base DISABLE ROW LEVEL SECURITY;
 -- voice_transcripts       — Sarvam voice chat transcripts
 -- knowledge_base          — AI chat context entries
 -- ai_knowledge_base       — alias used by /api/dashboard/knowledge
+-- client_resources         — file/resource library per client (upload by team or client)
 -- =============================================================================
 -- Already in schema.sql (no action needed):
 -- users, sessions, pending_users, leads, contacts, newsletter, callbacks,
