@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type {
   CRMTask, TaskPriority, TaskStatus, LinkedEntityType,
   Lead, Ticket, Client, Invoice, CallbackRequest, NewsletterSubscriber,
@@ -116,7 +115,7 @@ export default function TasksPage() {
     if (!silent) setLoading(true);
     fetch("/api/dashboard/tasks", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) { ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; }
         return r.json();
       })
       .then((d) => {
@@ -346,7 +345,7 @@ export default function TasksPage() {
   const overdueCount = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date() && !["done","cancelled"].includes(t.status)).length;
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
 
         {/* ── header ── */}
@@ -769,7 +768,7 @@ export default function TasksPage() {
         .fi:focus { border-color:rgba(99,102,241,0.5); }
         option { background:#0f1626; color:#e2e8f0; }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 

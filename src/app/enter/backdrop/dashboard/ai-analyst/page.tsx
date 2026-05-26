@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -171,7 +170,7 @@ export default function AiAnalystPage() {
   const isEmpty = messages.length === 0;
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col h-full">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b shrink-0"
@@ -284,6 +283,6 @@ export default function AiAnalystPage() {
           <p className="text-slate-700 text-[10px] text-center mt-2">Enter to send · Shift+Enter for new line · All answers are grounded in live data</p>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

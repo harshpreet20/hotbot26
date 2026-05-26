@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { NewsletterSubscriber } from "@/types/dashboard";
 
 function getToken() {
@@ -120,7 +119,7 @@ export default function NewsletterPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* ── Header ── */}
         <header className="flex items-center justify-between px-6 py-4 border-b flex-wrap gap-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -351,6 +350,6 @@ export default function NewsletterPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

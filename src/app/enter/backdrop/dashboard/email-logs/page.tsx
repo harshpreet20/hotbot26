@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -183,7 +182,7 @@ export default function EmailLogsPage() {
   };
 
   return (
-    <DashboardShell>
+    <>
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
 
         {/* Header */}
@@ -418,6 +417,6 @@ export default function EmailLogsPage() {
         )}
 
       </div>
-    </DashboardShell>
+    </>
   );
 }

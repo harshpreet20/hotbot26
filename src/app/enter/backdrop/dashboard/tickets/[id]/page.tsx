@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Ticket, TicketStatus, TicketPriority, TicketCategory, TicketComment, TicketActivity } from "@/types/dashboard";
 
 function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
@@ -71,7 +70,7 @@ export default function TicketDetailPage() {
     if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch(`/api/dashboard/tickets?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) { ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; }
         return r.json();
       })
       .then((d) => {
@@ -166,20 +165,20 @@ export default function TicketDetailPage() {
 
   if (loading) {
     return (
-      <DashboardShell>
+      <>
         <div className="flex items-center justify-center h-full text-slate-500 text-sm py-24">Loading…</div>
-      </DashboardShell>
+      </>
     );
   }
 
   if (!ticket) {
     return (
-      <DashboardShell>
+      <>
         <div className="flex flex-col items-center justify-center h-full py-24 gap-4">
           <p className="text-slate-500 text-sm">Ticket not found.</p>
           <Link href="/enter/backdrop/dashboard/tickets" className="text-indigo-400 text-sm hover:text-indigo-300">← Back to tickets</Link>
         </div>
-      </DashboardShell>
+      </>
     );
   }
 
@@ -188,7 +187,7 @@ export default function TicketDetailPage() {
   const isClosed = ticket.status === "resolved" || ticket.status === "closed";
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex min-h-full">
         {/* ── Main Content ── */}
         <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
@@ -470,7 +469,7 @@ export default function TicketDetailPage() {
           </SidebarField>
         </aside>
       </div>
-    </DashboardShell>
+    </>
   );
 }
 

@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Client, ClientStatus, OnboardingStage, SubscriptionStatus, Invoice, Ticket, Project } from "@/types/dashboard";
 
 function getToken() {
@@ -217,7 +216,7 @@ export default function ClientDetailPage() {
     fetch(`/api/dashboard/clients/${clientId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => {
         if (r.status === 401) {
-          sessionStorage.clear();
+          ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k));
           router.replace("/enter/backdrop");
           return null;
         }
@@ -354,14 +353,14 @@ export default function ClientDetailPage() {
 
   if (loading) {
     return (
-      <DashboardShell>
+      <>
         <div className="flex items-center justify-center py-32">
           <svg className="animate-spin h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
         </div>
-      </DashboardShell>
+      </>
     );
   }
 
@@ -371,7 +370,7 @@ export default function ClientDetailPage() {
   const sm = STATUS_META[client.status];
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Breadcrumb */}
         <header className="flex items-center gap-2 px-6 py-3 border-b text-xs text-slate-500" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -916,7 +915,7 @@ export default function ClientDetailPage() {
         .fi:focus { border-color: rgba(99,102,241,0.5); }
         option { background: #0f1626; color: #e2e8f0; }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 

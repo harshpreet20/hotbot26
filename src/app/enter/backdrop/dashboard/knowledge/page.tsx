@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { KnowledgeEntry } from "@/types/dashboard";
 
 function getToken() {
@@ -157,19 +156,19 @@ export default function KnowledgePage() {
 
   if (accessDenied) {
     return (
-      <DashboardShell>
+      <>
         <div className="flex items-center justify-center min-h-full py-32">
           <div className="text-center">
             <p className="text-red-400 text-sm font-medium">Access denied</p>
             <p className="text-slate-600 text-xs mt-1">Your role does not have permission to view this page.</p>
           </div>
         </div>
-      </DashboardShell>
+      </>
     );
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header
@@ -391,7 +390,7 @@ export default function KnowledgePage() {
         .fi:focus { border-color: rgba(99,102,241,0.5); }
         option { background: #0f1626; color: #e2e8f0; }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 

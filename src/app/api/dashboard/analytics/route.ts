@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ── Helper: get ISO date string N days ago ────────────────────────────────────
 function daysAgo(n: number): string {
@@ -379,7 +379,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const { overview, timeseries = [], topPages = [], sources = [], devices = [], topEvents = [] } = body;
 
@@ -442,17 +442,14 @@ Rules:
 - sections.recommendations: 3-5 concrete, prioritised action items`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an expert web analytics consultant. Always respond with valid JSON only, no markdown fences." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.3,
+    const completion = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 1200,
+      system: "You are an expert web analytics consultant. Always respond with valid JSON only, no markdown fences.",
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const raw = completion.content[0]?.type === "text" ? completion.content[0].text : "{}";
     let parsed: {
       healthScore?: number;
       flags?: string[];

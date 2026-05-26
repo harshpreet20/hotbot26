@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Lead, LeadStatus } from "@/types/dashboard";
 
 function getSecret() {
@@ -294,7 +293,7 @@ export default function LeadsPage() {
   const inputStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" };
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -644,6 +643,6 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }

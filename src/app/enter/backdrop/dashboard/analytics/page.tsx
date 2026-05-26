@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 // ── Style constants ────────────────────────────────────────────────────────────
 
@@ -717,7 +716,7 @@ export default function AnalyticsPage() {
   const liveLabel = `Last updated ${new Date(liveTs).toLocaleTimeString()}`;
 
   return (
-    <DashboardShell>
+    <>
       <div style={{ padding: "24px 28px", maxWidth: 1200 }}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -1101,6 +1100,6 @@ export default function AnalyticsPage() {
         @keyframes spin  { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }

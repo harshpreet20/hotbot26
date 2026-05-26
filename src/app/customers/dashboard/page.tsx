@@ -2,471 +2,129 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 
-interface ClientUser {
-  email: string;
-  name: string;
-  role: string;
-  client_id: string;
-  avatar_url?: string;
-}
+interface StatCardProps { label: string; value: string; href: string; color: string; icon: React.ReactNode; }
 
-interface Client {
-  name: string;
-  client_id: string;
-  account_manager?: string;
-  subscription_status?: string;
-}
-
-interface Project {
-  id: string;
-  project_number: string;
-  name: string;
-  status: string;
-  stage?: string;
-  progress: number;
-  target_date?: string;
-}
-
-interface Update {
-  id: string;
-  type: string;
-  title: string;
-  content: string;
-  author_name: string;
-  created_at: string;
-}
-
-const UPDATE_ICONS: Record<string, string> = {
-  deployment:       "🚀",
-  milestone:        "✅",
-  approval_needed:  "🎨",
-  blocker:          "⚠️",
-  sprint_summary:   "📋",
-  update:           "💬",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  active:     "#22c55e",
-  completed:  "#6366f1",
-  on_hold:    "#f59e0b",
-  review:     "#3b82f6",
-  planning:   "#8b5cf6",
-};
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m    = Math.floor(diff / 60000);
-  if (m < 1)   return "just now";
-  if (m < 60)  return `${m}m ago`;
-  const h    = Math.floor(m / 60);
-  if (h < 24)  return `${h}h ago`;
-  const d    = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
-function Initials({ name }: { name: string }) {
-  const parts = name.split(" ");
-  const init  = parts.length >= 2 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
+function StatCard({ label, value, href, color, icon }: StatCardProps) {
   return (
-    <div
-      style={{
-        width: 32, height: 32,
-        borderRadius: "50%",
-        background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 12, fontWeight: 700, color: "#fff",
-        flexShrink: 0,
-      }}
-    >
-      {init.toUpperCase()}
-    </div>
+    <Link href={href}
+      className="block rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.03]"
+      style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}18`, color }}>
+          {icon}
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
+      </div>
+      <p className="text-3xl font-bold text-white tabular-nums">{value}</p>
+      <p className="text-slate-500 text-sm mt-1">{label}</p>
+    </Link>
   );
 }
 
-const NAV_ITEMS = [
-  { label: "Dashboard",      href: "/customers/dashboard",      icon: "⊞" },
-  { label: "Projects",       href: "/customers/projects",        icon: "◈" },
-  { label: "Invoices",       href: "/customers/invoices",        icon: "◎" },
-  { label: "Support",        href: "/customers/tickets",         icon: "◉" },
-  { label: "Notifications",  href: "/customers/notifications",   icon: "◻" },
-];
+interface Stats { openTickets: number; totalTasks: number; pendingTasks: number; }
 
-export default function CustomerDashboard() {
+export default function CustomerOverviewPage() {
   const router = useRouter();
-  const [user, setUser]         = useState<ClientUser | null>(null);
-  const [client, setClient]     = useState<Client | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [recentUpdates, setRecentUpdates] = useState<Update[]>([]);
-  const [tickets, setTickets]   = useState<{ status: string }[]>([]);
-  const [invoices, setInvoices] = useState<{ status: string; amount: number; currency: string }[]>([]);
-  const [notifCount, setNotifCount] = useState(0);
-  const [loading, setLoading]   = useState(true);
-  const [signingOut, setSigningOut] = useState(false);
+  const [clientName, setClientName] = useState("");
+  const [stats, setStats] = useState<Stats>({ openTickets: 0, totalTasks: 0, pendingTasks: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/customers/me").then((r) => r.ok ? r.json() : null),
-      fetch("/api/customers/projects").then((r) => r.ok ? r.json() : null),
-      fetch("/api/customers/tickets").then((r) => r.ok ? r.json() : null),
-      fetch("/api/customers/notifications").then((r) => r.ok ? r.json() : null),
-      fetch("/api/customers/invoices").then((r) => r.ok ? r.json() : null),
-    ]).then(([meData, projData, ticketData, notifData, invData]) => {
-      if (!meData) { router.replace("/customers"); return; }
-      setUser(meData.user);
-      setClient(meData.client);
-      const projs: Project[] = projData?.projects ?? [];
-      setProjects(projs);
-      setTickets(ticketData?.tickets ?? []);
-      setInvoices(invData?.invoices ?? []);
-      const notifications = notifData?.notifications ?? [];
-      setNotifCount(notifications.filter((n: { read_at: string | null }) => !n.read_at).length);
-      setLoading(false);
-    }).catch(() => {
-      router.replace("/customers");
-    });
+    async function fetchData() {
+      try {
+        const [meRes, ticketsRes, tasksRes] = await Promise.all([
+          fetch("/api/customers/me"),
+          fetch("/api/customers/tickets"),
+          fetch("/api/customers/tasks"),
+        ]);
+
+        if (!meRes.ok) { router.replace("/customers"); return; }
+
+        const meData = await meRes.json() as { user?: { name?: string } };
+        setClientName(meData.user?.name?.split(" ")[0] ?? "");
+
+        const ticketsData = ticketsRes.ok ? await ticketsRes.json() as { tickets?: Array<{ status: string }> } : { tickets: [] };
+        const tasksData   = tasksRes.ok  ? await tasksRes.json()   as { tasks?:   Array<{ status: string }> } : { tasks: [] };
+
+        const tickets = ticketsData.tickets ?? [];
+        const tasks   = tasksData.tasks     ?? [];
+
+        setStats({
+          openTickets:  tickets.filter((t) => t.status === "open" || t.status === "in_progress").length,
+          totalTasks:   tasks.length,
+          pendingTasks: tasks.filter((r) => r.status === "pending" || r.status === "in_progress").length,
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    void fetchData();
   }, [router]);
 
-  // Fetch recent updates across projects
-  useEffect(() => {
-    if (projects.length === 0) return;
-    // Fetch from first active project for feed
-    const activeProject = projects.find((p) => p.status === "active") ?? projects[0];
-    fetch(`/api/customers/projects/${activeProject.id}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d?.updates) setRecentUpdates(d.updates.slice(0, 5));
-      })
-      .catch(() => {});
-  }, [projects]);
-
-  async function signOut() {
-    setSigningOut(true);
-    await fetch("/api/customers/auth/logout", { method: "POST" });
-    router.replace("/customers");
-  }
-
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const activeProjects = projects.filter((p) => p.status === "active").length;
-  const openTickets    = tickets.filter((t: { status: string }) => t.status === "open").length;
-  const unpaidInvoices = invoices.filter((i) => i.status === "unpaid" || i.status === "overdue");
-  const totalDues      = unpaidInvoices.reduce((s, i) => s + (i.amount ?? 0), 0);
-  const currency       = invoices[0]?.currency ?? "INR";
-
-  const sidebarStyle: React.CSSProperties = {
-    width: 240,
-    flexShrink: 0,
-    background: "rgba(255,255,255,0.02)",
-    borderRight: "1px solid rgba(255,255,255,0.06)",
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-    position: "sticky",
-    top: 0,
-  };
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0f" }}>
-      {/* Sidebar */}
-      <aside style={sidebarStyle}>
-        {/* Logo */}
-        <div style={{ padding: "24px 20px 16px" }}>
-          <Image src="/logos/brand-logo.png" alt="HotBot Studios" width={120} height={30} style={{ objectFit: "contain" }} />
+    <div className="p-6">
+      <div className="mb-7">
+        <h1 className="text-white text-xl font-semibold">{greeting}{clientName ? `, ${clientName}` : ""}</h1>
+        <p className="text-slate-500 text-sm mt-1">Welcome to your HotBot Studios client portal.</p>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <svg className="animate-spin h-6 w-6 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
         </div>
-
-        {/* Client badge */}
-        {client && (
-          <div style={{ margin: "0 12px 20px", padding: "12px 14px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12 }}>
-            <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{client.name}</p>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", background: "rgba(99,102,241,0.15)", padding: "2px 8px", borderRadius: 100 }}>
-              {client.client_id}
-            </span>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <StatCard label="Open Tickets" value={String(stats.openTickets)} href="/customers/tickets" color="#6366f1"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 9a3 3 0 010-6h20a3 3 0 010 6"/><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6"/></svg>}
+            />
+            <StatCard label="Total Tasks" value={String(stats.totalTasks)} href="/customers/tasks" color="#22c55e"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+            />
+            <StatCard label="Pending Tasks" value={String(stats.pendingTasks)} href="/customers/tasks" color="#f59e0b"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+            />
           </div>
-        )}
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "0 8px" }}>
-          {NAV_ITEMS.map((item) => {
-            const isActive = typeof window !== "undefined" && window.location.pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "9px 12px",
-                  borderRadius: 9,
-                  marginBottom: 2,
-                  color: isActive ? "#fff" : "#94a3b8",
-                  background: isActive ? "rgba(99,102,241,0.15)" : "transparent",
-                  textDecoration: "none",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  transition: "all 0.1s",
-                }}
-              >
-                <span style={{ fontSize: 15 }}>{item.icon}</span>
-                {item.label}
-                {item.label === "Notifications" && notifCount > 0 && (
-                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#ef4444", color: "#fff", padding: "1px 6px", borderRadius: 100 }}>
-                    {notifCount}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Account manager card */}
-        {client?.account_manager && (
-          <div style={{ margin: "0 12px 12px", padding: "12px 14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12 }}>
-            <p style={{ margin: "0 0 4px", fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>Your Manager</p>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "#e2e8f0" }}>{client.account_manager}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <QuickLink href="/customers/tasks" title="Submit a Task Request"
+              desc="Start a new website, app, content, or automation project with us." color="#6366f1" />
+            <QuickLink href="/customers/tickets" title="Open a Support Ticket"
+              desc="Report an issue, request changes, or get help from our team." color="#818cf8" />
+            <QuickLink href="/customers/projects" title="View Your Projects"
+              desc="Track progress, updates, and milestones on your active projects." color="#22c55e" />
+            <QuickLink href="/customers/invoices" title="View Invoices"
+              desc="Check your invoices, payment history, and outstanding balances." color="#f59e0b" />
           </div>
-        )}
-
-        {/* Sign out */}
-        <div style={{ padding: "0 8px 20px" }}>
-          <button
-            onClick={signOut}
-            disabled={signingOut}
-            style={{
-              width: "100%",
-              padding: "9px 12px",
-              background: "none",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 9,
-              color: "#64748b",
-              fontSize: 13,
-              cursor: "pointer",
-              textAlign: "left",
-              transition: "all 0.1s",
-            }}
-          >
-            {signingOut ? "Signing out…" : "← Sign Out"}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main style={{ flex: 1, padding: "32px 40px", overflow: "auto" }}>
-        {loading ? (
-          <div style={{ color: "#64748b", fontSize: 14, textAlign: "center", paddingTop: 80 }}>Loading…</div>
-        ) : (
-          <>
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
-              <div>
-                <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 700, color: "#fff" }}>
-                  {greeting()}, {user?.name?.split(" ")[0] ?? "there"} 👋
-                </h1>
-                <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-                  Here&apos;s what&apos;s happening with your projects.
-                </p>
-              </div>
-              <Link
-                href="/customers/notifications"
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#94a3b8",
-                  textDecoration: "none",
-                  fontSize: 18,
-                }}
-              >
-                🔔
-                {notifCount > 0 && (
-                  <span style={{
-                    position: "absolute",
-                    top: -4,
-                    right: -4,
-                    width: 18,
-                    height: 18,
-                    background: "#ef4444",
-                    borderRadius: "50%",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
-                    {notifCount > 9 ? "9+" : notifCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-
-            {/* Summary cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
-              <SummaryCard label="Active Projects" value={String(activeProjects)} color="#22c55e" icon="◈" />
-              <SummaryCard label="Open Tickets"    value={String(openTickets)}    color="#f59e0b" icon="◉" />
-              <SummaryCard label="Unpaid Invoices" value={String(unpaidInvoices.length)} color={unpaidInvoices.length > 0 ? "#ef4444" : "#22c55e"} icon="◎" />
-              <SummaryCard label="Total Dues"      value={totalDues > 0 ? `${currency === "INR" ? "₹" : "$"}${totalDues.toLocaleString()}` : "Clear"} color={totalDues > 0 ? "#ef4444" : "#22c55e"} icon="⊕" />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
-              {/* Recent updates feed */}
-              <div>
-                <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600, color: "#e2e8f0" }}>Recent Updates</h2>
-                {recentUpdates.length === 0 && projects.length === 0 ? (
-                  <div style={{ padding: "32px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, color: "#64748b", fontSize: 13, textAlign: "center" }}>
-                    No projects yet. Your account manager will set things up shortly.
-                  </div>
-                ) : recentUpdates.length === 0 ? (
-                  <div style={{ padding: "32px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, color: "#64748b", fontSize: 13, textAlign: "center" }}>
-                    No updates yet. Check back soon.
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {recentUpdates.map((upd) => (
-                      <div
-                        key={upd.id}
-                        style={{
-                          padding: "16px 20px",
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.07)",
-                          borderRadius: 14,
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>
-                            {UPDATE_ICONS[upd.type] ?? "💬"}
-                          </span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>{upd.title}</p>
-                            <p style={{ margin: "0 0 8px", fontSize: 13, color: "#94a3b8", lineHeight: 1.6, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                              {upd.content}
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <Initials name={upd.author_name || "Team"} />
-                              <span style={{ fontSize: 12, color: "#64748b" }}>{upd.author_name}</span>
-                              <span style={{ fontSize: 12, color: "#475569" }}>·</span>
-                              <span style={{ fontSize: 12, color: "#475569" }}>{timeAgo(upd.created_at)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right panel */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* Projects list */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Your Projects</h3>
-                    <Link href="/customers/projects" style={{ fontSize: 12, color: "#6366f1", textDecoration: "none" }}>View all →</Link>
-                  </div>
-                  {projects.slice(0, 4).map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/customers/projects/${p.id}`}
-                      style={{ display: "block", textDecoration: "none", marginBottom: 12 }}
-                    >
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: "#e2e8f0" }}>{p.name}</span>
-                          <span style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: STATUS_COLORS[p.status] ?? "#6366f1",
-                            background: `${STATUS_COLORS[p.status] ?? "#6366f1"}18`,
-                            padding: "2px 7px",
-                            borderRadius: 100,
-                            textTransform: "capitalize",
-                          }}>
-                            {p.status}
-                          </span>
-                        </div>
-                        <div style={{ height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${p.progress ?? 0}%`, background: "#6366f1", borderRadius: 10, transition: "width 0.3s" }} />
-                        </div>
-                        <span style={{ fontSize: 11, color: "#64748b" }}>{p.progress ?? 0}% complete</span>
-                      </div>
-                    </Link>
-                  ))}
-                  {projects.length === 0 && (
-                    <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>No projects yet.</p>
-                  )}
-                </div>
-
-                {/* Quick actions */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px" }}>
-                  <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Quick Actions</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <Link href="/customers/tickets" style={{
-                      display: "block", padding: "10px 14px",
-                      background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)",
-                      borderRadius: 10, color: "#a5b4fc", fontSize: 13, fontWeight: 500,
-                      textDecoration: "none",
-                    }}>
-                      + New Support Ticket
-                    </Link>
-                    <Link href="/customers/tasks" style={{
-                      display: "block", padding: "10px 14px",
-                      background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)",
-                      borderRadius: 10, color: "#86efac", fontSize: 13, fontWeight: 500,
-                      textDecoration: "none",
-                    }}>
-                      + New Task Request
-                    </Link>
-                    <Link href="/customers/invoices" style={{
-                      display: "block", padding: "10px 14px",
-                      background: unpaidInvoices.length > 0 ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.03)",
-                      border: unpaidInvoices.length > 0 ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: 10, color: unpaidInvoices.length > 0 ? "#fca5a5" : "#94a3b8", fontSize: 13, fontWeight: 500,
-                      textDecoration: "none",
-                    }}>
-                      {unpaidInvoices.length > 0 ? `⚠ ${unpaidInvoices.length} Unpaid Invoice${unpaidInvoices.length > 1 ? "s" : ""}` : "View Invoices"}
-                    </Link>
-                    {client?.account_manager && (
-                      <a href={`mailto:${client.account_manager}`} style={{
-                        display: "block", padding: "10px 14px",
-                        background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: 10, color: "#94a3b8", fontSize: 13, fontWeight: 500,
-                        textDecoration: "none",
-                      }}>
-                        Contact Manager
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </main>
+        </>
+      )}
     </div>
   );
 }
 
-function SummaryCard({ label, value, color, icon }: { label: string; value: string; color: string; icon: string }) {
+function QuickLink({ href, title, desc, color }: { href: string; title: string; desc: string; color: string }) {
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "20px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 16, color: "#475569" }}>{icon}</span>
+    <Link href={href}
+      className="block rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.03]"
+      style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium mb-1" style={{ color }}>{title}</p>
+          <p className="text-slate-500 text-xs leading-relaxed">{desc}</p>
+        </div>
+        <svg className="shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
       </div>
-      <p style={{ margin: 0, fontSize: 26, fontWeight: 700, color }}>{value}</p>
-    </div>
+    </Link>
   );
 }

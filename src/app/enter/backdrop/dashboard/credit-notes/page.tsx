@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -88,7 +87,7 @@ export default function CreditNotesPage() {
     fetch("/api/dashboard/credit-notes", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
         if (r.status === 401) {
-          sessionStorage.clear();
+          ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k));
           router.replace("/enter/backdrop");
           return null;
         }
@@ -188,7 +187,7 @@ export default function CreditNotesPage() {
   });
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -607,7 +606,7 @@ export default function CreditNotesPage() {
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }
 

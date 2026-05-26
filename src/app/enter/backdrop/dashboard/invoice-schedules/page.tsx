@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
 function getSecret() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -168,7 +167,7 @@ export default function InvoiceSchedulesPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div className="flex items-center gap-4">
@@ -313,7 +312,7 @@ export default function InvoiceSchedulesPage() {
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }
 

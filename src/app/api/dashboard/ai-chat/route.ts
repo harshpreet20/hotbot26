@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
-import OpenAI from "openai";
-
-function openai() {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("OPENAI_API_KEY is not set");
-  return new OpenAI({ apiKey: key });
-}
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -41,10 +34,7 @@ async function getAnalytics() {
     const p = pv.page_path as string;
     pageCounts[p] = (pageCounts[p] ?? 0) + 1;
   }
-  const topPages = Object.entries(pageCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([page, views]) => ({ page, views }));
+  const topPages = Object.entries(pageCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([page, views]) => ({ page, views }));
 
   const eventCounts: Record<string, number> = {};
   for (const ev of events) {
@@ -115,18 +105,13 @@ async function getCrmSummary() {
     leads: { total: leads.length, byStatus: countBy(leads, "status") },
     tickets: { total: tickets.length, byStatus: countBy(tickets, "status"), byPriority: countBy(tickets, "priority") },
     callbacks: { total: callbacks.length, byStatus: countBy(callbacks, "status") },
-    chats: {
-      total: chats.length,
-      needsHuman: chats.filter((c) => c.needs_human).length,
-      agentHandled: chats.filter((c) => c.agent_username).length,
-    },
+    chats: { total: chats.length, needsHuman: chats.filter((c) => c.needs_human).length, agentHandled: chats.filter((c) => c.agent_username).length },
   };
 }
 
 async function getEmailStats() {
   const client = sb();
   const since = daysAgo(30);
-
   const { data } = await client.from("email_logs").select("status, email_type, created_at").gte("created_at", since);
   const rows = data ?? [];
 
@@ -135,11 +120,9 @@ async function getEmailStats() {
     for (const r of rows) { const v = (r[key as keyof typeof r] as string) ?? "unknown"; out[v] = (out[v] ?? 0) + 1; }
     return out;
   }
-
   const total = rows.length;
   const byStatus = countBy("status");
   const byType = countBy("email_type");
-
   return {
     period: "last 30 days",
     total,
@@ -161,144 +144,159 @@ async function getRecentTickets(limit = 10) {
   return data ?? [];
 }
 
-// ── Tool definitions ──────────────────────────────────────────────────────────
+// ── Local intelligence: intent detection & response formatting ─────────────
 
-const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "get_analytics",
-      description: "Fetch website analytics for the last 30 days: visitors, pageviews, bounce rate, avg session duration, top pages, top events, devices, countries, referrers.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_crm_summary",
-      description: "Fetch CRM summary for the last 30 days: leads, tickets, callbacks, and live chat statistics with status breakdowns.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_email_stats",
-      description: "Fetch email marketing and transactional email statistics for the last 30 days: delivery, open, bounce rates, breakdown by type.",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_recent_leads",
-      description: "Fetch the most recent leads from the CRM.",
-      parameters: {
-        type: "object",
-        properties: { limit: { type: "number", description: "Number of leads to return (default 10, max 25)" } },
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_recent_tickets",
-      description: "Fetch the most recent support tickets.",
-      parameters: {
-        type: "object",
-        properties: { limit: { type: "number", description: "Number of tickets to return (default 10, max 25)" } },
-      },
-    },
-  },
-];
+function detectIntent(query: string): string[] {
+  const q = query.toLowerCase();
+  const intents: string[] = [];
 
-const SYSTEM_PROMPT = `You are the HotBot Studios AI Analyst — a data-grounded business intelligence assistant for the HotBot Studios dashboard.
+  if (/\b(analytic|traffic|visitor|session|pageview|page view|bounce|referr|source|device|country|top page)\b/.test(q)) intents.push("analytics");
+  if (/\b(lead|crm|sales|callback|chat|ticket|support)\b/.test(q)) intents.push("crm");
+  if (/\b(email|mail|deliver|open rate|bounce rate|newsletter|broadcast)\b/.test(q)) intents.push("email");
+  if (/\b(recent lead|new lead|latest lead|lead list)\b/.test(q)) intents.push("leads");
+  if (/\b(recent ticket|open ticket|latest ticket|ticket list)\b/.test(q)) intents.push("tickets");
+  if (/\b(overview|summary|all|everything|dashboard|how.*doing|strategic|recommend)\b/.test(q)) {
+    intents.push("analytics", "crm", "email");
+  }
 
-RULES (non-negotiable):
-1. ALWAYS call the appropriate tool(s) before answering any factual question. Never answer from memory or training data.
-2. NEVER hallucinate numbers, names, or metrics. If data is missing, say so explicitly.
-3. Only answer questions about HotBot Studios business data: analytics, CRM, email, leads, tickets, callbacks, chats.
-4. For off-topic requests (coding help, general knowledge, news, etc.), respond: "I can only help with HotBot Studios business metrics and strategy. Ask me about your analytics, CRM, email performance, or growth strategy."
-5. You CAN help with strategy — but only when grounded in actual fetched data. Suggest concrete actions based on the numbers.
-6. Be concise, clear, and professional. Use bullet points for lists. Bold key metrics.
-7. Never mention competitors, make promises, or give legal/financial advice.
-8. If you cannot answer confidently from the tool data, say so — never guess.`;
+  return [...new Set(intents)];
+}
 
-// ── POST: chat ────────────────────────────────────────────────────────────────
+function fmt(n: number, unit = "") {
+  return `**${n.toLocaleString()}**${unit ? " " + unit : ""}`;
+}
+
+function formatAnalytics(d: Awaited<ReturnType<typeof getAnalytics>>): string {
+  const topPages = d.topPages.slice(0, 5).map((p, i) => `  ${i + 1}. \`${p.page}\` — ${p.views} views`).join("\n");
+  const topRefs  = d.topReferrers.slice(0, 5).map((r, i) => `  ${i + 1}. ${r.source} — ${r.count} sessions`).join("\n");
+  const devices  = d.devices.map((dv) => `${dv.device}: ${dv.count}`).join(", ");
+  const topCountries = d.topCountries.slice(0, 5).map((c) => `${c.country}: ${c.count}`).join(", ");
+
+  return `### Website Analytics (last 30 days)
+
+- **Visitors / Sessions:** ${fmt(d.visitors)}
+- **Pageviews:** ${fmt(d.pageviews)}
+- **Bounce Rate:** ${fmt(d.bounceRate, "%")}
+- **Avg Session Duration:** ${fmt(d.avgDurationSec, "sec")}
+
+**Top Pages:**
+${topPages || "  No data"}
+
+**Traffic Sources:**
+${topRefs || "  No data"}
+
+**Devices:** ${devices || "No data"}
+
+**Top Countries:** ${topCountries || "No data"}`;
+}
+
+function formatCrm(d: Awaited<ReturnType<typeof getCrmSummary>>): string {
+  const leadStatuses = Object.entries(d.leads.byStatus).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const ticketStatuses = Object.entries(d.tickets.byStatus).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const ticketPriorities = Object.entries(d.tickets.byPriority).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const callbackStatuses = Object.entries(d.callbacks.byStatus).map(([k, v]) => `${k}: ${v}`).join(", ");
+
+  return `### CRM Summary (last 30 days)
+
+**Leads:** ${fmt(d.leads.total)} total
+${leadStatuses ? `  Status: ${leadStatuses}` : ""}
+
+**Tickets:** ${fmt(d.tickets.total)} total
+${ticketStatuses ? `  Status: ${ticketStatuses}` : ""}
+${ticketPriorities ? `  Priority: ${ticketPriorities}` : ""}
+
+**Callbacks:** ${fmt(d.callbacks.total)} total${callbackStatuses ? ` — ${callbackStatuses}` : ""}
+
+**Live Chats:** ${fmt(d.chats.total)} total — ${fmt(d.chats.needsHuman)} escalated to human, ${fmt(d.chats.agentHandled)} agent-handled`;
+}
+
+function formatEmail(d: Awaited<ReturnType<typeof getEmailStats>>): string {
+  const byType = Object.entries(d.byType).map(([k, v]) => `${k}: ${v}`).join(", ");
+  return `### Email Stats (last 30 days)
+
+- **Total emails sent:** ${fmt(d.total)}
+- **Delivery Rate:** ${fmt(d.deliveryRate, "%")}
+- **Open Rate:** ${fmt(d.openRate, "%")}
+- **Bounce Rate:** ${fmt(d.bounceRate, "%")}
+${byType ? `\n**By Type:** ${byType}` : ""}`;
+}
+
+function formatLeads(rows: Awaited<ReturnType<typeof getRecentLeads>>): string {
+  if (rows.length === 0) return "No recent leads found.";
+  const table = rows.slice(0, 10).map((r, i) => {
+    const date = new Date(r.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `  ${i + 1}. **${r.name ?? "—"}** (${r.email ?? "—"}) — ${r.status ?? "—"} · ${r.source ?? "—"} · ${date}`;
+  }).join("\n");
+  return `### Recent Leads (last ${rows.length})\n\n${table}`;
+}
+
+function formatTickets(rows: Awaited<ReturnType<typeof getRecentTickets>>): string {
+  if (rows.length === 0) return "No recent tickets found.";
+  const table = rows.slice(0, 10).map((r, i) => {
+    const date = new Date(r.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `  ${i + 1}. **${r.subject ?? "—"}** — ${r.status ?? "—"} · ${r.priority ?? "—"} · ${date}`;
+  }).join("\n");
+  return `### Recent Tickets (last ${rows.length})\n\n${table}`;
+}
+
+const HELP_MSG = `I'm your HotBot Studios data assistant. Ask me about:
+
+- **Analytics** — traffic, visitors, top pages, devices, countries, referrers
+- **CRM** — leads, tickets, callbacks, live chats
+- **Email** — delivery rates, open rates, bounces
+- **Recent leads** or **recent tickets** — latest entries
+
+Try: *"Show me analytics"* or *"How are leads performing?"*`;
+
+// ── POST handler ──────────────────────────────────────────────────────────────
 
 type Message = { role: "user" | "assistant"; content: string };
-type ToolCall = { id: string; name: string; args: Record<string, unknown> };
 
 export async function POST(req: NextRequest) {
   const session = await authorizeAdmin(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as { messages: Message[] };
-  const history = (body.messages ?? []).slice(-20); // keep last 20 for context
+  const lastMsg = (body.messages ?? []).at(-1);
+  const query = lastMsg?.role === "user" ? lastMsg.content.trim() : "";
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-  ];
+  if (!query) return NextResponse.json({ reply: HELP_MSG, toolsUsed: [] });
 
+  const intents = detectIntent(query);
   const toolsUsed: string[] = [];
 
-  try {
-    // Agentic loop: keep calling until no more tool calls
-    for (let iter = 0; iter < 5; iter++) {
-      const response = await openai().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages,
-        tools: TOOLS,
-        tool_choice: "auto",
-        temperature: 0.2,
-        max_tokens: 1500,
-      });
-
-      const msg = response.choices[0]?.message;
-      if (!msg) break;
-
-      messages.push(msg);
-
-      if (!msg.tool_calls || msg.tool_calls.length === 0) {
-        // Final text response
-        return NextResponse.json({
-          reply: msg.content ?? "",
-          toolsUsed,
-        });
-      }
-
-      // Execute each tool call
-      const toolResults: OpenAI.Chat.ChatCompletionToolMessageParam[] = [];
-      for (const tc of msg.tool_calls) {
-        if (tc.type !== "function") continue;
-        const name = tc.function.name;
-        let args: Record<string, unknown> = {};
-        try { args = JSON.parse(tc.function.arguments) as Record<string, unknown>; } catch { /* ignore */ }
-
-        toolsUsed.push(name);
-        const call: ToolCall = { id: tc.id, name, args };
-
-        let result: unknown;
-        try {
-          if (call.name === "get_analytics")      result = await getAnalytics();
-          else if (call.name === "get_crm_summary") result = await getCrmSummary();
-          else if (call.name === "get_email_stats") result = await getEmailStats();
-          else if (call.name === "get_recent_leads") result = await getRecentLeads(Math.min((call.args.limit as number) ?? 10, 25));
-          else if (call.name === "get_recent_tickets") result = await getRecentTickets(Math.min((call.args.limit as number) ?? 10, 25));
-          else result = { error: "Unknown tool" };
-        } catch (err) {
-          result = { error: err instanceof Error ? err.message : "Tool error" };
-        }
-
-        toolResults.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
-      }
-      messages.push(...toolResults);
-    }
-
-    return NextResponse.json({ reply: "I was unable to generate a response. Please try again.", toolsUsed });
-  } catch (err) {
-    console.error("[ai-chat]", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "AI error" }, { status: 500 });
+  if (intents.length === 0) {
+    return NextResponse.json({
+      reply: HELP_MSG,
+      toolsUsed: [],
+    });
   }
+
+  const parts: string[] = [];
+
+  await Promise.all(intents.map(async (intent) => {
+    try {
+      if (intent === "analytics") {
+        toolsUsed.push("get_analytics");
+        parts.push(formatAnalytics(await getAnalytics()));
+      } else if (intent === "crm") {
+        toolsUsed.push("get_crm_summary");
+        parts.push(formatCrm(await getCrmSummary()));
+      } else if (intent === "email") {
+        toolsUsed.push("get_email_stats");
+        parts.push(formatEmail(await getEmailStats()));
+      } else if (intent === "leads") {
+        toolsUsed.push("get_recent_leads");
+        parts.push(formatLeads(await getRecentLeads(10)));
+      } else if (intent === "tickets") {
+        toolsUsed.push("get_recent_tickets");
+        parts.push(formatTickets(await getRecentTickets(10)));
+      }
+    } catch (err) {
+      parts.push(`_Error fetching ${intent} data: ${err instanceof Error ? err.message : "unknown error"}_`);
+    }
+  }));
+
+  const reply = parts.join("\n\n---\n\n") || HELP_MSG;
+  return NextResponse.json({ reply, toolsUsed: [...new Set(toolsUsed)] });
 }

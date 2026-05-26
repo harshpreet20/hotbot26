@@ -208,11 +208,8 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0f" }}>
-        <PortalSidebar active="/customers/projects" />
-        <main style={{ flex: 1, padding: "32px 40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ color: "#64748b", fontSize: 14 }}>Loading project…</div>
-        </main>
+      <div style={{ padding: "32px 40px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ color: "#64748b", fontSize: 14 }}>Loading project…</div>
       </div>
     );
   }
@@ -222,9 +219,7 @@ export default function ProjectDetailPage() {
   const milestones = updates.filter((u) => u.type === "milestone");
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0f" }}>
-      <PortalSidebar active="/customers/projects" />
-      <main style={{ flex: 1, padding: "32px 40px", overflow: "auto" }}>
+    <div style={{ padding: "32px 40px", overflow: "auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
           <Link href="/customers/projects" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", marginBottom: 12, display: "inline-block" }}>
@@ -490,7 +485,6 @@ export default function ProjectDetailPage() {
             )}
           </div>
         </div>
-      </main>
     </div>
   );
 }
@@ -520,33 +514,3 @@ function CircleProgress({ value }: { value: number }) {
   );
 }
 
-function PortalSidebar({ active }: { active: string }) {
-  const NAV = [
-    { label: "Dashboard",     href: "/customers/dashboard",     icon: "⊞" },
-    { label: "Projects",      href: "/customers/projects",      icon: "◈" },
-    { label: "Invoices",      href: "/customers/invoices",      icon: "◎" },
-    { label: "Support",       href: "/customers/tickets",       icon: "◉" },
-    { label: "Notifications", href: "/customers/notifications", icon: "◻" },
-  ];
-  return (
-    <aside style={{ width: 220, flexShrink: 0, background: "rgba(255,255,255,0.02)", borderRight: "1px solid rgba(255,255,255,0.06)", padding: "24px 8px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <div style={{ padding: "0 12px 20px" }}>
-        <Link href="/customers/dashboard">
-          <img src="/logos/brand-logo.png" alt="HotBot Studios" style={{ width: 110, height: "auto", objectFit: "contain" }} />
-        </Link>
-      </div>
-      {NAV.map((item) => (
-        <Link key={item.href} href={item.href} style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "9px 12px", borderRadius: 9, marginBottom: 2,
-          color: active === item.href ? "#fff" : "#94a3b8",
-          background: active === item.href ? "rgba(99,102,241,0.15)" : "transparent",
-          textDecoration: "none", fontSize: 13, fontWeight: 500,
-        }}>
-          <span style={{ fontSize: 15 }}>{item.icon}</span>
-          {item.label}
-        </Link>
-      ))}
-    </aside>
-  );
-}

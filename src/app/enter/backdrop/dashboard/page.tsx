@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { DashboardOverview, Lead, Contact, CallbackRequest, Invoice } from "@/types/dashboard";
 
 function getSecret() {
@@ -68,7 +67,7 @@ export default function OverviewPage() {
   }, [router]);
 
   return (
-    <DashboardShell>
+    <>
       <div className="p-6">
         <div className="mb-7">
           <h1 className="text-white text-xl font-semibold">Overview</h1>
@@ -161,7 +160,7 @@ export default function OverviewPage() {
           </>
         )}
       </div>
-    </DashboardShell>
+    </>
   );
 }
 

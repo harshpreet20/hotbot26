@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { BlogPost } from "@/types/blog";
 
 function getSecret() {
@@ -68,7 +67,7 @@ export default function BlogPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         <header
           className="flex items-center justify-between px-6 py-4 border-b"
@@ -151,6 +150,6 @@ export default function BlogPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

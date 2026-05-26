@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Role, TicketPriority, TicketStatus } from "@/types/dashboard";
 
 function getSecret() {
@@ -122,7 +121,7 @@ export default function TeamMemberPage() {
       headers: { Authorization: `Bearer ${secret}` },
     })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) { ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; }
         if (r.status === 404) { setError("Team member not found."); return null; }
         return r.json();
       })
@@ -134,7 +133,7 @@ export default function TeamMemberPage() {
   const badge = profile ? (ROLE_BADGE[profile.member.role] ?? { label: profile.member.role, color: "#64748b" }) : null;
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col min-h-full">
         {/* Header */}
         <header
@@ -315,6 +314,6 @@ export default function TeamMemberPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

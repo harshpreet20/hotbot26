@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Project, ProjectUpdate, ProjectStatus, ProjectStage, ProjectUpdateType } from "@/types/dashboard";
 
 function getSecret() {
@@ -103,7 +102,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     setLoading(true);
     fetch(`/api/dashboard/projects/${id}`, { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) { ["backdrop_secret","backdrop_role","backdrop_username"].forEach((k)=>sessionStorage.removeItem(k)); router.replace("/enter/backdrop"); return null; }
         if (r.status === 404) { setError("Project not found"); return null; }
         return r.json();
       })
@@ -278,28 +277,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <DashboardShell>
+      <>
         <div className="text-slate-500 text-sm py-20 text-center">Loading…</div>
-      </DashboardShell>
+      </>
     );
   }
 
   if (error || !project) {
     return (
-      <DashboardShell>
+      <>
         <div className="text-slate-500 text-sm py-20 text-center">
           {error || "Project not found"}
           <br />
           <Link href="/enter/backdrop/dashboard/projects" className="text-indigo-400 mt-2 inline-block">← Back to Projects</Link>
         </div>
-      </DashboardShell>
+      </>
     );
   }
 
   const sm = STATUS_META[project.status];
 
   return (
-    <DashboardShell>
+    <>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Top bar */}
         <header className="flex items-center gap-4 px-6 py-3 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -764,7 +763,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         .rfi:focus { border-color: rgba(99,102,241,0.5); }
         option { background: #0f1626; color: #e2e8f0; }
       `}</style>
-    </DashboardShell>
+    </>
   );
 }
 
