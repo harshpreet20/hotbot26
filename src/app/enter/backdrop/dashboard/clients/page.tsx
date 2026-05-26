@@ -99,7 +99,7 @@ export default function ClientsPage() {
     if (filter !== "all" && c.status !== filter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return [c.name, c.email, c.company, c.clientId].some((v) => v.toLowerCase().includes(q));
+    return [c.name, c.email, c.company, c.clientId].some((v) => v?.toLowerCase().includes(q));
   });
 
   function copyId(clientId: string) {

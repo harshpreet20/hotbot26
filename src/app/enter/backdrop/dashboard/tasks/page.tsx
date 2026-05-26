@@ -233,7 +233,7 @@ export default function TasksPage() {
         const d = await fetch(`/api/dashboard/invoices?id=${task.invoiceId}`, { headers: h }).then((r) => r.json()) as { invoice?: Record<string, unknown> };
         ctx = d.invoice ?? null;
       } else if (task.ticketId) {
-        const d = await fetch(`/api/tickets?id=${task.ticketId}`).then((r) => r.json()) as { ticket?: Record<string, unknown> };
+        const d = await fetch(`/api/dashboard/tickets?id=${task.ticketId}`, { headers: h }).then((r) => r.ok ? r.json() : {}) as { ticket?: Record<string, unknown> };
         ctx = d.ticket ?? null;
       } else if (task.clientId) {
         const allClients = await fetch("/api/dashboard/clients", { headers: h }).then((r) => r.json()) as { clients?: Client[] };
