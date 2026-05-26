@@ -49,8 +49,7 @@ export async function GET(req: NextRequest) {
       .gte("created_at", prev30);
 
     if (pvErr) {
-      console.error("[analytics] site_page_views query failed:", pvErr.message);
-      return NextResponse.json({ error: `Analytics query failed: ${pvErr.message}` }, { status: 500 });
+      console.warn("[analytics] site_page_views not ready:", pvErr.message);
     }
 
     // Total visitors (distinct session_ids) — use all sessions in range
@@ -60,8 +59,7 @@ export async function GET(req: NextRequest) {
       .gte("created_at", prev30);
 
     if (sessErr) {
-      console.error("[analytics] site_sessions query failed:", sessErr.message);
-      return NextResponse.json({ error: `Analytics query failed: ${sessErr.message}` }, { status: 500 });
+      console.warn("[analytics] site_sessions not ready:", sessErr.message);
     }
 
     const totalSessions  = sessionsCurrent?.length ?? 0;

@@ -77,7 +77,7 @@ export default function ProjectsPage() {
         return r.json();
       })
       .then((d) => {
-        if (d) setProjects((d as { projects: Project[] }).projects);
+        if (d?.projects) setProjects((d as { projects: Project[] }).projects);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
