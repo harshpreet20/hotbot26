@@ -104,6 +104,18 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/crm-reports",
+    label: "CRM Reports",
+    roles: ["super_admin", "admin", "manager", "sales", "crm_operator"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/projects",
     label: "Projects",
     roles: ["super_admin", "admin", "manager", "sales", "crm_operator"],
@@ -113,6 +125,21 @@ const NAV: NavItem[] = [
         <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
         <line x1="12" y1="12" x2="12" y2="16" />
         <line x1="10" y1="14" x2="14" y2="14" />
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/projects/gantt",
+    label: "Gantt Chart",
+    exact: true,
+    roles: ["super_admin", "admin", "manager", "sales", "crm_operator"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="6" x2="13" y2="6"/>
+        <line x1="3" y1="10" x2="18" y2="10"/>
+        <line x1="3" y1="14" x2="10" y2="14"/>
+        <line x1="3" y1="18" x2="15" y2="18"/>
+        <rect x="2" y="3" width="20" height="18" rx="2" opacity="0"/>
       </svg>
     ),
   },

@@ -9,6 +9,7 @@ const NO_SIDEBAR_PATHS = ["/customers", "/customers/setup", "/customers/verify"]
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/customers/dashboard",       icon: "📊" },
   { label: "Projects",        href: "/customers/projects",        icon: "📁" },
+  { label: "Timeline",        href: "/customers/projects/timeline", icon: "📅" },
   { label: "Invoices",        href: "/customers/invoices",        icon: "💳" },
   { label: "Support",         href: "/customers/tickets",        icon: "🎫" },
   { label: "Tasks",           href: "/customers/tasks",           icon: "✅" },
