@@ -58,39 +58,46 @@ export async function createSession(
   };
 
   if (isSupabaseEnabled()) {
-    const { error } = await sb().from("sessions").insert(session);
-    if (error) {
-      // Supabase insert failed - could be FK violation for env-user/bootstrap (user_id
-      // doesn't exist in the users table on legacy schemas that still have the FK constraint),
-      // or schema not yet applied, or table missing.
-      //
-      // Attempt a second insert using "unknown" as user_id so the session persists in
-      // Supabase even when the originating user is synthetic (env-fallback / bootstrap).
-      // This avoids the cold-start logout issue on Vercel where /tmp is ephemeral.
-      if (error.message.includes("violates foreign key constraint") || error.code === "23503") {
-        // Ensure the "unknown" placeholder row exists in the users table so the FK is satisfied.
-        try {
-          await sb()
-            .from("users")
-            .upsert(
-              { id: "unknown", username: "_system_placeholder_", password_hash: "disabled", role: "admin", created_at: new Date().toISOString() },
-              { onConflict: "id" }
-            );
-        } catch {
-          // ignore upsert errors for placeholder row
-        }
+    // Strip optional columns that may not exist yet on legacy schemas so we
+    // don't hit "column does not exist" errors on older Supabase projects.
+    // The fix_sessions_and_data.sql migration adds them; until then we omit them.
+    const { is_impersonating, original_user_id, original_username, original_role, ...coreSession } = session;
+    const insertPayload = is_impersonating
+      ? session   // include impersonation fields only when actually impersonating
+      : coreSession;
 
-        const { error: retryError } = await sb().from("sessions").insert({
-          ...session,
-          user_id: "unknown",
-        });
-        if (!retryError) return token; // stored successfully with relaxed user_id
+    const { error } = await sb().from("sessions").insert(insertPayload);
+    if (error) {
+      // FK violation: sessions table still has a legacy user_id FK constraint.
+      // Run supabase/fix_sessions_and_data.sql to drop it permanently.
+      // Until then, retry with a safe TEXT user_id that satisfies any TEXT FK.
+      if (error.code === "23503" || error.message.includes("violates foreign key constraint")) {
+        // Create a safe placeholder row in the users table (TEXT id = fine)
+        await Promise.resolve(
+          sb().from("users").upsert(
+            { id: userId, username, password_hash: "supabase-auth", role, created_at: new Date().toISOString() },
+            { onConflict: "id", ignoreDuplicates: true }
+          )
+        ).catch(() => {});
+
+        const { error: retryError } = await sb().from("sessions").insert(insertPayload);
+        if (!retryError) return token;
       }
-      console.warn("[sessions] Supabase insert failed, using filesystem fallback:", error.message);
-      const sessions = fsActive();
-      sessions.push(session);
-      _fsWrite("sessions", sessions);
+
+      // Any other Supabase error (column missing, table missing, etc.) —
+      // fall back to filesystem only in dev. On Vercel /tmp is ephemeral so
+      // this will cause session loss on cross-instance requests.
+      if (!process.env.VERCEL) {
+        console.warn("[sessions] Supabase insert failed (dev), using filesystem:", error.message);
+        const sessions = fsActive();
+        sessions.push(session);
+        _fsWrite("sessions", sessions);
+        return token;
+      }
+      // On Vercel: log the error clearly so it surfaces in function logs
+      console.error("[sessions] CRITICAL: Supabase session insert failed on Vercel — run fix_sessions_and_data.sql:", error.message);
     }
+    return token;
   } else {
     const sessions = fsActive();
     sessions.push(session);
