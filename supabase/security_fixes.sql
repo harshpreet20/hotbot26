@@ -18,20 +18,22 @@ ALTER TABLE public.client_resources ENABLE ROW LEVEL SECURITY;
 -- Adding a policy only when a direct client-side Supabase query is intentionally added.
 
 
--- ── FIX 1: Move pg_net extension out of public schema ─────────────────────────
--- RISK: pg_net in public schema allows any database role (including anon via
--- PostgREST) to call net.http_post() / net.http_get() and exfiltrate data or
--- make server-side HTTP requests to internal services (SSRF vector).
--- FIX: Move to the extensions schema, which is not exposed via PostgREST.
+-- ── FIX 1: Block anon/authenticated access to pg_net HTTP functions ───────────
+-- RISK: pg_net allows any database role (including anon via PostgREST) to call
+-- net.http_post() / net.http_get() and exfiltrate data or make server-side HTTP
+-- requests to internal services (SSRF vector).
+--
+-- NOTE: ALTER EXTENSION pg_net SET SCHEMA ... is NOT supported — pg_net hard-codes
+-- its schema and returns "extension does not support SET SCHEMA".
+-- FIX: Revoke USAGE on the net schema and EXECUTE on all its functions from all
+-- public-facing roles. The service role (used by the app server) is unaffected.
 
-CREATE SCHEMA IF NOT EXISTS extensions;
-
-ALTER EXTENSION pg_net SET SCHEMA extensions;
+REVOKE USAGE  ON SCHEMA net FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA net FROM PUBLIC, anon, authenticated;
 
 -- Verify:
--- SELECT nspname FROM pg_namespace n JOIN pg_extension e ON e.extnamespace = n.oid
--- WHERE e.extname = 'pg_net';
--- Should return "extensions", not "public".
+-- SELECT has_schema_privilege('anon', 'net', 'USAGE');
+-- Should return "f" (false).
 
 
 -- ── FIX 2: Consolidate duplicate RLS policies on public.site_settings ─────────
