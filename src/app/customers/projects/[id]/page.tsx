@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { portalClient } from "@/lib/supabase-portal";
+import { trackPortalEvent } from "@/lib/portal-track";
 
 interface Project {
   id: string;
@@ -142,6 +143,7 @@ export default function ProjectDetailPage() {
         setComments(d.comments ?? []);
         setReactions(d.reactions ?? []);
         setLoading(false);
+        trackPortalEvent("project_view", { entityType: "project", entityId: id });
       })
       .catch(() => router.replace("/customers"));
   }, [id, router]);
@@ -193,6 +195,7 @@ export default function ProjectDetailPage() {
     if (data.comment) {
       setComments((prev) => [...prev, data.comment!]);
       setCommentInputs((prev) => ({ ...prev, [updateId]: "" }));
+      trackPortalEvent("comment", { entityType: "project", entityId: id });
     }
     setSubmittingComment(null);
   }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackPortalEvent } from "@/lib/portal-track";
 
 interface Task {
   id: string;
@@ -47,7 +48,10 @@ export default function TasksPage() {
         return r.json() as Promise<{ tasks: Task[] }>;
       })
       .then((d) => {
-        if (d) setTasks(d.tasks ?? []);
+        if (d) {
+          setTasks(d.tasks ?? []);
+          trackPortalEvent("page_view", { page: "/customers/tasks" });
+        }
         setLoading(false);
       })
       .catch(() => router.replace("/customers"));
@@ -67,7 +71,10 @@ export default function TasksPage() {
       if (res.status === 401) { router.replace("/customers"); return; }
       const data = await res.json() as { task?: Task; error?: string };
       if (!res.ok) { setFormError(data.error ?? "Failed to submit request."); setSubmitting(false); return; }
-      if (data.task) setTasks((prev) => [data.task!, ...prev]);
+      if (data.task) {
+        setTasks((prev) => [data.task!, ...prev]);
+        trackPortalEvent("task_create");
+      }
       setForm({ title: "", description: "", priority: "medium" });
       setShowForm(false);
     } catch {

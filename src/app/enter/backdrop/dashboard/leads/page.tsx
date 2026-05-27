@@ -67,6 +67,7 @@ export default function LeadsPage() {
   const [convertMsg, setConvertMsg] = useState<Record<string, string>>({});
   const [team,       setTeam]       = useState<TeamMember[]>([]);
   const [role,       setRole]       = useState("");
+  const [scoreMap,   setScoreMap]   = useState<Record<string, string>>({});
 
   // Add Lead modal
   const [showAdd,  setShowAdd]  = useState(false);
@@ -110,6 +111,20 @@ export default function LeadsPage() {
       setTeam(td.members ?? []);
     }).catch(console.error).finally(() => setLoading(false));
   }, [router]);
+
+  useEffect(() => {
+    const secret = getSecret();
+    if (!secret) return;
+    fetch("/api/dashboard/analytics/behavior", { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => r.ok ? r.json() as Promise<{ top_engaged?: { email: string; lead_quality: string }[] }> : null)
+      .then((d) => {
+        if (!d?.top_engaged) return;
+        const map: Record<string, string> = {};
+        for (const entry of d.top_engaged) { map[entry.email] = entry.lead_quality; }
+        setScoreMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   function exportCSV() {
     const secret = getSecret();
@@ -381,9 +396,14 @@ export default function LeadsPage() {
 
                         {/* Name */}
                         <td className="py-3 px-3 text-white font-medium whitespace-nowrap">
-                          <Link href={`/enter/backdrop/dashboard/leads/${lead.id}`} className="hover:text-indigo-300 transition-colors">
-                            {lead.name}
-                          </Link>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <Link href={`/enter/backdrop/dashboard/leads/${lead.id}`} className="hover:text-indigo-300 transition-colors">
+                              {lead.name}
+                            </Link>
+                            {scoreMap[lead.email] === "hot"  && <span title="Hot lead">🔥</span>}
+                            {scoreMap[lead.email] === "warm" && <span title="Warm lead">🌡</span>}
+                            {scoreMap[lead.email] === "cold" && <span title="Cold lead">❄</span>}
+                          </div>
                         </td>
 
                         {/* Email */}

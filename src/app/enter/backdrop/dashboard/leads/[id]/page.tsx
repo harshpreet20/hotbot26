@@ -47,6 +47,7 @@ export default function LeadDetailPage() {
   const [invoices,  setInvoices]  = useState<Invoice[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
+  const [behavior,  setBehavior]  = useState<BehaviorData | null | "loading">("loading");
 
   // Inline edit
   const [editMode,   setEditMode]   = useState(false);
@@ -92,6 +93,15 @@ export default function LeadDetailPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id, router]);
+
+  useEffect(() => {
+    const secret = getSecret();
+    if (!secret || !id) return;
+    fetch(`/api/dashboard/leads/${id}/behavior`, { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => r.ok ? r.json() as Promise<BehaviorData> : null)
+      .then((d) => setBehavior(d))
+      .catch(() => setBehavior(null));
+  }, [id]);
 
   async function saveEdit() {
     if (!lead) return;
@@ -259,6 +269,9 @@ export default function LeadDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Behavioral Profile */}
+            <BehavioralProfileCard data={behavior} />
 
             {/* Activity log */}
             <div className="rounded-2xl p-5" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -451,5 +464,100 @@ function InvStatusBadge({ status }: { status: string }) {
     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium capitalize" style={{ background: `${color}18`, color }}>
       {status}
     </span>
+  );
+}
+
+interface JourneyEvent { stage: string; created_at: string; }
+interface BehaviorData {
+  engagement_score?: number;
+  intent_score?: number;
+  session_count?: number;
+  pricing_page_views?: number;
+  proposal_views?: number;
+  last_activity?: string;
+  portal_active?: boolean;
+  portal_last_seen?: string;
+  lead_quality?: string;
+  journey?: JourneyEvent[];
+}
+
+const STAGE_DOTS: Record<string, string> = {
+  lead: "#22c55e", proposal: "#8b5cf6", lead_form_submit: "#3b82f6",
+  pricing_view: "#f59e0b", portal_login: "#06b6d4",
+};
+
+function timeAgoShort(d?: string | null) {
+  if (!d) return "—";
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+const QUALITY_STYLES: Record<string, { label: string; color: string; bg: string }> = {
+  hot:  { label: "Hot",  color: "#ef4444", bg: "rgba(239,68,68,0.15)" },
+  warm: { label: "Warm", color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
+  cold: { label: "Cold", color: "#64748b", bg: "rgba(100,116,139,0.15)" },
+};
+
+function BehavioralProfileCard({ data }: { data: BehaviorData | null | "loading" }) {
+  if (data === "loading") {
+    return (
+      <div className="rounded-2xl p-5" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+        <p className="text-slate-500 text-xs">Loading behavioral profile…</p>
+      </div>
+    );
+  }
+  const score = data?.engagement_score ?? 0;
+  const quality = data?.lead_quality ?? "cold";
+  const qs = QUALITY_STYLES[quality] ?? QUALITY_STYLES.cold;
+  const recentJourney = (data?.journey ?? []).slice(0, 3);
+
+  return (
+    <div className="rounded-2xl p-5" style={{ border: "1px solid rgba(99,102,241,0.2)", background: "rgba(99,102,241,0.03)" }}>
+      <h2 className="text-white text-sm font-semibold mb-4">Behavioral Profile</h2>
+      {!data ? (
+        <p className="text-slate-500 text-xs">No behavioral data yet — tracking starts after next site visit</p>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ padding: "2px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700, color: qs.color, background: qs.bg }}>{qs.label}</span>
+            <span className="text-slate-400 text-xs">Engagement:</span>
+            <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 8, overflow: "hidden", maxWidth: 120 }}>
+              <div style={{ height: "100%", width: `${(score / 10) * 100}%`, background: score >= 7 ? "#ef4444" : score >= 4 ? "#f59e0b" : "#64748b", borderRadius: 8 }} />
+            </div>
+            <span className="text-slate-300 text-xs font-semibold">{score.toFixed(1)}/10</span>
+          </div>
+          <div className="flex gap-4 flex-wrap mb-3">
+            <span className="text-slate-500 text-xs">Intent: <span className="text-slate-300 font-medium">{(data.intent_score ?? 0).toFixed(1)}</span></span>
+            <span className="text-slate-500 text-xs">Sessions: <span className="text-slate-300 font-medium">{data.session_count ?? 0}</span></span>
+            <span className="text-slate-500 text-xs">Pricing: <span className="text-slate-300 font-medium">{data.pricing_page_views ?? 0} visits</span></span>
+            <span className="text-slate-500 text-xs">Last activity: <span className="text-slate-300 font-medium">{timeAgoShort(data.last_activity)}</span></span>
+            <span className="text-slate-500 text-xs">Proposal views: <span className="text-slate-300 font-medium">{data.proposal_views ?? 0}</span></span>
+          </div>
+          {recentJourney.length > 0 && (
+            <div className="mb-3">
+              <p className="text-slate-600 text-xs mb-2">Recent Journey:</p>
+              <div className="space-y-1.5">
+                {recentJourney.map((ev, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: STAGE_DOTS[ev.stage] ?? "#6366f1", flexShrink: 0, display: "inline-block" }} />
+                    <span className="text-slate-400 text-xs">{ev.stage}</span>
+                    <span className="text-slate-600 text-xs">· {timeAgoShort(ev.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="text-slate-500 text-xs">
+            Portal Active: <span className="text-slate-300 font-medium">{data.portal_active ? "Yes" : "No"}</span>
+            {data.portal_last_seen && <span> (last seen: {timeAgoShort(data.portal_last_seen)})</span>}
+          </p>
+        </>
+      )}
+    </div>
   );
 }

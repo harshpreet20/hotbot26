@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { trackPortalEvent } from "@/lib/portal-track";
 
 interface PortalInvoice {
   id: string;
@@ -71,6 +72,7 @@ export default function InvoicesPage() {
         if (d) {
           setInvoices(d.invoices ?? []);
           setSummary(d.summary ?? { totalBilled: 0, totalPaid: 0, outstanding: 0 });
+          trackPortalEvent("page_view", { page: "/customers/invoices" });
         }
         setLoading(false);
       })
