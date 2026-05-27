@@ -79,6 +79,13 @@ export async function POST(req: NextRequest) {
       }, { onConflict: "id" });
 
     } else if (payload.type === "pageview") {
+      // Ensure the session row exists before inserting (FK constraint race: session and
+      // first pageview fire simultaneously from SiteTracker, pageview can arrive first)
+      await client.from("site_sessions").upsert(
+        { id: payload.sessionId, first_page: payload.page, page_count: 1, is_bounce: true,
+          created_at: new Date().toISOString(), last_seen_at: new Date().toISOString() },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
       await client.from("site_page_views").insert({
         session_id:       payload.sessionId,
         page:             payload.page,

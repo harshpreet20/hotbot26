@@ -608,7 +608,116 @@ export async function sendClientWelcomeEmail(opts: {
   );
 }
 
-// ── 15. Task assigned notification ───────────────────────────────────────────
+// ── 15. Portal invite ────────────────────────────────────────────────────────
+
+export async function sendPortalInvite(
+  email: string,
+  name: string,
+  clientName: string,
+  setupLink: string,
+): Promise<void> {
+  const html = wrap(
+    "You've Been Invited",
+    `${clientName} has invited you to the HotBot Studios Client Portal`,
+    `
+    ${greeting(name)}
+    ${para(`You've been invited to the <strong>HotBot Studios Client Portal</strong> on behalf of <strong>${clientName}</strong>. The portal gives you real-time access to your projects, invoices, and support tickets.`)}
+    <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e1b4b;">Your portal includes:</p>
+      <ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#374151;line-height:2;">
+        <li>Live project updates &amp; milestones</li>
+        <li>Invoice history &amp; payment status</li>
+        <li>Support ticket management</li>
+        <li>Direct communication with your account manager</li>
+      </ul>
+    </div>
+    ${para(`Click the button below to set up your account. This link expires in <strong>7 days</strong>.`)}
+    ${btn("Set Up My Account", setupLink)}
+    ${para(`If you did not expect this invitation, you can safely ignore this email.`)}
+  `,
+  );
+  await send(
+    email,
+    `You've been invited to ${FROM_NAME} Portal`,
+    html,
+    `Hi ${name},\n\nYou've been invited to the ${FROM_NAME} Client Portal for ${clientName}.\n\nSet up your account: ${setupLink}\n\nThis link expires in 7 days.\n\n${FROM_NAME}`,
+    "portal_invite",
+    { clientName },
+  );
+}
+
+// ── 16. Portal magic link ─────────────────────────────────────────────────────
+
+export async function sendPortalMagicLink(email: string, link: string): Promise<void> {
+  const html = wrap(
+    "Your Sign-in Link",
+    "Click to sign in to your HotBot Studios client portal",
+    `
+    ${greeting("there")}
+    ${para(`Here is your sign-in link for the <strong>HotBot Studios Client Portal</strong>. Click the button below to log in instantly — no password required.`)}
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:13px;color:#92400e;line-height:1.6;">
+        <strong>This link expires in 1 hour</strong> and can only be used once. If you did not request this, you can safely ignore this email.
+      </p>
+    </div>
+    ${btn("Sign In to Portal", link)}
+    ${para(`Or copy this link into your browser:`)}
+    <p style="margin:0 0 20px;font-size:12px;color:#6b7280;word-break:break-all;">${link}</p>
+  `,
+  );
+  await send(
+    email,
+    `${FROM_NAME}: Your sign-in link`,
+    html,
+    `Hi,\n\nHere is your sign-in link for the ${FROM_NAME} Client Portal:\n\n${link}\n\nThis link expires in 1 hour.\n\n${FROM_NAME}`,
+    "portal_magic_link",
+  );
+}
+
+// ── 17. Portal welcome ────────────────────────────────────────────────────────
+
+export async function sendPortalWelcome(
+  email: string,
+  name: string,
+  clientName: string,
+  clientId: string,
+): Promise<void> {
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? SITE_URL}/customers/dashboard`;
+  const html = wrap(
+    "Welcome to the Portal",
+    `Welcome to the HotBot Studios Client Portal, ${name}!`,
+    `
+    ${greeting(name)}
+    ${para(`Your account is all set! You now have full access to the <strong>HotBot Studios Client Portal</strong> for <strong>${clientName}</strong>.`)}
+    ${infoBox([
+      ["Account", clientName],
+      ["Client ID", clientId],
+      ["Portal URL", `<a href="${portalUrl}" style="color:#6366f1;text-decoration:none;">${portalUrl.replace(/^https?:\/\//, "")}</a>`],
+    ])}
+    <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e1b4b;">What you can do:</p>
+      <ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#374151;line-height:2;">
+        <li>Track project progress in real time</li>
+        <li>View and download invoices</li>
+        <li>Submit and track support tickets</li>
+        <li>React and comment on project updates</li>
+      </ul>
+    </div>
+    ${btn("Open My Portal", portalUrl)}
+    ${para(`Bookmark this link for quick access. If you ever have trouble signing in, use the "Magic Link" option on the login page.`)}
+  `,
+  );
+  await send(
+    email,
+    `${FROM_NAME}: Welcome to your client portal`,
+    html,
+    `Hi ${name},\n\nWelcome to the ${FROM_NAME} Client Portal!\n\nClient: ${clientName} (${clientId})\nPortal: ${portalUrl}\n\n${FROM_NAME}`,
+    "portal_welcome",
+    { clientName, clientId },
+  );
+}
+
+// ── 15b. Task assigned notification ──────────────────────────────────────────
 
 export async function sendTaskAssignedEmail(opts: {
   assigneeEmail: string;

@@ -13,10 +13,10 @@
       "args": [
         "-y",
         "@supabase/mcp-server-supabase@latest",
-        "--supabase-url",
-        "https://wsucqpunleplgyrrroae.supabase.co",
-        "--supabase-key",
-        "${SUPABASE_SERVICE_ROLE_KEY}"
+        "--access-token",
+        "${SUPABASE_ACCESS_TOKEN}",
+        "--project-ref",
+        "wsucqpunleplgyrrroae"
       ]
     }
   }

@@ -369,10 +369,12 @@ export interface KnowledgeEntry {
 // ── Clients ───────────────────────────────────────────────────────────────────
 
 export type ClientStatus = "active" | "old" | "reactivation_needed";
+export type OnboardingStage = "prospect" | "onboarded" | "active" | "vip";
+export type SubscriptionStatus = "none" | "trial" | "active" | "paused" | "cancelled";
 
 export interface Client {
   id: string;
-  clientId: string;        // e.g. "HBS-A1B2C"
+  clientId: string;             // e.g. "HOT-1001"
   name: string;
   email: string;
   phone: string;
@@ -381,6 +383,129 @@ export interface Client {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  leadId?: string;
+  // Extended CRM fields
+  onboardingStage?: OnboardingStage;
+  accountManager?: string;
+  portalEnabled?: boolean;
+  portalInviteSentAt?: string;
+  subscriptionStatus?: SubscriptionStatus;
+  industry?: string;
+  website?: string;
+  address?: string;
+  avatarUrl?: string;
+  tags?: string[];
+  customFields?: Record<string, unknown>;
+  clientType?: string;
+  totalRevenue?: number;
+  outstandingBalance?: number;
+  lastActivityAt?: string;
+}
+
+// ── Client Portal Users ───────────────────────────────────────────────────────
+
+export type ClientUserRole = "owner" | "admin" | "member";
+
+export interface ClientUser {
+  id: string;
+  clientId: string;
+  email: string;
+  name: string;
+  role: ClientUserRole;
+  inviteToken?: string;
+  inviteExpiresAt?: string;
+  inviteAcceptedAt?: string;
+  invitedBy?: string;
+  isActive: boolean;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  currency: string;
+  gateway: "razorpay" | "paypal" | "manual";
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  paidAt?: string;
+  payerEmail?: string;
+  createdAt: string;
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+export type ProjectStage = "discovery" | "design" | "development" | "qa" | "launch" | "support";
+export type ProjectUpdateType = "update" | "milestone" | "deployment" | "approval_needed" | "blocker" | "sprint_summary" | "design" | "qa_pass" | "launch" | "file" | "note";
+
+export interface Project {
+  id: string;
+  project_number: string;
+  client_id: string;
+  client_name?: string;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  stage: ProjectStage;
+  priority: "low" | "medium" | "high" | "urgent";
+  progress: number;
+  start_date?: string;
+  target_date?: string;
+  completed_date?: string;
+  assigned_to: string[];
+  account_manager?: string;
+  budget?: number;
+  currency: string;
+  tags: string[];
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectUpdate {
+  id: string;
+  project_id: string;
+  client_id?: string;
+  type: ProjectUpdateType;
+  title?: string;
+  content: string;
+  visibility: "internal" | "client";
+  progress?: number;
+  author_email: string;
+  author_name?: string;
+  author_type: "team" | "client";
+  attachments: { name: string; url: string }[];
+  pinned: boolean;
+  reactions?: ProjectUpdateReaction[];
+  comments?: ProjectUpdateComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectUpdateReaction {
+  id: string;
+  update_id: string;
+  author_email: string;
+  author_name?: string;
+  author_type: string;
+  emoji: string;
+  created_at: string;
+}
+
+export interface ProjectUpdateComment {
+  id: string;
+  update_id: string;
+  content: string;
+  author_email: string;
+  author_name?: string;
+  author_type: string;
+  created_at: string;
 }
 
 // ── Dashboard Overview ────────────────────────────────────────────────────────
@@ -395,6 +520,7 @@ export interface DashboardOverview {
   invoices: number;
   invoiceRevenue: number;       // total paid invoice amount
   openTasks: number;
+  portalUsers: number;          // active client_users with invite accepted
   recentLeads: Lead[];
   recentContacts: Contact[];
   recentCallbacks: CallbackRequest[];

@@ -38,14 +38,14 @@ export function Navbar() {
         boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.3)" : "none",
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-8">
+        {/* Logo — left-aligned */}
         <Link
           href="/"
-          className="flex items-center hover:opacity-80 transition-opacity shrink-0"
+          className="flex items-center hover:opacity-80 transition-opacity shrink-0 mr-auto lg:mr-0"
         >
           <Image
-            src="/logos/hotbot-logo.svg"
+            src="/logos/brand-logo.png"
             alt="HotBot Studios - AI Automation & Digital Marketing Agency"
             width={200}
             height={48}
@@ -55,8 +55,8 @@ export function Navbar() {
           />
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-6">
+        {/* Desktop Nav — centered with even spacing */}
+        <div className="hidden lg:flex items-center gap-7 flex-1 justify-center">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -72,16 +72,17 @@ export function Navbar() {
         </div>
 
         {/* CTA + Mobile Toggle */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
+          {/* Customer Login — replaces Raise a Ticket */}
           <Link
-            href="/tickets"
+            href="/customers"
             className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
             style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
             </svg>
-            Raise a Ticket
+            Customer Login
           </Link>
           <button
             onClick={() => openForm("get-started", pathname)}
@@ -123,11 +124,14 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              href="/tickets"
-              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center"
+              href="/customers"
+              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center flex items-center justify-center gap-2"
               style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
             >
-              Raise a Ticket
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+              </svg>
+              Customer Login
             </Link>
             <button
               onClick={() => openForm("get-started", pathname)}

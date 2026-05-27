@@ -34,17 +34,24 @@ export default function TeamChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Load channels
+  // Load channels — retries after 300ms if token not yet restored by DashboardShell
   useEffect(() => {
+    function fetchChannels(secret: string) {
+      fetch("/api/dashboard/team-chat?type=channels", { headers: { Authorization: `Bearer ${secret}` } })
+        .then((r) => r.ok ? r.json() as Promise<{ channels?: TeamChannel[] }> : null)
+        .then((d) => { if (d?.channels) setChannels(d.channels); })
+        .catch(() => {});
+    }
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch("/api/dashboard/team-chat?type=channels", { headers: { Authorization: `Bearer ${secret}` } })
-      .then((r) => {
-        if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
-        return r.json() as Promise<{ channels?: TeamChannel[] }>;
-      })
-      .then((d) => { if (d?.channels) setChannels(d.channels); })
-      .catch(console.error);
+    if (!secret) {
+      const t = setTimeout(() => {
+        const s = getSecret();
+        if (!s) { router.replace("/enter/backdrop"); return; }
+        fetchChannels(s);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+    fetchChannels(secret);
   }, [router]);
 
   // Load messages when channel changes
@@ -57,7 +64,7 @@ export default function TeamChatPage() {
 
     fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`, { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
-        if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
+        if (!r.ok) return null;
         return r.json() as Promise<{ messages?: TeamMessage[] }>;
       })
       .then((d) => {

@@ -8,8 +8,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny, authorizeAdmin } from "@/lib/dashboardAuth";
 import { insert, readAll, updateById, removeById, newId } from "@/lib/store";
-import type { Client, ClientStatus } from "@/types/dashboard";
+import type { Client, ClientStatus, OnboardingStage, SubscriptionStatus } from "@/types/dashboard";
 import crypto from "crypto";
+import { sb } from "@/lib/supabase";
+import { sendPortalInvite, sendClientWelcomeEmail } from "@/lib/resend";
 
 function generateClientId(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -81,6 +83,55 @@ export async function POST(req: NextRequest) {
   };
 
   await insert<Client>("clients", client);
+
+  if (client.email) {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const setupLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://hotbotstudios.com"}/customers/setup?token=${token}`;
+
+    Promise.resolve(
+      sb()
+        .from("client_users")
+        .upsert(
+          {
+            email: client.email,
+            name: client.name,
+            client_id: client.clientId,
+            role: "owner",
+            invite_token: token,
+            invite_expires_at: expires,
+            is_active: true,
+          },
+          { onConflict: "email" },
+        ),
+    )
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] upsert client_users:", e));
+
+    Promise.resolve(
+      sb()
+        .from("clients")
+        .update({ portal_enabled: true })
+        .eq("client_id", client.clientId),
+    )
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] update clients portal_enabled:", e));
+
+    sendPortalInvite(client.email, client.name, client.name, setupLink)
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] sendPortalInvite:", e));
+
+    sendClientWelcomeEmail({
+      name: client.name,
+      email: client.email,
+      company: client.company,
+      convertedBy: session.username ?? "Team",
+      clientId: client.clientId,
+    })
+      .then(() => {})
+      .catch((e: unknown) => console.error("[client-create] sendClientWelcomeEmail:", e));
+  }
+
   return NextResponse.json({ client }, { status: 201 });
 }
 
@@ -101,17 +152,37 @@ export async function PATCH(req: NextRequest) {
     company?: string;
     status?: ClientStatus;
     notes?: string;
+    onboardingStage?: OnboardingStage;
+    accountManager?: string;
+    portalEnabled?: boolean;
+    portalInviteSentAt?: string;
+    subscriptionStatus?: SubscriptionStatus;
+    industry?: string;
+    website?: string;
+    address?: string;
+    tags?: string[];
+    clientType?: string;
   };
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const update: Partial<Client> = { updatedAt: new Date().toISOString() };
-  if (body.name     !== undefined) update.name    = body.name.trim();
-  if (body.email    !== undefined) update.email   = body.email.trim();
-  if (body.phone    !== undefined) update.phone   = body.phone.trim();
-  if (body.company  !== undefined) update.company = body.company.trim();
-  if (body.status   !== undefined) update.status  = body.status;
-  if (body.notes    !== undefined) update.notes   = body.notes.trim();
+  if (body.name               !== undefined) update.name               = body.name.trim();
+  if (body.email              !== undefined) update.email              = body.email.trim();
+  if (body.phone              !== undefined) update.phone              = body.phone.trim();
+  if (body.company            !== undefined) update.company            = body.company.trim();
+  if (body.status             !== undefined) update.status             = body.status;
+  if (body.notes              !== undefined) update.notes              = body.notes.trim();
+  if (body.onboardingStage    !== undefined) update.onboardingStage    = body.onboardingStage;
+  if (body.accountManager     !== undefined) update.accountManager     = body.accountManager;
+  if (body.portalEnabled      !== undefined) update.portalEnabled      = body.portalEnabled;
+  if (body.portalInviteSentAt !== undefined) update.portalInviteSentAt = body.portalInviteSentAt;
+  if (body.subscriptionStatus !== undefined) update.subscriptionStatus = body.subscriptionStatus;
+  if (body.industry           !== undefined) update.industry           = body.industry;
+  if (body.website            !== undefined) update.website            = body.website;
+  if (body.address            !== undefined) update.address            = body.address;
+  if (body.tags               !== undefined) update.tags               = body.tags;
+  if (body.clientType         !== undefined) update.clientType         = body.clientType;
 
   await updateById<Client>("clients", body.id, update);
   return NextResponse.json({ success: true });

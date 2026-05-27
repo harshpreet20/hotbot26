@@ -1,9 +1,10 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+
+type MicState = "idle" | "recording" | "transcribing";
 import { createClient } from "@supabase/supabase-js";
 import { ChatMessages } from "./ChatMessages";
 import { QuickReplies } from "./QuickReplies";
-import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 function sbClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,13 +20,7 @@ interface Message {
   ts: number;
 }
 
-type Tab = "chat" | "whatsapp" | "call";
-
-const WHATSAPP_NUMBER = "919700001534";
-const WHATSAPP_MESSAGE = encodeURIComponent(
-  "Hi HotBot Studios! I'd like to learn more about your services."
-);
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
+type Tab = "chat" | "voice" | "call";
 
 // ─── Tab icons ────────────────────────────────────────────────────────────────
 function ChatIcon({ active }: { active: boolean }) {
@@ -37,10 +32,14 @@ function ChatIcon({ active }: { active: boolean }) {
   );
 }
 
-function WAIcon({ active }: { active: boolean }) {
+function MicIcon({ active }: { active: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={active ? "#22c55e" : "#64748b"}>
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#f472b6" : "#64748b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="11" rx="3"/>
+      <path d="M19 10a7 7 0 01-14 0"/>
+      <line x1="12" y1="19" x2="12" y2="22"/>
+      <line x1="8" y1="22" x2="16" y2="22"/>
     </svg>
   );
 }
@@ -54,165 +53,427 @@ function PhoneIcon({ active }: { active: boolean }) {
   );
 }
 
-// ─── WhatsApp Tab ─────────────────────────────────────────────────────────────
-function WhatsAppTab() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-6">
-      {/* WhatsApp branding orb */}
-      <div
-        className="w-20 h-20 rounded-3xl flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 0 40px rgba(34,197,94,0.25)" }}
-      >
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-        </svg>
-      </div>
-
-      <div className="text-center">
-        <p className="text-white font-semibold text-base mb-1">Chat on WhatsApp</p>
-        <p className="text-slate-400 text-sm leading-relaxed max-w-[240px]">
-          Get instant replies from our AI assistant - powered by AI Sensy on WhatsApp Business.
-        </p>
-      </div>
-
-      <a
-        href={WHATSAPP_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full py-3.5 rounded-2xl font-semibold text-white text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-green-500/30"
-        style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}
-      >
-        Open WhatsApp →
-      </a>
-
-      <p className="text-slate-500 text-xs text-center">
-        +91 97000 01534 · Typically replies in minutes
-      </p>
-    </div>
-  );
-}
-
-// ─── Call Tab ─────────────────────────────────────────────────────────────────
-function CallTab() {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+// ─── AI Voice Call Tab — Sarvam-powered with transcript storage ───────────────
+function VoiceCallTab() {
+  const [phase, setPhase] = useState<"intro" | "active">("intro");
+  const [micState, setMicState] = useState<"idle" | "recording" | "processing" | "playing">("idle");
+  const [turns, setTurns] = useState<VoiceTurn[]>([]);
   const [error, setError] = useState("");
-  const { getToken } = useRecaptcha();
+  const mrRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const historyRef = useRef<{ role: string; content: string }[]>([]);
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim()) return;
-    setLoading(true);
-    setError("");
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [turns]);
+
+  async function saveTranscript(user_message: string, ai_reply: string, language?: string) {
     try {
-      const recaptchaToken = await getToken("callback_form");
-      const res = await fetch("/api/forms/callback", {
+      await fetch("/api/voice-transcripts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), recaptchaToken }),
+        body: JSON.stringify({
+          user_message,
+          ai_reply,
+          language: language || "en",
+          session_id: sessionIdRef.current,
+        }),
       });
-      if (!res.ok) {
-        setError("Something went wrong. Please try again.");
-        return;
-      }
-      const data = await res.json();
-      if (data.success) {
-        setDone(true);
-      } else {
-        setError(data.error || "Something went wrong. Please try again.");
-      }
-    } catch {
-      // Network error - still confirm so user isn't stuck
-      setDone(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch { /* silently ignore — never crash the voice session */ }
+  }
 
-  if (done) {
+  async function playAudio(b64: string) {
+    return new Promise<void>((resolve) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "audio/wav" });
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      a.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      a.onerror  = () => { URL.revokeObjectURL(url); resolve(); };
+      a.play().catch(resolve);
+    });
+  }
+
+  async function startCall() {
+    const greeting = "Hi! I'm HotBot, your AI voice assistant. How can I help you today?";
+    historyRef.current = [{ role: "assistant", content: greeting }];
+    setTurns([{ role: "bot", text: greeting }]);
+    setPhase("active");
+    setMicState("playing");
+    try {
+      const res = await fetch("/api/sarvam/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: greeting }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { audio?: string };
+        if (data.audio) await playAudio(data.audio);
+      }
+    } catch { /* proceed silently */ }
+    setMicState("idle");
+  }
+
+  async function handleMic() {
+    if (micState === "recording") {
+      mrRef.current?.stop();
+      return;
+    }
+    if (micState !== "idle") return;
+    setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mrRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setMicState("processing");
+        try {
+          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+          const form = new FormData();
+          form.append("audio", blob);
+          form.append("history", JSON.stringify(historyRef.current.slice(-6)));
+          const res = await fetch("/api/sarvam/voice-chat", { method: "POST", body: form });
+          if (!res.ok) throw new Error("failed");
+          const data = await res.json() as { transcript?: string; reply?: string; audio?: string; language?: string };
+          if (data.transcript) {
+            setTurns((p) => [...p, { role: "user", text: data.transcript! }]);
+            historyRef.current.push({ role: "user", content: data.transcript! });
+          }
+          if (data.reply) {
+            setTurns((p) => [...p, { role: "bot", text: data.reply! }]);
+            historyRef.current.push({ role: "assistant", content: data.reply! });
+          }
+          // Save transcript exchange to Supabase (non-blocking)
+          if (data.transcript && data.reply) {
+            void saveTranscript(data.transcript, data.reply, data.language);
+          }
+          if (data.audio) {
+            setMicState("playing");
+            await playAudio(data.audio);
+          }
+        } catch {
+          setError("Something went wrong. Please try again.");
+        } finally {
+          setMicState("idle");
+        }
+      };
+      mr.start();
+      setMicState("recording");
+    } catch {
+      setError("Microphone access denied. Please allow mic access.");
+      setMicState("idle");
+    }
+  }
+
+  if (phase === "intro") {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-5 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-6">
         <div
-          className="w-16 h-16 rounded-3xl flex items-center justify-center"
-          style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}
+          className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, rgba(244,114,182,0.25), rgba(139,92,246,0.2))",
+            border: "1px solid rgba(244,114,182,0.4)",
+            boxShadow: "0 0 40px rgba(244,114,182,0.2)",
+          }}
         >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M20 6L9 17l-5-5" />
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f9a8d4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/>
+            <path d="M19 10a7 7 0 01-14 0"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
           </svg>
         </div>
-        <div>
-          <p className="text-white font-semibold text-base mb-1">Call Scheduled!</p>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Our AI voice assistant will call <span className="text-white">{phone}</span> within 2 minutes.
-            Make sure you&apos;re available.
+        <div className="text-center">
+          <p className="text-white font-semibold text-base mb-1">AI Voice Call</p>
+          <p className="text-slate-400 text-sm leading-relaxed max-w-[240px]">
+            Speak directly with HotBot&apos;s AI voice agent. Powered by Sarvam — supports Hindi, English, and more.
           </p>
         </div>
         <button
-          onClick={() => { setDone(false); setName(""); setPhone(""); }}
-          className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
+          onClick={startCall}
+          className="w-full py-3.5 rounded-2xl font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+          style={{ background: "linear-gradient(135deg, #f472b6, #8b5cf6)", boxShadow: "0 4px 24px rgba(244,114,182,0.3)" }}
         >
-          Request another call
+          🎙 Start Voice Session →
         </button>
+        <p className="text-slate-500 text-xs text-center">Powered by Sarvam AI · No phone number needed</p>
       </div>
     );
   }
 
+  const micLabel = micState === "recording" ? "Listening…" : micState === "processing" ? "Thinking…" : micState === "playing" ? "Speaking…" : "Tap to speak";
+  const micActive = micState === "recording";
+  const micBusy   = micState === "processing" || micState === "playing";
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-6 gap-5">
-      {/* Icon */}
-      <div
-        className="w-16 h-16 rounded-3xl flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.15))", border: "1px solid rgba(139,92,246,0.3)", boxShadow: "0 0 30px rgba(139,92,246,0.15)" }}
-      >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 10.8 19.79 19.79 0 01.36 2.18 2 2 0 012.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.08 6.08l.82-.82a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-        </svg>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Transcript scroll area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+        {turns.map((t, i) => (
+          <div key={i} className={`flex ${t.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className="max-w-[82%] px-3 py-2 rounded-2xl text-xs leading-relaxed"
+              style={{
+                background: t.role === "user"
+                  ? "linear-gradient(135deg, #be185d, #7c3aed)"
+                  : "rgba(255,255,255,0.07)",
+                color: "white",
+                borderBottomRightRadius: t.role === "user" ? 4 : 16,
+                borderBottomLeftRadius:  t.role === "bot"  ? 4 : 16,
+              }}
+            >
+              {t.text}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="text-center">
-        <p className="text-white font-semibold text-base mb-1">Request a Callback</p>
-        <p className="text-slate-400 text-sm leading-relaxed">
-          Our AI voice agent (powered by Sarvam) will call you back within 2 minutes.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="w-full space-y-3">
-        <div>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            required
-            className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 text-white text-sm placeholder:text-slate-500 outline-none focus:border-purple-500/50 transition-colors"
-          />
-        </div>
-        <div>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91 97000 01534"
-            required
-            className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 text-white text-sm placeholder:text-slate-500 outline-none focus:border-purple-500/50 transition-colors"
-          />
-        </div>
-        {error && <p className="text-red-400 text-xs">{error}</p>}
+      {/* Mic control */}
+      <div className="flex-shrink-0 flex flex-col items-center gap-2 pb-5 pt-3 border-t border-white/[0.06]">
+        {error && <p className="text-red-400 text-[11px]">{error}</p>}
         <button
-          type="submit"
-          disabled={loading || !name.trim() || !phone.trim()}
-          className="w-full py-3.5 rounded-2xl font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-          style={{ background: "linear-gradient(135deg, #8b5cf6, #3b82f6)" }}
+          onClick={handleMic}
+          disabled={micBusy}
+          className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 disabled:cursor-not-allowed"
+          style={{
+            background: micActive
+              ? "rgba(239,68,68,0.2)"
+              : micBusy
+                ? "rgba(244,114,182,0.15)"
+                : "linear-gradient(135deg, #f472b6, #8b5cf6)",
+            border: micActive ? "2px solid rgba(239,68,68,0.7)" : "2px solid transparent",
+            boxShadow: micActive
+              ? "0 0 0 0 rgba(239,68,68,0.4)"
+              : micBusy ? "none" : "0 0 24px rgba(244,114,182,0.4)",
+            animation: micActive ? "micPulse 1s ease-in-out infinite" : "none",
+          }}
         >
-          {loading ? "Requesting..." : "Call Me Now →"}
+          {micState === "processing" || micState === "playing" ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f9a8d4" strokeWidth="2" strokeLinecap="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+              stroke={micActive ? "#f87171" : "white"}
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M19 10a7 7 0 01-14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          )}
         </button>
-      </form>
+        <p className="text-slate-400 text-[11px]">{micLabel}</p>
+      </div>
+    </div>
+  );
+}
 
-      <p className="text-slate-500 text-xs text-center">
-        Powered by Sarvam AI · Calls from +91 97000 01534
-      </p>
+// ─── Voice turn entry ────────────────────────────────────────────────────────
+interface VoiceTurn { role: "user" | "bot"; text: string; }
+
+// ─── Call Tab — Sarvam-powered live voice conversation ───────────────────────
+function CallTab() {
+  const [phase, setPhase] = useState<"intro" | "active">("intro");
+  const [micState, setMicState] = useState<"idle" | "recording" | "processing" | "playing">("idle");
+  const [turns, setTurns] = useState<VoiceTurn[]>([]);
+  const [error, setError] = useState("");
+  const mrRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const historyRef = useRef<{ role: string; content: string }[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [turns]);
+
+  async function playAudio(b64: string) {
+    return new Promise<void>((resolve) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "audio/wav" });
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      a.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      a.onerror  = () => { URL.revokeObjectURL(url); resolve(); };
+      a.play().catch(resolve);
+    });
+  }
+
+  async function startCall() {
+    const greeting = "Hi! I'm HotBot, your AI voice assistant. How can I help you today?";
+    historyRef.current = [{ role: "assistant", content: greeting }];
+    setTurns([{ role: "bot", text: greeting }]);
+    setPhase("active");
+    setMicState("playing");
+    try {
+      const res = await fetch("/api/sarvam/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: greeting }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { audio?: string };
+        if (data.audio) await playAudio(data.audio);
+      }
+    } catch { /* proceed silently */ }
+    setMicState("idle");
+  }
+
+  async function handleMic() {
+    if (micState === "recording") {
+      mrRef.current?.stop();
+      return;
+    }
+    if (micState !== "idle") return;
+    setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mrRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setMicState("processing");
+        try {
+          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+          const form = new FormData();
+          form.append("audio", blob);
+          form.append("history", JSON.stringify(historyRef.current.slice(-6)));
+          const res = await fetch("/api/sarvam/voice-chat", { method: "POST", body: form });
+          if (!res.ok) throw new Error("failed");
+          const data = await res.json() as { transcript?: string; reply?: string; audio?: string };
+          if (data.transcript) {
+            setTurns((p) => [...p, { role: "user", text: data.transcript! }]);
+            historyRef.current.push({ role: "user", content: data.transcript! });
+          }
+          if (data.reply) {
+            setTurns((p) => [...p, { role: "bot", text: data.reply! }]);
+            historyRef.current.push({ role: "assistant", content: data.reply! });
+          }
+          if (data.audio) {
+            setMicState("playing");
+            await playAudio(data.audio);
+          }
+        } catch {
+          setError("Something went wrong. Please try again.");
+        } finally {
+          setMicState("idle");
+        }
+      };
+      mr.start();
+      setMicState("recording");
+    } catch {
+      setError("Microphone access denied. Please allow mic access.");
+      setMicState("idle");
+    }
+  }
+
+  if (phase === "intro") {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-6">
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2))",
+            border: "1px solid rgba(139,92,246,0.4)",
+            boxShadow: "0 0 40px rgba(139,92,246,0.2)",
+          }}
+        >
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/>
+            <path d="M19 10a7 7 0 01-14 0"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-white font-semibold text-base mb-1">Live Voice Agent</p>
+          <p className="text-slate-400 text-sm leading-relaxed max-w-[240px]">
+            Speak directly with HotBot&apos;s AI voice agent. Powered by Sarvam — supports Hindi, English, and more.
+          </p>
+        </div>
+        <button
+          onClick={startCall}
+          className="w-full py-3.5 rounded-2xl font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+          style={{ background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
+        >
+          Start Voice Call →
+        </button>
+        <p className="text-slate-500 text-xs text-center">Powered by Sarvam AI · No phone number needed</p>
+      </div>
+    );
+  }
+
+  const micLabel = micState === "recording" ? "Listening…" : micState === "processing" ? "Thinking…" : micState === "playing" ? "Speaking…" : "Tap to speak";
+  const micActive = micState === "recording";
+  const micBusy   = micState === "processing" || micState === "playing";
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Transcript scroll area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+        {turns.map((t, i) => (
+          <div key={i} className={`flex ${t.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className="max-w-[82%] px-3 py-2 rounded-2xl text-xs leading-relaxed"
+              style={{
+                background: t.role === "user"
+                  ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                  : "rgba(255,255,255,0.07)",
+                color: "white",
+                borderBottomRightRadius: t.role === "user" ? 4 : 16,
+                borderBottomLeftRadius:  t.role === "bot"  ? 4 : 16,
+              }}
+            >
+              {t.text}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mic control */}
+      <div className="flex-shrink-0 flex flex-col items-center gap-2 pb-5 pt-3 border-t border-white/[0.06]">
+        {error && <p className="text-red-400 text-[11px]">{error}</p>}
+        <button
+          onClick={handleMic}
+          disabled={micBusy}
+          className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 disabled:cursor-not-allowed"
+          style={{
+            background: micActive
+              ? "rgba(239,68,68,0.2)"
+              : micBusy
+                ? "rgba(139,92,246,0.15)"
+                : "linear-gradient(135deg, #8b5cf6, #3b82f6)",
+            border: micActive ? "2px solid rgba(239,68,68,0.7)" : "2px solid transparent",
+            boxShadow: micActive
+              ? "0 0 0 0 rgba(239,68,68,0.4)"
+              : micBusy ? "none" : "0 0 24px rgba(139,92,246,0.4)",
+            animation: micActive ? "micPulse 1s ease-in-out infinite" : "none",
+          }}
+        >
+          {micState === "processing" || micState === "playing" ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" strokeWidth="2" strokeLinecap="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+              stroke={micActive ? "#f87171" : "white"}
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M19 10a7 7 0 01-14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          )}
+        </button>
+        <p className="text-slate-400 text-[11px]">{micLabel}</p>
+      </div>
     </div>
   );
 }
@@ -294,10 +555,13 @@ export function HotBotChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [needsHuman, setNeedsHuman] = useState(false);
   const [agentJoined, setAgentJoined] = useState(false);
+  const [micState, setMicState] = useState<MicState>("idle");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMsgCountRef = useRef(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -387,13 +651,46 @@ export function HotBotChat() {
       if (err instanceof Error && err.name === "AbortError") return;
       setMsgs((p) => [...p, {
         role: "bot",
-        text: "Message sent! You can also reach us instantly via WhatsApp or request a call.",
+        text: "Message sent! You can also try our AI Voice Call or request a call from our team.",
         ts: Date.now(),
       }]);
     } finally {
       setTyping(false);
     }
   }, [msgs, guestName, guestEmail, guestPhone, sessionId]);
+
+  const handleMic = useCallback(async () => {
+    if (micState === "recording") {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    if (micState !== "idle") return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setMicState("transcribing");
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const form = new FormData();
+          form.append("audio", blob);
+          const res = await fetch("/api/sarvam/stt", { method: "POST", body: form });
+          if (res.ok) {
+            const data = await res.json() as { transcript?: string };
+            if (data.transcript) setInput(data.transcript);
+          }
+        } catch { /* ignore */ } finally {
+          setMicState("idle");
+        }
+      };
+      mr.start();
+      setMicState("recording");
+    } catch { setMicState("idle"); }
+  }, [micState]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -404,9 +701,9 @@ export function HotBotChat() {
 
   // Tab config
   const TABS: { id: Tab; label: string; Icon: React.FC<{ active: boolean }> }[] = [
-    { id: "chat",      label: "AI Chat",   Icon: ChatIcon },
-    { id: "whatsapp",  label: "WhatsApp",  Icon: WAIcon },
-    { id: "call",      label: "Call",      Icon: PhoneIcon },
+    { id: "chat",  label: "AI Chat",   Icon: ChatIcon },
+    { id: "voice", label: "Voice AI",  Icon: MicIcon },
+    { id: "call",  label: "Call",      Icon: PhoneIcon },
   ];
 
   return (
@@ -498,10 +795,10 @@ export function HotBotChat() {
                 className="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-all duration-200"
                 style={{
                   color: tab === id
-                    ? id === "chat" ? "#60a5fa" : id === "whatsapp" ? "#22c55e" : "#a78bfa"
+                    ? id === "chat" ? "#60a5fa" : id === "voice" ? "#f472b6" : "#a78bfa"
                     : "#475569",
                   borderBottom: tab === id
-                    ? `2px solid ${id === "chat" ? "#3b82f6" : id === "whatsapp" ? "#22c55e" : "#8b5cf6"}`
+                    ? `2px solid ${id === "chat" ? "#3b82f6" : id === "voice" ? "#f472b6" : "#8b5cf6"}`
                     : "2px solid transparent",
                   background: tab === id ? "rgba(255,255,255,0.03)" : "transparent",
                 }}
@@ -552,6 +849,34 @@ export function HotBotChat() {
                   style={{ minHeight: 44 }}
                 />
                 <button
+                  onClick={handleMic}
+                  disabled={typing}
+                  title={micState === "recording" ? "Stop recording" : micState === "transcribing" ? "Transcribing…" : "Voice input"}
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background: micState === "recording"
+                      ? "rgba(239,68,68,0.2)"
+                      : "rgba(255,255,255,0.05)",
+                    border: micState === "recording" ? "1px solid rgba(239,68,68,0.5)" : "1px solid transparent",
+                    animation: micState === "recording" ? "micPulse 1s ease-in-out infinite" : "none",
+                  }}
+                >
+                  {micState === "transcribing" ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke={micState === "recording" ? "#f87171" : "#94a3b8"}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="2" width="6" height="11" rx="3"/>
+                      <path d="M19 10a7 7 0 01-14 0"/>
+                      <line x1="12" y1="19" x2="12" y2="22"/>
+                      <line x1="8" y1="22" x2="16" y2="22"/>
+                    </svg>
+                  )}
+                </button>
+                <button
                   onClick={() => sendMsg(input)}
                   disabled={!input.trim() || typing}
                   className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -570,7 +895,7 @@ export function HotBotChat() {
             </>
           )}
 
-          {tab === "whatsapp" && <WhatsAppTab />}
+          {tab === "voice" && <VoiceCallTab />}
           {tab === "call" && <CallTab />}
         </div>
       )}

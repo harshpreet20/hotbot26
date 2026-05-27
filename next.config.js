@@ -56,6 +56,8 @@ const nextConfig = {
       { source: "/digital-marketing/ppc", destination: "/digital-marketing/ppc-management", permanent: true },
       { source: "/digital-marketing/seo", destination: "/digital-marketing/seo-services", permanent: true },
       { source: "/digital-marketing/social-media", destination: "/digital-marketing/social-media-marketing", permanent: true },
+      { source: "/client", destination: "/customers", permanent: false },
+      { source: "/client/:path*", destination: "/customers/:path*", permanent: false },
     ];
   },
 };

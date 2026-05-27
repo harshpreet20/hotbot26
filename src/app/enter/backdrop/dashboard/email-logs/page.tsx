@@ -125,7 +125,7 @@ export default function EmailLogsPage() {
 
   const load = useCallback(async (p: number, q: string, t: string, s: string, silent = false) => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     if (!silent) setLoading(true);
     const params = new URLSearchParams({ page: String(p), limit: String(limit) });
     if (q) params.set("q", q);

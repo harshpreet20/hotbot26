@@ -53,7 +53,7 @@ export default function InvoiceDetailPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
 
     Promise.all([
       fetch(`/api/dashboard/invoices?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })

@@ -22,6 +22,9 @@ export default function ChatsPage() {
   const [active, setActive] = useState<string | null>(null);
   const [agentInput, setAgentInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
+  const canDelete = role === "super_admin";
 
   const fetchSessions = useCallback(() => {
     const secret = getSecret();
@@ -65,6 +68,18 @@ export default function ChatsPage() {
   });
 
   const selected = sessions.find((s) => s.id === active) ?? null;
+
+  async function deleteSession(id: string, displayName: string) {
+    if (!confirm(`Permanently delete chat session "${displayName}"? This cannot be undone.`)) return;
+    const secret = getSecret();
+    setDeleting(id);
+    try {
+      await fetch(`/api/dashboard/chats?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      if (active === id) setActive(null);
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  }
 
   async function handleAgentReply() {
     if (!selected || !agentInput.trim() || sending) return;
@@ -121,49 +136,63 @@ export default function ChatsPage() {
                   "Session";
                 const isActive = active === s.id;
                 return (
-                  <button
+                  <div
                     key={s.id}
-                    onClick={() => setActive(isActive ? null : s.id)}
-                    className="w-full text-left px-4 py-3 border-b hover:bg-white/[0.03] transition-colors"
-                    style={{
-                      borderColor: "rgba(255,255,255,0.05)",
-                      borderLeft: s.needsHuman ? "2px solid #ef4444" : "2px solid transparent",
-                      background: isActive ? "rgba(99,102,241,0.08)" : "transparent",
-                    }}
+                    className="flex items-stretch border-b"
+                    style={{ borderColor: "rgba(255,255,255,0.05)" }}
                   >
-                    <div className="flex items-center gap-2">
-                      {s.needsHuman && (
-                        <span className="relative flex h-2 w-2 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                    <button
+                      onClick={() => setActive(isActive ? null : s.id)}
+                      className="flex-1 text-left px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                      style={{
+                        borderLeft: s.needsHuman ? "2px solid #ef4444" : "2px solid transparent",
+                        background: isActive ? "rgba(99,102,241,0.08)" : "transparent",
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {s.needsHuman && (
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                          </span>
+                        )}
+                        <p className="text-slate-300 text-xs font-medium truncate flex-1">
+                          {displayName}
+                        </p>
+                        {s.needsHuman && (
+                          <span className="shrink-0 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                            LIVE
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-slate-600 text-[10px]">{s.messages.length} msgs</span>
+                        <span className="text-slate-700 text-[10px]">·</span>
+                        <span className="text-slate-600 text-[10px]">
+                          {new Date(s.startedAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </span>
-                      )}
-                      <p className="text-slate-300 text-xs font-medium truncate flex-1">
-                        {displayName}
-                      </p>
-                      {s.needsHuman && (
-                        <span className="shrink-0 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                          LIVE
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-slate-600 text-[10px]">{s.messages.length} msgs</span>
-                      <span className="text-slate-700 text-[10px]">·</span>
-                      <span className="text-slate-600 text-[10px]">
-                        {new Date(s.startedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                      {s.needsHuman && (
-                        <>
-                          <span className="text-slate-700 text-[10px]">·</span>
-                          <span className="text-red-400 text-[10px]">Awaiting agent</span>
-                        </>
-                      )}
-                    </div>
-                  </button>
+                        {s.needsHuman && (
+                          <>
+                            <span className="text-slate-700 text-[10px]">·</span>
+                            <span className="text-red-400 text-[10px]">Awaiting agent</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => deleteSession(s.id, displayName)}
+                        disabled={deleting === s.id}
+                        className="px-2 text-red-500 hover:text-red-400 transition-colors disabled:opacity-40 text-xs"
+                        title="Delete session"
+                      >
+                        {deleting === s.id ? "…" : "✕"}
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

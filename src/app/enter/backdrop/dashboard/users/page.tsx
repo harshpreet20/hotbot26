@@ -127,7 +127,7 @@ export default function UsersPage() {
   useEffect(() => {
     const secret = getSecret();
     const role   = getRole() as Role;
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     if (role && role !== "super_admin" && role !== "admin" && role !== "manager") {
       router.replace("/enter/backdrop/dashboard");
       return;

@@ -24,7 +24,7 @@ export default function ContactsPage() {
 
   const fetchContacts = useCallback(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     setLoading(true);
     fetch('/api/dashboard/contacts', { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {

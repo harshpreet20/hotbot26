@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
-import { readAll, updateById } from "@/lib/store";
+import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
+import { readAll, updateById, removeById } from "@/lib/store";
 import type { CallbackRequest } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
@@ -24,4 +24,16 @@ export async function PATCH(req: NextRequest) {
 
   await updateById<CallbackRequest>("callbacks", id, { status: "called" });
   return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!["super_admin"].includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  await removeById("callbacks", id);
+  return NextResponse.json({ ok: true });
 }

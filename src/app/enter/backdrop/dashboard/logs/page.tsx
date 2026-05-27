@@ -134,7 +134,7 @@ export default function LogsPage() {
 
   const fetchLogs = useCallback(async (silent = false) => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
 
     if (!silent) setLoading(true);
     setError("");

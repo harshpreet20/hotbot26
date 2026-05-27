@@ -23,7 +23,7 @@ export default function BlogPage() {
 
   const fetchPosts = useCallback(async () => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     setLoading(true);
     try {
       const allRes = await fetch(`/api/blog/posts?status=all&limit=500`, {

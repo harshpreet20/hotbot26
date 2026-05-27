@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Client, ClientStatus } from "@/types/dashboard";
 
@@ -46,6 +47,7 @@ export default function ClientsPage() {
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
 
   // Edit state
   const [editing, setEditing]   = useState<Client | null>(null);
@@ -76,11 +78,28 @@ export default function ClientsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Load project counts per client
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch("/api/dashboard/projects", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { projects?: { client_id: string }[] } | null) => {
+        if (!d?.projects) return;
+        const counts: Record<string, number> = {};
+        for (const p of d.projects) {
+          counts[p.client_id] = (counts[p.client_id] ?? 0) + 1;
+        }
+        setProjectCounts(counts);
+      })
+      .catch(() => {});
+  }, []);
+
   const filtered = clients.filter((c) => {
     if (filter !== "all" && c.status !== filter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return [c.name, c.email, c.company, c.clientId].some((v) => v.toLowerCase().includes(q));
+    return [c.name, c.email, c.company, c.clientId].some((v) => v?.toLowerCase().includes(q));
   });
 
   function copyId(clientId: string) {
@@ -314,7 +333,7 @@ export default function ClientsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-                    {["Client ID", "Name", "Company", "Email", "Status", "Added", "Actions"].map((h) => (
+                    {["Client ID", "Name", "Company", "Email", "Projects", "Status", "Added", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-4 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -349,6 +368,20 @@ export default function ClientsPage() {
                           {c.email
                             ? <a href={`mailto:${c.email}`} className="text-blue-400 hover:text-blue-300 text-sm">{c.email}</a>
                             : <span className="text-slate-700">—</span>}
+                        </td>
+                        {/* Projects */}
+                        <td className="py-3 px-4">
+                          {(projectCounts[c.clientId] ?? 0) > 0 ? (
+                            <Link
+                              href={`/enter/backdrop/dashboard/projects?client_id=${c.clientId}`}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
+                              style={{ color: "#818cf8", background: "rgba(129,140,248,0.12)" }}
+                            >
+                              {projectCounts[c.clientId]}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-700 text-xs">—</span>
+                          )}
                         </td>
                         {/* Status */}
                         <td className="py-3 px-4">
@@ -403,7 +436,7 @@ export default function ClientsPage() {
                       </tr>,
                       isEmailExpanded && (
                         <tr key={`${c.id}-emails`} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                          <td colSpan={7} style={{ padding: "0 16px 16px" }}>
+                          <td colSpan={8} style={{ padding: "0 16px 16px" }}>
                             <EntityEmailHistory entityType="client" entityId={c.id} role={getRole()} />
                           </td>
                         </tr>

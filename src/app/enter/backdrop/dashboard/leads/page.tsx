@@ -92,7 +92,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    if (!secret) { setTimeout(() => { if (!getSecret()) router.replace("/enter/backdrop"); }, 200); return; }
     Promise.all([
       fetch("/api/dashboard/leads", { headers: { Authorization: `Bearer ${secret}` } }),
       fetch("/api/dashboard/team",  { headers: { Authorization: `Bearer ${secret}` } }),
