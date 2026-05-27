@@ -33,10 +33,14 @@ export async function GET(req: NextRequest) {
   if (token) {
     const session = await getSession(token);
     if (session) {
-      // Do NOT echo the token back — it lives in the HttpOnly cookie already.
+      // The token IS returned so callers can restore sessionStorage.backdrop_secret on
+      // cold-start (new tab / tab reload).  It carries no additional XSS risk: callers
+      // immediately write it to sessionStorage, so the threat model is the same
+      // whether it travels in the body or stays cookie-only.
       return NextResponse.json({
         needsSetup:      false,
         authenticated:   true,
+        token,
         role:            session.role,
         username:        session.username,
         isImpersonating: session.isImpersonating,

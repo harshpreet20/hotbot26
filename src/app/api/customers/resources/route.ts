@@ -62,18 +62,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate file_url is a Supabase Storage URL to prevent SSRF / arbitrary URL injection.
+  // Fail closed: if the env var is not set we cannot verify the hostname, so reject the request.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (!supabaseUrl) {
+    return NextResponse.json({ error: "Server configuration error: storage URL not set" }, { status: 503 });
+  }
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(file_url);
   } catch {
     return NextResponse.json({ error: "Invalid file_url" }, { status: 400 });
   }
-  const allowedHostname = supabaseUrl ? new URL(supabaseUrl).hostname : null;
-  if (
-    parsedUrl.protocol !== "https:" ||
-    (allowedHostname && parsedUrl.hostname !== allowedHostname)
-  ) {
+  const allowedHostname = new URL(supabaseUrl).hostname;
+  if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== allowedHostname) {
     return NextResponse.json({ error: "file_url must be a valid Supabase Storage URL" }, { status: 400 });
   }
 

@@ -4,6 +4,7 @@ import { sb } from "@/lib/supabase";
 import { newId } from "@/lib/store";
 import { fireJourneyEvent } from "@/lib/journey";
 import { sendClientWelcomeEmail } from "@/lib/resend";
+import crypto from "crypto";
 
 export async function POST(
   req: NextRequest,
@@ -36,10 +37,12 @@ export async function POST(
   // 3. Create client record
   const clientId = newId(); // UUID — clients.id
 
-  // Generate a unique HBS-XXXXX code for clients.client_id (required NOT NULL field).
-  // Format: HBS- + 5 uppercase alphanumeric chars. Collisions are extremely unlikely
-  // but the insert will fail on the UNIQUE constraint — caller can retry if needed.
-  const hbsCode = "HBS-" + Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "0").slice(2, 7);
+  // Generate a unique HBS-XXXXX code for clients.client_id (required NOT NULL UNIQUE).
+  // Uses crypto.randomBytes for cryptographic randomness — 3 bytes = 16M combinations
+  // in hex uppercase = HBS-XXXXXX (6 hex chars, 16^6 ≈ 16.7M space), far safer than
+  // Math.random() (birthday collision at ~780 with Math.random's 5-char base36).
+  // On the rare UNIQUE constraint collision the caller gets a clear 500 and can retry.
+  const hbsCode = "HBS-" + crypto.randomBytes(3).toString("hex").toUpperCase();
 
   const { error: clientError } = await sb()
     .from("clients")

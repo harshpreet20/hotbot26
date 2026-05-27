@@ -5,6 +5,19 @@
 -- =============================================================================
 
 
+-- ── FIX 0: Enable RLS on tables that were missing it ──────────────────────────
+-- RISK: Tables without RLS are fully readable/writable by any role (anon,
+-- authenticated) through PostgREST. All three were in the Supabase CRITICAL list.
+
+ALTER TABLE public.pending_users    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_resources ENABLE ROW LEVEL SECURITY;
+
+-- All three tables are accessed exclusively through service role key API routes
+-- (which bypass RLS by design). No anon/authenticated policies are needed.
+-- Adding a policy only when a direct client-side Supabase query is intentionally added.
+
+
 -- ── FIX 1: Move pg_net extension out of public schema ─────────────────────────
 -- RISK: pg_net in public schema allows any database role (including anon via
 -- PostgREST) to call net.http_post() / net.http_get() and exfiltrate data or
@@ -22,20 +35,19 @@ ALTER EXTENSION pg_net SET SCHEMA extensions;
 
 
 -- ── FIX 2: Consolidate duplicate RLS policies on public.site_settings ─────────
--- RISK: Two permissive SELECT policies for the anon role (public_read_recaptcha_site_key
--- and public_read_settings) are evaluated with OR logic on EVERY anon SELECT.
--- PostgreSQL must check both conditions, doubling execution cost and making
--- the effective policy hard to audit.
--- FIX: Drop both, replace with a single clear policy.
+-- RISK: Two permissive SELECT policies for the anon role existed simultaneously:
+--   - public_read_settings  (USING true — allows ALL rows)
+--   - public_read_recaptcha_site_key (USING key = 'recaptcha_site_key' — scoped)
+-- PostgreSQL evaluates permissive policies with OR, so the broader policy subsumes
+-- the scoped one — effectively exposing all site_settings rows to anon.
+-- FIX: Drop the overly-broad policy, keep only the key-scoped one.
 
-DROP POLICY IF EXISTS "public_read_recaptcha_site_key" ON public.site_settings;
-DROP POLICY IF EXISTS "public_read_settings"           ON public.site_settings;
+DROP POLICY IF EXISTS "public_read_settings" ON public.site_settings;
 
--- One consolidated policy — anon can read public settings rows
-CREATE POLICY "anon_read_public_settings" ON public.site_settings
-  FOR SELECT
-  TO anon
-  USING (true);
+-- The remaining policy public_read_recaptcha_site_key (qual = key='recaptcha_site_key')
+-- correctly scopes anon SELECT to only the public-safe recaptcha key row.
+-- If you previously relied on public_read_settings for other rows, add a new
+-- explicit policy with a precise USING clause instead of USING (true).
 
 -- Verify:
 -- SELECT policyname, roles, cmd FROM pg_policies

@@ -27,13 +27,11 @@ export async function POST(req: NextRequest) {
       .eq("email", email.toLowerCase().trim())
       .single();
 
-    if (!user) {
-      // Don't reveal whether account exists
+    if (!user || !user.is_active) {
+      // Don't reveal whether account exists or is inactive — always return ok.
+      // This prevents email enumeration: an attacker cannot distinguish missing
+      // accounts from inactive ones by comparing response shape.
       return NextResponse.json({ ok: true });
-    }
-
-    if (!user.is_active) {
-      return NextResponse.json({ error: "Account is inactive." }, { status: 403 });
     }
 
     const token = crypto.randomBytes(32).toString("hex");

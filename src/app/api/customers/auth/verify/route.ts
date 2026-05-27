@@ -22,32 +22,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/customers?error=invalid_token", req.url));
   }
 
-  const { data: user } = await sb()
-    .from("client_users")
-    .select("id, email, name, role, client_id, invite_expires_at, is_active")
-    .eq("invite_token", token)
-    .single();
-
-  if (!user) {
-    return NextResponse.redirect(new URL("/customers?error=invalid_token", req.url));
-  }
-
-  if (!user.is_active) {
-    return NextResponse.redirect(new URL("/customers?error=inactive", req.url));
-  }
-
-  if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
-    return NextResponse.redirect(new URL("/customers?error=expired", req.url));
-  }
-
-  await sb()
+  // Atomically consume the token: UPDATE WHERE invite_token = $token AND not expired.
+  // This closes the TOCTOU race where two concurrent requests could both pass a
+  // SELECT check before either UPDATE fires — only one UPDATE can win the WHERE clause.
+  const { data: user, error: consumeError } = await sb()
     .from("client_users")
     .update({
       invite_token:       null,
       invite_expires_at:  null,
       invite_accepted_at: new Date().toISOString(),
     })
-    .eq("id", user.id);
+    .eq("invite_token", token)
+    .gt("invite_expires_at", new Date().toISOString())
+    .eq("is_active", true)
+    .select("id, email, name, role, client_id")
+    .single();
+
+  if (consumeError || !user) {
+    // Token not found, already used, expired, or account inactive
+    return NextResponse.redirect(new URL("/customers?error=invalid_token", req.url));
+  }
 
   const sessionToken = createPortalSession(user.email);
   const cookie = buildPortalCookie(sessionToken);

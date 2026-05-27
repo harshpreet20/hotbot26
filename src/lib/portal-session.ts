@@ -16,10 +16,13 @@ function sign(payload: string): string {
 
 /** Timing-safe comparison of two HMAC strings to prevent timing oracle attacks. */
 function hmacEqual(a: string, b: string): boolean {
+  // Validate both are full 64-char hex strings (SHA-256 output) before converting.
+  // Buffer.from(odd-length-hex, "hex") silently truncates — the length check below
+  // would then pass for a manipulated shorter input that coincidentally matches length.
+  if (a.length !== 64 || b.length !== 64) return false;
   try {
     const aBuf = Buffer.from(a, "hex");
     const bBuf = Buffer.from(b, "hex");
-    if (aBuf.length !== bBuf.length) return false;
     return crypto.timingSafeEqual(aBuf, bBuf);
   } catch {
     return false;
