@@ -3,8 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sb } from "@/lib/supabase";
 import { createPortalSession, buildPortalCookie } from "@/lib/portal-session";
+import { rateLimitResponse } from "@/lib/rateLimit";
+
+function getIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "portal-login", { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   try {
     const { email, password } = (await req.json()) as { email?: string; password?: string };
     if (!email || !password) {

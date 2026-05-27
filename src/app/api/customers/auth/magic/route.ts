@@ -3,8 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { sb } from "@/lib/supabase";
 import { sendPortalMagicLink } from "@/lib/resend";
+import { rateLimitResponse } from "@/lib/rateLimit";
+
+function getIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(getIp(req), "portal-magic", { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   try {
     const { email } = (await req.json()) as { email?: string };
     if (!email) {

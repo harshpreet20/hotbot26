@@ -4,7 +4,9 @@ import crypto from "crypto";
 import { sb } from "@/lib/supabase";
 import { sendPortalInvite } from "@/lib/resend";
 
-const BACKDROP_SECRET = process.env.BACKDROP_ADMIN_SECRET ?? process.env.NEXT_PUBLIC_BACKDROP_SECRET ?? "";
+// NEXT_PUBLIC_* variables are embedded in the client-side bundle — never use them
+// for server-side secrets. Only BACKDROP_ADMIN_SECRET (server-only) is valid here.
+const BACKDROP_SECRET = process.env.BACKDROP_ADMIN_SECRET ?? "";
 
 export async function POST(req: NextRequest) {
   // Admin-only endpoint — protected by backdrop secret

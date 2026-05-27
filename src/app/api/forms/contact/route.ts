@@ -128,6 +128,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, message: "Message received! We'll reply within 24 hours." });
   } catch (error) {
     console.error("[contact form] error:", error);
-    return NextResponse.json({ success: true, message: "Thanks for reaching out! We'll reply shortly." });
+    return NextResponse.json({ success: false, error: "Internal server error. Please try again." }, { status: 500 });
   }
 }

@@ -2,8 +2,21 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { sb } from "@/lib/supabase";
 import { createPortalSession, buildPortalCookie } from "@/lib/portal-session";
+import { rateLimit } from "@/lib/rateLimit";
+
+function getIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 export async function GET(req: NextRequest) {
+  // Rate-limit token verification to prevent brute-force guessing of magic-link tokens
+  const { allowed } = rateLimit(getIp(req), "portal-verify", { limit: 20, windowMs: 60_000 });
+  if (!allowed) {
+    return NextResponse.redirect(new URL("/customers?error=rate_limited", req.url));
+  }
+
   const token = req.nextUrl.searchParams.get("token");
   if (!token) {
     return NextResponse.redirect(new URL("/customers?error=invalid_token", req.url));

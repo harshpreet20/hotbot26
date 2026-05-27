@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const SECRET = process.env.PORTAL_SESSION_SECRET || 'portal-secret-change-me';
+const SECRET = process.env.PORTAL_SESSION_SECRET || 'portal-session-secret-change-me';
 
 export function createPortalSession(email: string): string {
   const payload = `${email}:${Date.now()}`;

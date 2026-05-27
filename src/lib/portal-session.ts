@@ -14,6 +14,18 @@ function sign(payload: string): string {
   return crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
 }
 
+/** Timing-safe comparison of two HMAC strings to prevent timing oracle attacks. */
+function hmacEqual(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a, "hex");
+    const bBuf = Buffer.from(b, "hex");
+    if (aBuf.length !== bBuf.length) return false;
+    return crypto.timingSafeEqual(aBuf, bBuf);
+  } catch {
+    return false;
+  }
+}
+
 /** Create a signed session token valid for 7 days. */
 export function createPortalSession(email: string): string {
   const expires = Date.now() + TTL_MS;
@@ -30,7 +42,7 @@ export function verifyPortalToken(token: string): string | null {
     const lastColon = decoded.lastIndexOf(":");
     const payload   = decoded.slice(0, lastColon);
     const hmac      = decoded.slice(lastColon + 1);
-    if (sign(payload) !== hmac) return null;
+    if (!hmacEqual(sign(payload), hmac)) return null;
 
     // payload = email:expires
     const idx     = payload.lastIndexOf(":");
@@ -68,10 +80,12 @@ export function verifyPortalSession(req: NextRequest | Request): string | null {
 /** Build the Set-Cookie header string. */
 export function buildPortalCookie(token: string): string {
   const maxAge = Math.floor(TTL_MS / 1000);
-  return `${COOKIE}=${token}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Lax`;
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${COOKIE}=${token}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Lax${secure}`;
 }
 
 /** Clear cookie value. */
 export function clearPortalCookie(): string {
-  return `${COOKIE}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`;
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${COOKIE}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax${secure}`;
 }

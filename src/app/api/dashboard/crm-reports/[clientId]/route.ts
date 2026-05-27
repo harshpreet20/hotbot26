@@ -54,10 +54,12 @@ export async function GET(
   }
 
   // 2. Projects for this client
+  // projects.client_id is the HBS-XXXXX varchar key (FK → clients.client_id), NOT the UUID.
+  // Use client.client_id (the HBS code fetched above) to avoid a UUID/varchar mismatch.
   const { data: projectRows, error: projectsError } = await sb()
     .from("projects")
     .select("*")
-    .eq("client_id", clientId)
+    .eq("client_id", (client as Record<string, unknown>).client_id ?? clientId)
     .order("created_at", { ascending: false });
 
   if (projectsError) {

@@ -33,10 +33,10 @@ export async function GET(req: NextRequest) {
   if (token) {
     const session = await getSession(token);
     if (session) {
+      // Do NOT echo the token back — it lives in the HttpOnly cookie already.
       return NextResponse.json({
         needsSetup:      false,
         authenticated:   true,
-        token,
         role:            session.role,
         username:        session.username,
         isImpersonating: session.isImpersonating,

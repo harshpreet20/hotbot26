@@ -34,18 +34,25 @@ export async function POST(
   }
 
   // 3. Create client record
-  const clientId = newId();
+  const clientId = newId(); // UUID — clients.id
+
+  // Generate a unique HBS-XXXXX code for clients.client_id (required NOT NULL field).
+  // Format: HBS- + 5 uppercase alphanumeric chars. Collisions are extremely unlikely
+  // but the insert will fail on the UNIQUE constraint — caller can retry if needed.
+  const hbsCode = "HBS-" + Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "0").slice(2, 7);
+
   const { error: clientError } = await sb()
     .from("clients")
     .insert({
-      id: clientId,
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      company: lead.company,
-      status: "active",
-      notes: `Converted from lead on ${new Date().toISOString()}. Service: ${lead.service}. Budget: ${lead.budget}`,
-      lead_id: lead.id,
+      id:         clientId,
+      client_id:  hbsCode,
+      name:       lead.name,
+      email:      lead.email,
+      phone:      lead.phone,
+      company:    lead.company,
+      status:     "active",
+      notes:      `Converted from lead on ${new Date().toISOString()}. Service: ${lead.service}. Budget: ${lead.budget}`,
+      lead_id:    lead.id,
       created_at: new Date().toISOString(),
     });
 

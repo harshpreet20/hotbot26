@@ -61,6 +61,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name, file_url, file_name, and mime_type are required" }, { status: 400 });
   }
 
+  // Validate file_url is a Supabase Storage URL to prevent SSRF / arbitrary URL injection.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(file_url);
+  } catch {
+    return NextResponse.json({ error: "Invalid file_url" }, { status: 400 });
+  }
+  const allowedHostname = supabaseUrl ? new URL(supabaseUrl).hostname : null;
+  if (
+    parsedUrl.protocol !== "https:" ||
+    (allowedHostname && parsedUrl.hostname !== allowedHostname)
+  ) {
+    return NextResponse.json({ error: "file_url must be a valid Supabase Storage URL" }, { status: 400 });
+  }
+
   const { data, error } = await sb()
     .from("client_resources")
     .insert({
