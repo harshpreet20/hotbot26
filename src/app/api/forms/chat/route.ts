@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     const ticketId = ticketMatch[0];
     try {
       const tickets = await readAll<Ticket>("tickets");
-      const ticket = tickets.find(t => t.ticketNumber.toUpperCase() === ticketId.toUpperCase());
+      const ticket = tickets.find(t => t.ticketNumber?.toUpperCase() === ticketId.toUpperCase());
       ticketContext = ticket
         ? `\n\n[TICKET LOOKUP]\nTicket ${ticket.ticketNumber}: "${ticket.title}"\nStatus: ${ticket.status} | Priority: ${ticket.priority} | Category: ${ticket.category}\nCreated: ${ticket.createdAt}\nLast Updated: ${ticket.updatedAt}`
         : `\n\n[TICKET LOOKUP]\nNo ticket found with ID ${ticketId}.`;

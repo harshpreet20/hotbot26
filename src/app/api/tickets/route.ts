@@ -32,7 +32,7 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
 
 function getNextTicketNumber(tickets: Ticket[]): string {
   const nums = tickets
-    .map((t) => parseInt(t.ticketNumber.replace(/\D/g, ""), 10))
+    .map((t) => parseInt((t.ticketNumber ?? "").replace(/\D/g, ""), 10))
     .filter((n) => !isNaN(n));
   const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
   return `TKT-${String(next).padStart(4, "0")}`;
@@ -141,13 +141,13 @@ export async function POST(req: NextRequest) {
     // Mirror as a lead so the sales team can follow up
     insert<Lead>("leads", {
       id:        newId(),
-      name:      ticket.requesterName,
-      email:     ticket.requesterEmail,
+      name:      ticket.requesterName ?? "",
+      email:     ticket.requesterEmail ?? "",
       phone:     null,
       company:   null,
-      service:   ticket.category,
+      service:   ticket.category ?? "general",
       budget:    null,
-      message:   `[Support Ticket #${ticket.ticketNumber}] ${ticket.title}`,
+      message:   `[Support Ticket #${ticket.ticketNumber ?? ""}] ${ticket.title ?? ""}`,
       formType:  "support-ticket",
       source:    "support",
       ip:        ip,
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     fireJourneyEvent({
       sessionId: null,
-      email: ticket.requesterEmail,
+      email: ticket.requesterEmail ?? "",
       stage: "lead",
       source: "support",
       page: req.headers.get("referer") ?? null,

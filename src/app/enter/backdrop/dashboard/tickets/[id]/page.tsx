@@ -76,7 +76,7 @@ export default function TicketDetailPage() {
       .then((d) => {
         if (d?.ticket) {
           setTicket(d.ticket as Ticket);
-          setTitleVal((d.ticket as Ticket).title);
+          setTitleVal((d.ticket as Ticket).title ?? (d.ticket as Ticket).subject ?? "");
           setDescVal((d.ticket as Ticket).description);
         } else if (d) {
           router.replace("/enter/backdrop/dashboard/tickets");

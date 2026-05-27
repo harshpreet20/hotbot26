@@ -387,14 +387,19 @@ export async function sendChatTranscript(opts: {
 // ── 8. Ticket confirmation ────────────────────────────────────────────────────
 
 export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
+  const recipientName  = ticket.requesterName  ?? ticket.clientName  ?? "there";
+  const recipientEmail = ticket.requesterEmail ?? ticket.clientEmail ?? "";
+  const displayTitle   = ticket.subject ?? ticket.title ?? "Support Request";
+  const ticketNum      = ticket.ticketNumber ?? "";
+  const category       = ticket.category ?? "general";
   const viewUrl = `${SITE_URL}/tickets?id=${ticket.id}`;
-  const html = wrap(`Ticket ${ticket.ticketNumber} Received`, `We got your ticket, ${ticket.requesterName}!`, `
-    ${greeting(ticket.requesterName)}
+  const html = wrap(`Ticket ${ticketNum} Received`, `We got your ticket, ${recipientName}!`, `
+    ${greeting(recipientName)}
     ${para(`We've received your support request. Our team will get back to you as soon as possible.`)}
     ${infoBox([
-      ["Ticket #", `<strong>${ticket.ticketNumber}</strong>`],
-      ["Subject", ticket.title],
-      ["Category", ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1)],
+      ["Ticket #", `<strong>${ticketNum || ticket.id.slice(0, 8)}</strong>`],
+      ["Subject", displayTitle],
+      ["Category", category.charAt(0).toUpperCase() + category.slice(1)],
       ["Priority", ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)],
       ["Status", "Open"],
     ])}
@@ -402,13 +407,14 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
     ${btn("View Ticket Status", viewUrl)}
     ${para(`Bookmark the link above to check your ticket status at any time.`)}
   `);
+  if (!recipientEmail) return; // portal ticket with no email — skip
   await send(
-    ticket.requesterEmail,
-    `[${ticket.ticketNumber}] We received your support request`,
+    recipientEmail,
+    `[${ticketNum || ticket.id.slice(0, 8)}] We received your support request`,
     html,
-    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber}: ${ticket.title}\nCategory: ${ticket.category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    `Hi ${recipientName},\n\nTicket ${ticketNum}: ${displayTitle}\nCategory: ${category} | Priority: ${ticket.priority}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_confirmation",
-    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+    { ticketId: ticket.id, ticketNumber: ticketNum },
     "ticket",
     ticket.id,
   );
@@ -417,21 +423,26 @@ export async function sendTicketConfirmation(ticket: Ticket): Promise<void> {
 // ── 9. Staff reply notification ───────────────────────────────────────────────
 
 export async function sendStaffReplyNotification(ticket: Ticket, comment: TicketComment): Promise<void> {
+  const recipientName  = ticket.requesterName  ?? ticket.clientName  ?? "there";
+  const recipientEmail = ticket.requesterEmail ?? ticket.clientEmail ?? "";
+  const displayTitle   = ticket.subject ?? ticket.title ?? "Support Request";
+  const ticketNum      = ticket.ticketNumber ?? "";
+  if (!recipientEmail) return;
   const viewUrl = `${SITE_URL}/tickets?id=${ticket.id}`;
-  const html = wrap(`New Reply on ${ticket.ticketNumber}`, "Our team responded to your ticket.", `
-    ${greeting(ticket.requesterName)}
-    ${para(`Our support team has replied to your ticket <strong>${ticket.ticketNumber}: ${ticket.title}</strong>.`)}
+  const html = wrap(`New Reply on ${ticketNum || ticket.id.slice(0, 8)}`, "Our team responded to your ticket.", `
+    ${greeting(recipientName)}
+    ${para(`Our support team has replied to your ticket <strong>${ticketNum}: ${displayTitle}</strong>.`)}
     ${quoteBox(`Reply from ${FROM_NAME}`, comment.text)}
     ${btn("View Full Conversation", viewUrl)}
     ${para(`You can reply directly from the ticket page above.`)}
   `);
   await send(
-    ticket.requesterEmail,
-    `[${ticket.ticketNumber}] New reply from our team`,
+    recipientEmail,
+    `[${ticketNum || ticket.id.slice(0, 8)}] New reply from our team`,
     html,
-    `Hi ${ticket.requesterName},\n\nNew reply on ticket ${ticket.ticketNumber}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    `Hi ${recipientName},\n\nNew reply on ticket ${ticketNum}:\n\n${comment.text}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_reply",
-    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+    { ticketId: ticket.id, ticketNumber: ticketNum },
     "ticket",
     ticket.id,
   );
@@ -448,12 +459,17 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
 };
 
 export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: string): Promise<void> {
+  const recipientName  = ticket.requesterName  ?? ticket.clientName  ?? "there";
+  const recipientEmail = ticket.requesterEmail ?? ticket.clientEmail ?? "";
+  const displayTitle   = ticket.subject ?? ticket.title ?? "Support Request";
+  const ticketNum      = ticket.ticketNumber ?? "";
+  if (!recipientEmail) return;
   const viewUrl = `${SITE_URL}/tickets?id=${ticket.id}`;
   const meta = STATUS_META[newStatus] ?? { label: newStatus, color: "#6366f1", bg: "#eff6ff" };
   const isResolved = newStatus === "resolved" || newStatus === "closed";
-  const html = wrap(`Ticket ${ticket.ticketNumber} Updated`, `Status changed to ${meta.label}`, `
-    ${greeting(ticket.requesterName)}
-    ${para(`The status of your ticket <strong>${ticket.ticketNumber}: ${ticket.title}</strong> has been updated.`)}
+  const html = wrap(`Ticket ${ticketNum || ticket.id.slice(0, 8)} Updated`, `Status changed to ${meta.label}`, `
+    ${greeting(recipientName)}
+    ${para(`The status of your ticket <strong>${ticketNum}: ${displayTitle}</strong> has been updated.`)}
     <div style="background:${meta.bg};border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">New Status</p>
       <span style="display:inline-block;padding:5px 16px;border-radius:100px;background:${meta.color}22;color:${meta.color};font-size:13px;font-weight:700;">${meta.label}</span>
@@ -462,12 +478,12 @@ export async function sendStatusUpdateNotification(ticket: Ticket, newStatus: st
     ${btn("View Ticket", viewUrl)}
   `);
   await send(
-    ticket.requesterEmail,
-    `[${ticket.ticketNumber}] Status updated: ${meta.label}`,
+    recipientEmail,
+    `[${ticketNum || ticket.id.slice(0, 8)}] Status updated: ${meta.label}`,
     html,
-    `Hi ${ticket.requesterName},\n\nTicket ${ticket.ticketNumber} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
+    `Hi ${recipientName},\n\nTicket ${ticketNum} status updated to: ${meta.label}\n\nView: ${viewUrl}\n\n${FROM_NAME}`,
     "ticket_status_update",
-    { ticketId: ticket.id, ticketNumber: ticket.ticketNumber, newStatus },
+    { ticketId: ticket.id, ticketNumber: ticketNum, newStatus },
     "ticket",
     ticket.id,
   );

@@ -305,15 +305,21 @@ export interface TicketActivity {
 
 export interface Ticket {
   id: string;
-  ticketNumber: string;   // e.g. "TKT-0042"
-  title: string;
+  ticketNumber?: string;  // e.g. "TKT-0042" (admin-created only)
+  title?: string;         // admin-created tickets
+  subject?: string;       // portal/contact-form tickets — use subject || title for display
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
-  category: TicketCategory;
-  // Requester (public user or internal reporter)
-  requesterName: string;
-  requesterEmail: string;
+  category?: TicketCategory;
+  // Requester — admin tickets use requesterName/requesterEmail, portal uses clientName/clientEmail
+  requesterName?: string;
+  requesterEmail?: string;
+  clientName?: string;    // portal ticket submitter display name
+  clientEmail?: string;   // portal ticket submitter email
+  // Source — "admin" | "portal" | "contact_form"
+  source?: string;
+  approvalStatus?: string;
   // Internal
   assignedTo?: string;      // username
   labels?: string[];

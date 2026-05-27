@@ -102,7 +102,7 @@ export default function TicketStatusPage() {
           </div>
 
           <div className="flex flex-wrap gap-3 mt-4">
-            <Badge label={ticket.category} />
+            <Badge label={ticket.category ?? "general"} />
             <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: `${pm.color}18`, color: pm.color }}>
               {pm.label} priority
             </span>

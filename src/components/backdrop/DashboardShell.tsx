@@ -60,6 +60,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/enter/backdrop/dashboard/analytics/behavior",
+    label: "Behavior",
+    roles: ["super_admin", "admin"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    ),
+  },
+  {
     href: "/enter/backdrop/dashboard/tasks",
     label: "Tasks",
     roles: ["super_admin", "admin", "manager", "sales", "crm_operator", "agent"],
@@ -77,6 +87,28 @@ const NAV: NavItem[] = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1" />
         <path d="M15 2H3a2 2 0 00-2 2v8a2 2 0 002 2h2v4l4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z" />
+      </svg>
+    ),
+  },
+  // ── Projects ───────────────────────────────────────────────────────────────
+  {
+    href: "/enter/backdrop/dashboard/projects",
+    label: "Projects",
+    roles: ["super_admin", "admin", "manager", "sales", "crm_operator"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/enter/backdrop/dashboard/projects/gantt",
+    label: "Gantt / Timeline",
+    roles: ["super_admin", "admin", "manager"],
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/>
+        <circle cx="21" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/>
       </svg>
     ),
   },

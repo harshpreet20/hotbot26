@@ -36,9 +36,13 @@ export default function TicketsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  // Portal tickets use `subject` + `clientName/clientEmail`; admin tickets use `title` + `requesterName/requesterEmail`
+  const ticketTitle = (t: Ticket) => t.subject || t.title || "(no title)";
+  const ticketRequester = (t: Ticket) => ({ name: t.clientName || t.requesterName || "—", email: t.clientEmail || t.requesterEmail || "" });
+
   const filtered = tickets.filter((t) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || [t.title, t.requesterName, t.requesterEmail, t.ticketNumber].some((v) => v.toLowerCase().includes(q));
+    const matchSearch = !q || [ticketTitle(t), ticketRequester(t).name, ticketRequester(t).email, t.ticketNumber].some((v) => (v ?? "").toLowerCase().includes(q));
     return matchSearch && (!filter || t.status === filter);
   });
 
@@ -108,18 +112,23 @@ export default function TicketsPage() {
                     return (
                       <tr key={t.id} className="border-b hover:bg-white/[0.02] transition-colors" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <Link href={`/enter/backdrop/dashboard/tickets/${t.id}`} className="text-indigo-400 font-mono text-xs hover:text-indigo-300">
-                            {t.ticketNumber}
-                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            <Link href={`/enter/backdrop/dashboard/tickets/${t.id}`} className="text-indigo-400 font-mono text-xs hover:text-indigo-300">
+                              {t.ticketNumber ?? "—"}
+                            </Link>
+                            {t.source === "portal" && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase" style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e" }}>Portal</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-3 max-w-xs">
                           <Link href={`/enter/backdrop/dashboard/tickets/${t.id}`} className="text-white text-sm hover:text-indigo-200 transition-colors line-clamp-1">
-                            {t.title}
+                            {ticketTitle(t)}
                           </Link>
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <p className="text-slate-300 text-xs">{t.requesterName}</p>
-                          <p className="text-slate-600 text-[11px]">{t.requesterEmail}</p>
+                          <p className="text-slate-300 text-xs">{ticketRequester(t).name}</p>
+                          <p className="text-slate-600 text-[11px]">{ticketRequester(t).email}</p>
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
                           <span className="flex items-center gap-1.5 text-xs" style={{ color: pc }}>
