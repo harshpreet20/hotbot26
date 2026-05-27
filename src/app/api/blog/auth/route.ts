@@ -29,23 +29,23 @@ function getIp(req: NextRequest): string {
 
 // ── GET - validate existing session ──────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  if (token) {
-    const session = await getSession(token);
-    if (session) {
-      // The token IS returned so callers can restore sessionStorage.backdrop_secret on
-      // cold-start (new tab / tab reload).  It carries no additional XSS risk: callers
-      // immediately write it to sessionStorage, so the threat model is the same
-      // whether it travels in the body or stays cookie-only.
-      return NextResponse.json({
-        needsSetup:      false,
-        authenticated:   true,
-        token,
-        role:            session.role,
-        username:        session.username,
-        isImpersonating: session.isImpersonating,
-      });
+  try {
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+    if (token) {
+      const session = await getSession(token);
+      if (session) {
+        return NextResponse.json({
+          needsSetup:      false,
+          authenticated:   true,
+          token,
+          role:            session.role,
+          username:        session.username,
+          isImpersonating: session.isImpersonating,
+        });
+      }
     }
+  } catch {
+    // Session check failure is non-fatal — fall through to unauthenticated response
   }
   return NextResponse.json({ needsSetup: false, authenticated: false });
 }
@@ -126,10 +126,26 @@ export async function POST(req: NextRequest) {
     // Support both email logins and short usernames (admin-created accounts use
     // the synthetic domain @hotbotstudios.internal)
     const loginEmail = username.includes("@") ? username : `${username}@hotbotstudios.internal`;
-    const { data: authData, error: authError } = await sb().auth.signInWithPassword({
-      email:    loginEmail,
-      password,
-    });
+
+    // Wrap signInWithPassword — in some supabase-js versions a successful auth
+    // response triggers internal session callbacks that can throw on Vercel
+    // (e.g. if storage is unavailable). Catching here lets us surface the real
+    // error instead of a generic 500.
+    let signInResult: { data: { user: unknown; session: unknown }; error: { message: string } | null };
+    try {
+      signInResult = await sb().auth.signInWithPassword({ email: loginEmail, password }) as typeof signInResult;
+    } catch (signInErr) {
+      const msg = signInErr instanceof Error ? signInErr.message : String(signInErr);
+      log.error("auth.session_error", `signInWithPassword threw for "${username}": ${msg}`, {
+        ip, username, details: { error: msg, ua },
+      });
+      return NextResponse.json(
+        { success: false, error: `Auth service error — please try again. (${msg})` },
+        { status: 500 },
+      );
+    }
+    const authData  = signInResult.data  as { user: { id: string; email?: string } | null; session: unknown };
+    const authError = signInResult.error;
 
     if (authError || !authData?.user) {
       const errMsg = authError?.message ?? "invalid_credentials";
