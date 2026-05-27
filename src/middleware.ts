@@ -1,42 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Middleware that protects /enter/backdrop/dashboard and sub-routes.
+ * Middleware that protects:
+ *  1. /enter/backdrop/dashboard/* — admin dashboard (backdrop_auth cookie)
+ *  2. /customers/dashboard*      — customer portal pages (hotbot_portal cookie)
+ *     (excludes /customers, /customers/login, /customers/setup, /customers/verify
+ *      which are the public auth entry points)
  *
- * Auth strategy:
- *  - The login page (/enter/backdrop) calls /api/blog/auth.
- *  - On success the client stores the token in sessionStorage AND
- *    the server sets a short-lived HttpOnly cookie ("backdrop_auth").
- *  - This middleware checks that cookie so the protection works even
- *    if the user navigates directly or refreshes.
- *
- * Note: The cookie is set by /api/blog/auth on every successful login
- *       and cleared by /api/blog/logout (or the Sign Out button).
+ * Note: API routes under /api/customers/* are independently protected via
+ * verifyPortalSession() in each route handler. This middleware only guards
+ * the Next.js page routes so unauthenticated visitors get a redirect instead
+ * of a blank/broken UI.
  */
 
-const COOKIE_NAME = "backdrop_auth";
+const ADMIN_COOKIE   = "backdrop_auth";
+const PORTAL_COOKIE  = "hotbot_portal";
+
+// Portal paths that must remain publicly accessible (login, invite, verify)
+const PORTAL_PUBLIC_PATHS = [
+  "/customers",
+  "/customers/login",
+  "/customers/setup",
+  "/customers/verify",
+];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Only guard the dashboard section (not the login page itself)
-  if (!pathname.startsWith("/enter/backdrop/dashboard")) {
-    return NextResponse.next();
+  // ── Admin dashboard guard ─────────────────────────────────────────────────
+  if (pathname.startsWith("/enter/backdrop/dashboard")) {
+    const cookie = req.cookies.get(ADMIN_COOKIE);
+    if (cookie?.value) return NextResponse.next();
+
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/enter/backdrop";
+    loginUrl.search   = "";
+    return NextResponse.redirect(loginUrl);
   }
 
-  const cookie = req.cookies.get(COOKIE_NAME);
-  if (cookie?.value) {
-    // Cookie present - let the request through
-    return NextResponse.next();
+  // ── Customer portal guard ─────────────────────────────────────────────────
+  // Protect /customers/* except the public auth pages listed above.
+  if (pathname.startsWith("/customers/")) {
+    // Allow exact public paths and their sub-paths
+    const isPublic = PORTAL_PUBLIC_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p + "?")
+    );
+    if (isPublic) return NextResponse.next();
+
+    const cookie = req.cookies.get(PORTAL_COOKIE);
+    if (cookie?.value) return NextResponse.next();
+
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/customers";
+    loginUrl.search   = `?redirect=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(loginUrl);
   }
 
-  // No cookie → redirect to login
-  const loginUrl = req.nextUrl.clone();
-  loginUrl.pathname = "/enter/backdrop";
-  loginUrl.search   = "";
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/enter/backdrop/dashboard/:path*"],
+  matcher: [
+    "/enter/backdrop/dashboard/:path*",
+    "/customers/:path*",
+  ],
 };

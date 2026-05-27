@@ -92,20 +92,22 @@ ALTER TABLE clients DISABLE ROW LEVEL SECURITY;
 --               src/app/api/dashboard/clients/route.ts
 
 CREATE TABLE IF NOT EXISTS client_users (
-  id                TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  email             TEXT UNIQUE NOT NULL,
-  name              TEXT,
-  client_id         TEXT NOT NULL,                 -- FK → clients.client_id
-  role              TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN (
+  id                  TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  email               TEXT UNIQUE NOT NULL,
+  name                TEXT,
+  client_id           TEXT NOT NULL,               -- FK → clients.client_id
+  role                TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN (
     'owner','admin','member','viewer'
   )),
-  invite_token      TEXT,
-  invite_expires_at TIMESTAMPTZ,
-  password_hash     TEXT,
-  is_active         BOOLEAN NOT NULL DEFAULT TRUE,
-  last_login_at     TIMESTAMPTZ,
-  created_at        TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-  updated_at        TIMESTAMPTZ DEFAULT NOW() NOT NULL
+  invite_token        TEXT,
+  invite_expires_at   TIMESTAMPTZ,
+  invite_accepted_at  TIMESTAMPTZ,                 -- set when setup token is consumed
+  invited_by          TEXT,                        -- admin username who sent invite
+  password_hash       TEXT,
+  is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+  last_login_at       TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at          TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS client_users_email_idx     ON client_users(email);
@@ -223,7 +225,7 @@ ALTER TABLE project_updates DISABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS project_update_comments (
   id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  update_id    TEXT NOT NULL,                      -- FK → project_updates.id
+  update_id    TEXT NOT NULL REFERENCES project_updates(id) ON DELETE CASCADE,
   content      TEXT NOT NULL,
   author_email TEXT,
   author_name  TEXT,
@@ -241,7 +243,7 @@ ALTER TABLE project_update_comments DISABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS project_update_reactions (
   id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  update_id    TEXT NOT NULL,                      -- FK → project_updates.id
+  update_id    TEXT NOT NULL REFERENCES project_updates(id) ON DELETE CASCADE,
   author_email TEXT NOT NULL,
   author_name  TEXT,
   author_type  TEXT NOT NULL DEFAULT 'client' CHECK (author_type IN ('team','client')),

@@ -30,15 +30,16 @@ export async function POST(req: NextRequest) {
   if (!title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
   const { data: task, error } = await sb().from("tasks").insert({
-    title: title.trim(),
-    description: description?.trim() ?? "",
-    status: "pending",
-    priority: priority ?? "medium",
-    client_id: user.client_id,
-    requester_name: user.name,
+    title:           title.trim(),
+    description:     description?.trim() ?? "",
+    status:          "pending",
+    priority:        priority ?? "medium",
+    client_id:       user.client_id,
+    client_email:    email,          // required by dashboard queries that filter tasks by client_email
+    requester_name:  user.name,
     requester_email: email,
-    source: "portal",
-    created_at: new Date().toISOString(),
+    source:          "portal",
+    created_at:      new Date().toISOString(),
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

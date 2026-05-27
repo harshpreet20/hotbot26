@@ -4,6 +4,7 @@ import { sb } from "@/lib/supabase";
 import { newId } from "@/lib/store";
 import { fireJourneyEvent } from "@/lib/journey";
 import { sendClientWelcomeEmail } from "@/lib/resend";
+import { sendPortalInvite } from "@/lib/resend";
 import crypto from "crypto";
 
 export async function POST(
@@ -64,6 +65,32 @@ export async function POST(
     return NextResponse.json({ error: "Failed to create client record" }, { status: 500 });
   }
 
+  // 3b. Create client_users entry so the converted client can log into the portal.
+  // Without this row, /api/customers/me returns 404 and the magic-link flow fails
+  // (no client_users row → nothing to send a link to). The row is created inactive
+  // pending the invite — the admin must click "Invite to Portal" to send the link
+  // and update is_active. Alternatively, convert fires the invite automatically.
+  const inviteToken   = crypto.randomBytes(32).toString("hex");
+  const inviteExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const appUrl        = process.env.NEXT_PUBLIC_APP_URL ?? "https://hotbotstudios.com";
+  const setupLink     = `${appUrl}/customers/setup?token=${inviteToken}`;
+
+  const { error: cuError } = await sb().from("client_users").insert({
+    email:             lead.email.toLowerCase().trim(),
+    name:              lead.name,
+    client_id:         hbsCode,
+    role:              "owner",          // primary contact — full portal access
+    invite_token:      inviteToken,
+    invite_expires_at: inviteExpires,
+    invited_by:        session.username,
+    is_active:         true,
+  });
+
+  if (cuError && !cuError.message.includes("duplicate")) {
+    // Non-fatal: log but continue — admin can re-invite via client detail page
+    console.error("[convert] client_users insert error:", cuError.message);
+  }
+
   // 4. Update lead
   const { error: updateError } = await sb()
     .from("leads")
@@ -74,7 +101,7 @@ export async function POST(
     console.error("[convert] lead update error:", updateError.message);
   }
 
-  // 5. Send client welcome email (fire-and-forget)
+  // 5. Send client welcome email + portal invite (fire-and-forget)
   sendClientWelcomeEmail({
     name:        lead.name,
     email:       lead.email,
@@ -84,6 +111,15 @@ export async function POST(
     clientId,
     leadId:      lead.id,
   }).catch(() => {});
+
+  // Send portal setup link so the client can activate their portal access
+  // immediately after conversion without waiting for a manual invite from admin.
+  sendPortalInvite(
+    lead.email,
+    lead.name,
+    lead.company ?? lead.name,
+    setupLink,
+  ).catch(() => {});
 
   // 6. Fire journey event (fire-and-forget)
   fireJourneyEvent({

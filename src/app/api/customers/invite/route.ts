@@ -3,24 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { sb } from "@/lib/supabase";
 import { sendPortalInvite } from "@/lib/resend";
-
-// NEXT_PUBLIC_* variables are embedded in the client-side bundle — never use them
-// for server-side secrets. Only BACKDROP_ADMIN_SECRET (server-only) is valid here.
-const BACKDROP_SECRET = process.env.BACKDROP_ADMIN_SECRET ?? "";
+import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 
 export async function POST(req: NextRequest) {
-  // Admin-only endpoint — protected by backdrop secret
-  const auth = req.headers.get("authorization") ?? "";
-  if (!BACKDROP_SECRET || auth !== `Bearer ${BACKDROP_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Admin-only endpoint — requires a valid admin backdrop session token.
+  // Previously used BACKDROP_ADMIN_SECRET (static env var), but the admin UI sends
+  // the per-session Bearer token (sessionStorage.backdrop_secret). Using authorizeAny
+  // here ensures the same auth path as every other admin API route.
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { email, name, clientId, invitedBy } = (await req.json()) as {
+  const { email, name, clientId, invitedBy, role } = (await req.json()) as {
     email?: string;
     name?: string;
     clientId?: string;
     invitedBy?: string;
+    role?: string;
   };
+
+  // Validate role — only values the DB CHECK constraint accepts
+  const VALID_ROLES = ["owner", "admin", "member", "viewer"] as const;
+  type ClientRole = typeof VALID_ROLES[number];
+  const clientRole: ClientRole = VALID_ROLES.includes(role as ClientRole)
+    ? (role as ClientRole)
+    : "member";
 
   if (!email || !clientId) {
     return NextResponse.json({ error: "email and clientId required" }, { status: 400 });
@@ -54,21 +60,26 @@ export async function POST(req: NextRequest) {
   const setupLink = `${appUrl}/customers/setup?token=${token}`;
 
   if (existing) {
-    // Resend invite
+    // Resend invite — update token and refresh role in case admin changed it
     await sb()
       .from("client_users")
-      .update({ invite_token: token, invite_expires_at: expires, invited_by: invitedBy ?? null })
+      .update({
+        invite_token:     token,
+        invite_expires_at: expires,
+        invited_by:       invitedBy ?? null,
+        role:             clientRole,
+      })
       .eq("id", existing.id);
   } else {
     await sb().from("client_users").insert({
-      email:           email.toLowerCase().trim(),
-      name:            name ?? "",
-      client_id:       clientId,
-      role:            "member",
-      invite_token:    token,
+      email:             email.toLowerCase().trim(),
+      name:              name ?? "",
+      client_id:         clientId,
+      role:              clientRole,
+      invite_token:      token,
       invite_expires_at: expires,
-      invited_by:      invitedBy ?? null,
-      is_active:       true,
+      invited_by:        invitedBy ?? null,
+      is_active:         true,
     });
   }
 
