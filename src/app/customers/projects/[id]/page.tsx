@@ -218,6 +218,12 @@ export default function ProjectDetailPage() {
 
   const milestones = updates.filter((u) => u.type === "milestone");
 
+  const navTabs = [
+    { label: "Updates",    href: `/customers/projects/${id}`,        active: true  },
+    { label: "Gantt Chart", href: `/customers/projects/${id}/gantt`,  active: false },
+    { label: "Timeline",   href: `/customers/projects/${id}/phases`,  active: false },
+  ];
+
   return (
     <div style={{ padding: "32px 40px", overflow: "auto" }}>
         {/* Header */}
@@ -260,6 +266,20 @@ export default function ProjectDetailPage() {
               <div style={{ height: "100%", width: `${project.progress ?? 0}%`, background: "linear-gradient(90deg,#6366f1,#8b5cf6)", borderRadius: 10, transition: "width 0.5s" }} />
             </div>
           </div>
+        </div>
+
+        {/* Navigation tabs */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 24, padding: "4px", background: "rgba(255,255,255,0.04)", borderRadius: 10, width: "fit-content" }}>
+          {navTabs.map((tab) => (
+            <Link key={tab.href} href={tab.href} style={{
+              padding: "7px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500,
+              background: tab.active ? "rgba(99,102,241,0.2)" : "transparent",
+              color: tab.active ? "#a5b4fc" : "#64748b",
+              textDecoration: "none",
+            }}>
+              {tab.label}
+            </Link>
+          ))}
         </div>
 
         {/* 2-column layout */}
