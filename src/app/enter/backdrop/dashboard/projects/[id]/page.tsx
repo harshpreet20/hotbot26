@@ -56,6 +56,19 @@ function initials(email: string) {
   return email.split("@")[0]?.slice(0, 2).toUpperCase() ?? "??";
 }
 
+type Phase = { id: string; name: string; phase_type: string; status: string; start_date?: string; end_date?: string; progress?: number; description?: string; visibility?: string; color?: string; sort_order?: number };
+type Milestone = { id: string; title: string; due_date?: string; status: string; visibility: string; description?: string; color?: string };
+
+const PHASE_STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  upcoming:  { label: "Upcoming",  color: "#94a3b8", bg: "rgba(148,163,184,0.12)" },
+  active:    { label: "Active",    color: "#34d399", bg: "rgba(52,211,153,0.12)" },
+  completed: { label: "Completed", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
+  delayed:   { label: "Delayed",   color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+  on_hold:   { label: "On Hold",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+};
+
+const COLOR_PRESETS = ["#6366f1","#8b5cf6","#3b82f6","#22c55e","#f59e0b","#ef4444","#14b8a6","#ec4899"];
+
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -90,6 +103,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   // Progress inline edit
   const [editingProgress, setEditingProgress] = useState(false);
   const [progressValue, setProgressValue] = useState(0);
+
+  // Phases panel
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [phasesOpen, setPhasesOpen] = useState(true);
+  const [phaseForm, setPhaseForm] = useState({ name: "", phase_type: "design", status: "upcoming", start_date: "", end_date: "", progress: "", description: "", visibility: "internal", color: "#6366f1" });
+  const [editingPhase, setEditingPhase] = useState<string | null>(null);
+  const [showPhaseForm, setShowPhaseForm] = useState(false);
+  const [phaseError, setPhaseError] = useState("");
+
+  // Milestones panel
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [msOpen, setMsOpen] = useState(true);
+  const [msForm, setMsForm] = useState({ title: "", due_date: "", status: "pending", visibility: "internal", description: "", color: "#6366f1" });
+  const [editingMs, setEditingMs] = useState<string | null>(null);
+  const [showMsForm, setShowMsForm] = useState(false);
+  const [msError, setMsError] = useState("");
 
   // Right panel edit
   const [editingInfo, setEditingInfo] = useState(false);
@@ -129,6 +158,93 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   }, [id, router]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadPhases = useCallback(() => {
+    const secret = getSecret();
+    fetch(`/api/dashboard/projects/${id}/phases`, { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => r.ok ? r.json() : { phases: [] })
+      .then((d: { phases?: Phase[] }) => setPhases(d.phases ?? []))
+      .catch(() => {});
+  }, [id]);
+
+  const loadMilestones = useCallback(() => {
+    const secret = getSecret();
+    fetch(`/api/dashboard/projects/${id}/milestones`, { headers: { Authorization: `Bearer ${secret}` } })
+      .then((r) => r.ok ? r.json() : { milestones: [] })
+      .then((d: { milestones?: Milestone[] }) => setMilestones(d.milestones ?? []))
+      .catch(() => {});
+  }, [id]);
+
+  useEffect(() => { loadPhases(); loadMilestones(); }, [loadPhases, loadMilestones]);
+
+  async function submitPhase(e: React.FormEvent) {
+    e.preventDefault();
+    setPhaseError("");
+    const secret = getSecret();
+    const isEdit = editingPhase !== null;
+    const url = isEdit ? `/api/dashboard/projects/${id}/phases/${editingPhase}` : `/api/dashboard/projects/${id}/phases`;
+    const res = await fetch(url, {
+      method: isEdit ? "PATCH" : "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ...phaseForm, progress: phaseForm.progress !== "" ? Number(phaseForm.progress) : undefined }),
+    });
+    if (!res.ok) { const d = await res.json() as { error?: string }; setPhaseError(d.error ?? "Failed"); return; }
+    setPhaseForm({ name: "", phase_type: "design", status: "upcoming", start_date: "", end_date: "", progress: "", description: "", visibility: "internal", color: "#6366f1" });
+    setShowPhaseForm(false); setEditingPhase(null);
+    loadPhases();
+  }
+
+  function startEditPhase(p: Phase) {
+    setPhaseForm({ name: p.name, phase_type: p.phase_type, status: p.status, start_date: p.start_date ?? "", end_date: p.end_date ?? "", progress: p.progress != null ? String(p.progress) : "", description: p.description ?? "", visibility: p.visibility ?? "internal", color: p.color ?? "#6366f1" });
+    setEditingPhase(p.id); setShowPhaseForm(true);
+  }
+
+  async function deletePhase(phaseId: string) {
+    if (!confirm("Delete this phase?")) return;
+    const secret = getSecret();
+    await fetch(`/api/dashboard/projects/${id}/phases/${phaseId}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+    loadPhases();
+  }
+
+  async function submitMilestone(e: React.FormEvent) {
+    e.preventDefault();
+    setMsError("");
+    const secret = getSecret();
+    const isEdit = editingMs !== null;
+    const url = isEdit ? `/api/dashboard/projects/${id}/milestones/${editingMs}` : `/api/dashboard/projects/${id}/milestones`;
+    const res = await fetch(url, {
+      method: isEdit ? "PATCH" : "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify(msForm),
+    });
+    if (!res.ok) { const d = await res.json() as { error?: string }; setMsError(d.error ?? "Failed"); return; }
+    setMsForm({ title: "", due_date: "", status: "pending", visibility: "internal", description: "", color: "#6366f1" });
+    setShowMsForm(false); setEditingMs(null);
+    loadMilestones();
+  }
+
+  function startEditMs(m: Milestone) {
+    setMsForm({ title: m.title, due_date: m.due_date ?? "", status: m.status, visibility: m.visibility, description: m.description ?? "", color: m.color ?? "#6366f1" });
+    setEditingMs(m.id); setShowMsForm(true);
+  }
+
+  async function deleteMs(msId: string) {
+    if (!confirm("Delete this milestone?")) return;
+    const secret = getSecret();
+    await fetch(`/api/dashboard/projects/${id}/milestones/${msId}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } });
+    loadMilestones();
+  }
+
+  async function toggleMsStatus(m: Milestone) {
+    const secret = getSecret();
+    const newStatus = m.status === "completed" ? "pending" : "completed";
+    await fetch(`/api/dashboard/projects/${id}/milestones/${m.id}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    loadMilestones();
+  }
 
   // Realtime subscription
   useEffect(() => {
@@ -744,6 +860,144 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   Archive Project
                 </button>
               </div>
+            </div>
+
+            {/* [Phase panel appended] */}
+            <div className="rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" onClick={() => setPhasesOpen((v) => !v)}>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider flex-1">Project Phases</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>{phases.length}</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setEditingPhase(null); setPhaseForm({ name: "", phase_type: "design", status: "upcoming", start_date: "", end_date: "", progress: "", description: "", visibility: "internal", color: "#6366f1" }); setShowPhaseForm((v) => !v); }} className="text-[10px] text-indigo-400 hover:text-indigo-300 ml-1">+ Add</button>
+                <span className="text-slate-600 text-xs">{phasesOpen ? "▲" : "▼"}</span>
+              </div>
+              {phasesOpen && (
+                <div className="px-4 pb-4 space-y-2">
+                  {showPhaseForm && (
+                    <form onSubmit={submitPhase} className="space-y-2 p-3 rounded-xl mb-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      {phaseError && <p className="text-red-400 text-[10px]">{phaseError}</p>}
+                      <input required value={phaseForm.name} onChange={(e) => setPhaseForm({ ...phaseForm, name: e.target.value })} placeholder="Phase name *" className="rfi w-full" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select value={phaseForm.phase_type} onChange={(e) => setPhaseForm({ ...phaseForm, phase_type: e.target.value })} className="rfi">
+                          {["discovery","design","development","qa","launch","support","review","other"].map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <select value={phaseForm.status} onChange={(e) => setPhaseForm({ ...phaseForm, status: e.target.value })} className="rfi">
+                          {Object.entries(PHASE_STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="date" value={phaseForm.start_date} onChange={(e) => setPhaseForm({ ...phaseForm, start_date: e.target.value })} className="rfi" />
+                        <input type="date" value={phaseForm.end_date} onChange={(e) => setPhaseForm({ ...phaseForm, end_date: e.target.value })} className="rfi" />
+                      </div>
+                      <input type="number" min={0} max={100} value={phaseForm.progress} onChange={(e) => setPhaseForm({ ...phaseForm, progress: e.target.value })} placeholder="Progress 0-100" className="rfi w-full" />
+                      <textarea value={phaseForm.description} onChange={(e) => setPhaseForm({ ...phaseForm, description: e.target.value })} placeholder="Description" rows={2} className="rfi w-full resize-none" />
+                      <select value={phaseForm.visibility} onChange={(e) => setPhaseForm({ ...phaseForm, visibility: e.target.value })} className="rfi w-full">
+                        <option value="internal">Internal only</option>
+                        <option value="client">Client visible</option>
+                      </select>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {COLOR_PRESETS.map((c) => <button key={c} type="button" onClick={() => setPhaseForm({ ...phaseForm, color: c })} className="w-5 h-5 rounded-full transition-all" style={{ background: c, outline: phaseForm.color === c ? `2px solid white` : "none", outlineOffset: 1 }} />)}
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" onClick={() => { setShowPhaseForm(false); setEditingPhase(null); }} className="text-xs text-slate-500 hover:text-slate-300">Cancel</button>
+                        <button type="submit" className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: "rgba(99,102,241,0.7)" }}>{editingPhase ? "Update" : "Add Phase"}</button>
+                      </div>
+                    </form>
+                  )}
+                  {phases.length === 0 && !showPhaseForm && <p className="text-slate-700 text-xs text-center py-2">No phases yet</p>}
+                  {phases.map((p) => {
+                    const sm2 = PHASE_STATUS_META[p.status] ?? PHASE_STATUS_META.upcoming;
+                    return (
+                      <div key={p.id} className="rounded-xl p-3 space-y-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div className="flex items-center gap-2">
+                          {p.sort_order != null && <span className="text-[10px] text-slate-700 w-4 shrink-0">#{p.sort_order}</span>}
+                          <span className="flex-1 text-xs font-medium text-white truncate">{p.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${p.color ?? "#6366f1"}22`, color: p.color ?? "#6366f1" }}>{p.phase_type}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: sm2.bg, color: sm2.color }}>{sm2.label}</span>
+                        </div>
+                        {(p.start_date || p.end_date) && (
+                          <p className="text-[10px] text-slate-600">{p.start_date ? fmtDateShort(p.start_date) : "?"} → {p.end_date ? fmtDateShort(p.end_date) : "?"}</p>
+                        )}
+                        {p.progress != null && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                              <div className="h-full rounded-full" style={{ width: `${p.progress}%`, background: p.color ?? "#6366f1" }} />
+                            </div>
+                            <span className="text-[10px] text-slate-600">{p.progress}%</span>
+                          </div>
+                        )}
+                        <div className="flex gap-3 justify-end">
+                          <button onClick={() => startEditPhase(p)} className="text-[10px] text-slate-600 hover:text-indigo-400">Edit</button>
+                          <button onClick={() => deletePhase(p.id)} className="text-[10px] text-slate-700 hover:text-red-400">Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Milestones panel */}
+            <div className="rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" onClick={() => setMsOpen((v) => !v)}>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider flex-1">Milestones</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>{milestones.length}</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setEditingMs(null); setMsForm({ title: "", due_date: "", status: "pending", visibility: "internal", description: "", color: "#6366f1" }); setShowMsForm((v) => !v); }} className="text-[10px] text-indigo-400 hover:text-indigo-300 ml-1">+ Add</button>
+                <span className="text-slate-600 text-xs">{msOpen ? "▲" : "▼"}</span>
+              </div>
+              {msOpen && (
+                <div className="px-4 pb-4 space-y-2">
+                  {showMsForm && (
+                    <form onSubmit={submitMilestone} className="space-y-2 p-3 rounded-xl mb-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      {msError && <p className="text-red-400 text-[10px]">{msError}</p>}
+                      <input required value={msForm.title} onChange={(e) => setMsForm({ ...msForm, title: e.target.value })} placeholder="Milestone title *" className="rfi w-full" />
+                      <input type="date" value={msForm.due_date} onChange={(e) => setMsForm({ ...msForm, due_date: e.target.value })} className="rfi w-full" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select value={msForm.status} onChange={(e) => setMsForm({ ...msForm, status: e.target.value })} className="rfi">
+                          {["pending","in_progress","completed","delayed"].map((s) => <option key={s} value={s}>{s.replace("_"," ")}</option>)}
+                        </select>
+                        <select value={msForm.visibility} onChange={(e) => setMsForm({ ...msForm, visibility: e.target.value })} className="rfi">
+                          <option value="internal">Internal</option>
+                          <option value="client">Client</option>
+                        </select>
+                      </div>
+                      <textarea value={msForm.description} onChange={(e) => setMsForm({ ...msForm, description: e.target.value })} placeholder="Description" rows={2} className="rfi w-full resize-none" />
+                      <div className="flex gap-1.5 flex-wrap">
+                        {COLOR_PRESETS.map((c) => <button key={c} type="button" onClick={() => setMsForm({ ...msForm, color: c })} className="w-5 h-5 rounded-full transition-all" style={{ background: c, outline: msForm.color === c ? `2px solid white` : "none", outlineOffset: 1 }} />)}
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" onClick={() => { setShowMsForm(false); setEditingMs(null); }} className="text-xs text-slate-500 hover:text-slate-300">Cancel</button>
+                        <button type="submit" className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: "rgba(99,102,241,0.7)" }}>{editingMs ? "Update" : "Add Milestone"}</button>
+                      </div>
+                    </form>
+                  )}
+                  {milestones.length === 0 && !showMsForm && <p className="text-slate-700 text-xs text-center py-2">No milestones yet</p>}
+                  {milestones.map((m) => {
+                    const overdue = m.due_date && m.status !== "completed" && new Date(m.due_date) < new Date();
+                    return (
+                      <div key={m.id} className="rounded-xl p-3 space-y-1.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleMsStatus(m)} className="text-base shrink-0" title={`Toggle status (${m.status})`}>{m.status === "completed" ? "✅" : "⭕"}</button>
+                          <span className={`flex-1 text-xs font-medium truncate ${m.status === "completed" ? "line-through text-slate-600" : "text-white"}`}>{m.title}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={m.visibility === "client" ? { color: "#3b82f6", background: "rgba(59,130,246,0.12)" } : { color: "#94a3b8", background: "rgba(148,163,184,0.1)" }}>{m.visibility}</span>
+                        </div>
+                        {m.due_date && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-600">Due: {fmtDateShort(m.due_date)}</span>
+                            {overdue && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}>OVERDUE</span>}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded capitalize" style={{ background: "rgba(255,255,255,0.06)", color: "#94a3b8" }}>{m.status.replace("_"," ")}</span>
+                          <div className="ml-auto flex gap-3">
+                            <button onClick={() => startEditMs(m)} className="text-[10px] text-slate-600 hover:text-indigo-400">Edit</button>
+                            <button onClick={() => deleteMs(m.id)} className="text-[10px] text-slate-700 hover:text-red-400">Delete</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
