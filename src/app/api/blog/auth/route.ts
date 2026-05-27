@@ -169,6 +169,14 @@ export async function POST(req: NextRequest) {
 
     const supabaseUser = authData.user;
 
+    // ── CRITICAL: Reset singleton auth state ───────────────────────────────────
+    // signInWithPassword stores the returned user JWT in the singleton's in-memory
+    // _currentSession. All subsequent sb().from() calls then use that JWT instead
+    // of the service_role key, which RLS blocks. scope:'local' clears the in-memory
+    // session without a network round-trip (no token revocation on the server).
+    try { await sb().auth.signOut({ scope: "local" }); } catch { /* non-fatal */ }
+    // ──────────────────────────────────────────────────────────────────────────
+
     // Look up backdrop_users for role / status
     const { data: userRow } = await sb()
       .from("backdrop_users")
