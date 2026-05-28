@@ -177,7 +177,7 @@ export interface PendingUser {
 
 // ── CRM Activity Updates ──────────────────────────────────────────────────────
 
-export type UpdateType = "note" | "call" | "email" | "meeting" | "status_change" | "assignment" | "task_linked" | "invoice_linked";
+export type UpdateType = "note" | "call" | "email" | "meeting" | "status_change" | "assignment" | "task_linked" | "invoice_linked" | "account_status_change";
 
 export interface CRMUpdate {
   id: string;
@@ -368,7 +368,8 @@ export interface KnowledgeEntry {
 
 // ── Clients ───────────────────────────────────────────────────────────────────
 
-export type ClientStatus = "active" | "old" | "reactivation_needed";
+export type ClientStatus    = "active" | "old" | "reactivation_needed";
+export type AccountStatus   = "active" | "suspended" | "terminated";
 
 export interface Client {
   id: string;
@@ -381,6 +382,10 @@ export interface Client {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  // Account suspension / termination
+  accountStatus?:    AccountStatus;
+  suspendedAt?:      string | null;
+  suspensionReason?: string | null;
 }
 
 // ── Dashboard Overview ────────────────────────────────────────────────────────
