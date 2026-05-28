@@ -193,6 +193,8 @@ export default function ClientsPage() {
     active:              clients.filter((c) => c.status === "active").length,
     old:                 clients.filter((c) => c.status === "old").length,
     reactivation_needed: clients.filter((c) => c.status === "reactivation_needed").length,
+    suspended:           clients.filter((c) => c.accountStatus === "suspended").length,
+    terminated:          clients.filter((c) => c.accountStatus === "terminated").length,
   };
 
   return (
@@ -217,10 +219,12 @@ export default function ClientsPage() {
         </header>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 px-6 pt-5">
-          <Stat label="Active" value={counts.active} />
-          <Stat label="Old / Inactive" value={counts.old} />
-          <Stat label="Reactivation Needed" value={counts.reactivation_needed} />
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 px-6 pt-5">
+          <Stat label="Active"               value={counts.active} />
+          <Stat label="Old / Inactive"       value={counts.old} />
+          <Stat label="Reactivation Needed"  value={counts.reactivation_needed} />
+          <Stat label="Suspended"            value={counts.suspended} />
+          <Stat label="Terminated"           value={counts.terminated} />
         </div>
 
         <div className="flex-1 p-6">
@@ -325,6 +329,90 @@ export default function ClientsPage() {
             </div>
           )}
 
+          {/* Account status action modal */}
+          {statusAction && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.7)" }}>
+              <form
+                onSubmit={handleAccountStatusAction}
+                className="w-full max-w-md rounded-2xl p-6 space-y-4"
+                style={{ background: "#0f1626", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-white font-semibold capitalize">
+                    {statusAction.action === "suspend" && "Suspend Account"}
+                    {statusAction.action === "terminate" && "Terminate Account"}
+                    {statusAction.action === "reactivate" && "Reactivate Account"}
+                  </h2>
+                  <button type="button" onClick={() => { setStatusAction(null); setStatusReason(""); setError(""); }} className="text-slate-500 hover:text-white transition-colors">✕</button>
+                </div>
+                {error && <p className="text-red-400 text-sm">{error}</p>}
+                <div
+                  className="rounded-xl p-3 text-sm"
+                  style={{
+                    background: statusAction.action === "reactivate" ? "rgba(52,211,153,0.08)" : statusAction.action === "terminate" ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)",
+                    border: statusAction.action === "reactivate" ? "1px solid rgba(52,211,153,0.2)" : statusAction.action === "terminate" ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(245,158,11,0.2)",
+                    color: statusAction.action === "reactivate" ? "#34d399" : statusAction.action === "terminate" ? "#f87171" : "#fbbf24",
+                  }}
+                >
+                  {statusAction.action === "suspend" && "The client will receive an email notification about their account being placed on hold."}
+                  {statusAction.action === "terminate" && "This action will terminate the client account. The client will receive a termination notice."}
+                  {statusAction.action === "reactivate" && "This will reactivate the client account to active status."}
+                </div>
+                {statusAction.action !== "reactivate" && (
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5">Reason (optional)</label>
+                    <textarea
+                      value={statusReason}
+                      onChange={(e) => setStatusReason(e.target.value)}
+                      rows={3}
+                      placeholder="Describe the reason for this action…"
+                      className="fi resize-none w-full"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={statusSaving}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                    style={{
+                      background: statusAction.action === "reactivate"
+                        ? "linear-gradient(135deg,#34d399,#10b981)"
+                        : statusAction.action === "terminate"
+                        ? "linear-gradient(135deg,#ef4444,#dc2626)"
+                        : "linear-gradient(135deg,#f59e0b,#d97706)",
+                    }}
+                  >
+                    {statusSaving ? "Processing…" : statusAction.action === "suspend" ? "Suspend Account" : statusAction.action === "terminate" ? "Terminate Account" : "Reactivate Account"}
+                  </button>
+                  <button type="button" onClick={() => { setStatusAction(null); setStatusReason(""); setError(""); }} className="px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white transition-colors" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Client context card panel */}
+          {contextClient && (() => {
+            const c = clients.find((cl) => cl.id === contextClient);
+            if (!c) return null;
+            return (
+              <div className="mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)", background: "rgba(99,102,241,0.04)" }}>
+                <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "rgba(99,102,241,0.15)" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Context</span>
+                    <span className="text-xs text-slate-400">{c.name} ({c.clientId})</span>
+                  </div>
+                  <button onClick={() => setContextClient(null)} className="text-slate-500 hover:text-white text-xs transition-colors">✕ Close</button>
+                </div>
+                <div className="p-4">
+                  <ClientContextCard id={c.id} clientId={c.clientId} clientEmail={c.email} />
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Filters + Search */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <input
@@ -360,7 +448,7 @@ export default function ClientsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-                    {["Client ID", "Name", "Company", "Email", "Status", "Added", "Actions"].map((h) => (
+                    {["Client ID", "Name", "Company", "Email", "Status", "Account", "Added", "Actions"].map((h) => (
                       <th key={h} className="text-left py-3 px-4 text-xs text-slate-500 font-medium uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -368,6 +456,7 @@ export default function ClientsPage() {
                 <tbody>
                   {filtered.map((c) => {
                     const isEmailExpanded = expandedClient === c.id;
+                    const acctStatus = (c.accountStatus ?? "active") as AccountStatus;
                     return [
                       <tr key={c.id} className="hover:bg-white/[0.02] transition-colors" style={{ borderBottom: isEmailExpanded ? "none" : "1px solid rgba(255,255,255,0.04)" }}>
                         {/* Client ID */}
@@ -396,7 +485,7 @@ export default function ClientsPage() {
                             ? <a href={`mailto:${c.email}`} className="text-blue-400 hover:text-blue-300 text-sm">{c.email}</a>
                             : <span className="text-slate-700">—</span>}
                         </td>
-                        {/* Status */}
+                        {/* Status (CRM status) */}
                         <td className="py-3 px-4">
                           {canWrite ? (
                             <select
@@ -413,13 +502,25 @@ export default function ClientsPage() {
                             <StatusBadge status={c.status} />
                           )}
                         </td>
+                        {/* Account Status */}
+                        <td className="py-3 px-4">
+                          <AccountStatusBadge status={acctStatus} />
+                        </td>
                         {/* Date */}
                         <td className="py-3 px-4 text-slate-600 text-xs whitespace-nowrap">
                           {new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
                         {/* Actions */}
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => setContextClient(contextClient === c.id ? null : c.id)}
+                              className="text-xs transition-colors"
+                              style={{ color: contextClient === c.id ? "#a78bfa" : "#475569" }}
+                              title="Client context"
+                            >
+                              ◈ Context
+                            </button>
                             <button
                               onClick={() => setExpandedClient(isEmailExpanded ? null : c.id)}
                               className="text-xs transition-colors"
@@ -436,6 +537,34 @@ export default function ClientsPage() {
                                 Edit
                               </button>
                             )}
+                            {/* Account status actions - admin only */}
+                            {isAdmin && acctStatus === "active" && (
+                              <button
+                                onClick={() => { setStatusAction({ clientId: c.id, action: "suspend" }); setStatusReason(""); setError(""); }}
+                                className="text-xs text-slate-500 hover:text-yellow-400 transition-colors"
+                                title="Suspend account"
+                              >
+                                Suspend
+                              </button>
+                            )}
+                            {isAdmin && acctStatus === "active" && (
+                              <button
+                                onClick={() => { setStatusAction({ clientId: c.id, action: "terminate" }); setStatusReason(""); setError(""); }}
+                                className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+                                title="Terminate account"
+                              >
+                                Terminate
+                              </button>
+                            )}
+                            {isAdmin && (acctStatus === "suspended" || acctStatus === "terminated") && (
+                              <button
+                                onClick={() => { setStatusAction({ clientId: c.id, action: "reactivate" }); setStatusReason(""); setError(""); }}
+                                className="text-xs text-slate-500 hover:text-green-400 transition-colors"
+                                title="Reactivate account"
+                              >
+                                Reactivate
+                              </button>
+                            )}
                             {isAdmin && (
                               <button
                                 onClick={() => handleDelete(c.id, c.name)}
@@ -449,7 +578,7 @@ export default function ClientsPage() {
                       </tr>,
                       isEmailExpanded && (
                         <tr key={`${c.id}-emails`} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                          <td colSpan={7} style={{ padding: "0 16px 16px" }}>
+                          <td colSpan={8} style={{ padding: "0 16px 16px" }}>
                             <EntityEmailHistory entityType="client" entityId={c.id} role={getRole()} />
                           </td>
                         </tr>
