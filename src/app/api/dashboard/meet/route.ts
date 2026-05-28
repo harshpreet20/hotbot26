@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest) {
       type:       "meeting",
       content:    `Google Meet scheduled: ${meetUrl}${body.scheduledAt ? ` at ${new Date(body.scheduledAt).toLocaleString("en-IN")}` : ""}`,
       created_by: session.username,
-    }).then(() => null).catch(() => null);
+    }).catch(() => null);
   }
 
   return NextResponse.json({ meetUrl, entity: data });
