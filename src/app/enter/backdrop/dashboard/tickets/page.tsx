@@ -50,7 +50,7 @@ export default function TicketsPage() {
 
   return (
     <DashboardShell>
-      <div className="flex flex-col min-h-full">
+      <div className="flex flex-col w-full min-h-screen">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
