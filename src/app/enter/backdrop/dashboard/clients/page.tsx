@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
-import type { Client, ClientStatus } from "@/types/dashboard";
+import { ClientContextCard } from "@/components/backdrop/ClientContextCard";
+import type { Client, ClientStatus, AccountStatus } from "@/types/dashboard";
 
 function getToken() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -18,10 +19,26 @@ const STATUS_META: Record<ClientStatus, { label: string; color: string; bg: stri
   reactivation_needed:  { label: "Reactivation Needed",  color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
 };
 
+const ACCOUNT_STATUS_META: Record<AccountStatus, { label: string; color: string; bg: string }> = {
+  active:     { label: "Active",     color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
+  suspended:  { label: "Suspended",  color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
+  terminated: { label: "Terminated", color: "#ef4444", bg: "rgba(239,68,68,0.12)"   },
+};
+
 function StatusBadge({ status }: { status: ClientStatus }) {
   const m = STATUS_META[status];
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ color: m.color, background: m.bg }}>
+      {m.label}
+    </span>
+  );
+}
+
+function AccountStatusBadge({ status }: { status: AccountStatus }) {
+  const m = ACCOUNT_STATUS_META[status] ?? ACCOUNT_STATUS_META.active;
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ color: m.color, background: m.bg }}>
+      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.color }} />
       {m.label}
     </span>
   );
@@ -47,9 +64,15 @@ export default function ClientsPage() {
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [contextClient, setContextClient]   = useState<string | null>(null);
 
   // Edit state
   const [editing, setEditing]   = useState<Client | null>(null);
+
+  // Account status action state
+  const [statusAction, setStatusAction] = useState<{ clientId: string; action: "suspend" | "terminate" | "reactivate" } | null>(null);
+  const [statusReason, setStatusReason] = useState("");
+  const [statusSaving, setStatusSaving] = useState(false);
 
   // New client form state
   const [form, setForm] = useState({ name: "", email: "", phone: "", company: "", status: "active" as ClientStatus, notes: "" });
@@ -142,6 +165,28 @@ export default function ClientsPage() {
       headers: { Authorization: `Bearer ${getToken()}` },
     });
     setClients((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  async function handleAccountStatusAction(e: React.FormEvent) {
+    e.preventDefault();
+    if (!statusAction) return;
+    setStatusSaving(true);
+    try {
+      const res = await fetch(`/api/dashboard/clients/${statusAction.clientId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ action: statusAction.action, reason: statusReason || undefined }),
+      });
+      if (res.ok) {
+        setStatusAction(null);
+        setStatusReason("");
+        load();
+      } else {
+        const d = await res.json() as { error?: string };
+        setError(d.error ?? "Failed to update account status");
+      }
+    } catch { setError("Network error"); }
+    finally { setStatusSaving(false); }
   }
 
   const counts = {
