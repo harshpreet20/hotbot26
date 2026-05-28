@@ -1,42 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * Middleware that protects /enter/backdrop/dashboard and sub-routes.
- *
- * Auth strategy:
- *  - The login page (/enter/backdrop) calls /api/blog/auth.
- *  - On success the client stores the token in sessionStorage AND
- *    the server sets a short-lived HttpOnly cookie ("backdrop_auth").
- *  - This middleware checks that cookie so the protection works even
- *    if the user navigates directly or refreshes.
- *
- * Note: The cookie is set by /api/blog/auth on every successful login
- *       and cleared by /api/blog/logout (or the Sign Out button).
- */
-
-const COOKIE_NAME = "backdrop_auth";
+const ADMIN_COOKIE  = "backdrop_auth";
+const PORTAL_COOKIE = "portal_session";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Only guard the dashboard section (not the login page itself)
-  if (!pathname.startsWith("/enter/backdrop/dashboard")) {
-    return NextResponse.next();
+  // ── Admin dashboard ─────────────────────────────────────────────────────────
+  if (pathname.startsWith("/enter/backdrop/dashboard")) {
+    if (req.cookies.get(ADMIN_COOKIE)?.value) return NextResponse.next();
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/enter/backdrop";
+    loginUrl.search   = "";
+    return NextResponse.redirect(loginUrl);
   }
 
-  const cookie = req.cookies.get(COOKIE_NAME);
-  if (cookie?.value) {
-    // Cookie present - let the request through
-    return NextResponse.next();
+  // ── Customer portal dashboard ────────────────────────────────────────────────
+  if (pathname.startsWith("/portal/dashboard")) {
+    if (req.cookies.get(PORTAL_COOKIE)?.value) return NextResponse.next();
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/portal/login";
+    loginUrl.search   = "";
+    return NextResponse.redirect(loginUrl);
   }
 
-  // No cookie → redirect to login
-  const loginUrl = req.nextUrl.clone();
-  loginUrl.pathname = "/enter/backdrop";
-  loginUrl.search   = "";
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/enter/backdrop/dashboard/:path*"],
+  matcher: ["/enter/backdrop/dashboard/:path*", "/portal/dashboard/:path*"],
 };

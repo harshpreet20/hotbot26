@@ -47,6 +47,8 @@ export default function ClientsPage() {
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [inviting, setInviting] = useState<string | null>(null);  // clientId being invited
+  const [inviteMsg, setInviteMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
 
   // Edit state
   const [editing, setEditing]   = useState<Client | null>(null);
@@ -133,6 +135,29 @@ export default function ClientsPage() {
       load();
     } catch { setError("Network error"); }
     finally { setSaving(false); }
+  }
+
+  async function handlePortalInvite(id: string) {
+    setInviting(id);
+    setInviteMsg(null);
+    try {
+      const res = await fetch("/api/dashboard/clients/portal-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ clientId: id }),
+      });
+      const data = await res.json() as { success?: boolean; email?: string; error?: string };
+      if (res.ok) {
+        setInviteMsg({ id, msg: `Invite sent to ${data.email ?? "client"}`, ok: true });
+      } else {
+        setInviteMsg({ id, msg: data.error ?? "Failed to send invite", ok: false });
+      }
+    } catch {
+      setInviteMsg({ id, msg: "Network error", ok: false });
+    } finally {
+      setInviting(null);
+      setTimeout(() => setInviteMsg(null), 4000);
+    }
   }
 
   async function handleDelete(id: string, name: string) {
@@ -374,7 +399,7 @@ export default function ClientsPage() {
                         </td>
                         {/* Actions */}
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => setExpandedClient(isEmailExpanded ? null : c.id)}
                               className="text-xs transition-colors"
@@ -383,6 +408,28 @@ export default function ClientsPage() {
                             >
                               ✉ Emails
                             </button>
+                            {canWrite && c.email && (
+                              <button
+                                onClick={() => handlePortalInvite(c.id)}
+                                disabled={inviting === c.id}
+                                className="text-xs transition-colors disabled:opacity-50"
+                                style={{ color: inviteMsg?.id === c.id && inviteMsg.ok ? "#34d399" : inviteMsg?.id === c.id && !inviteMsg.ok ? "#f87171" : "#6366f1" }}
+                                title="Send portal invite"
+                              >
+                                {inviting === c.id ? "Sending…" : inviteMsg?.id === c.id ? inviteMsg.msg : "⬡ Portal Invite"}
+                              </button>
+                            )}
+                            {isAdmin && c.email && (
+                              <a
+                                href="/portal/dashboard"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-slate-500 hover:text-violet-400 transition-colors"
+                                title="Open customer portal"
+                              >
+                                View Portal ↗
+                              </a>
+                            )}
                             {canWrite && (
                               <button
                                 onClick={() => { setEditing(c); setError(""); }}

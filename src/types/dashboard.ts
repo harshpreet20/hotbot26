@@ -381,6 +381,9 @@ export interface Client {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  // Portal access
+  portalEnabled?: boolean;
+  portalInviteSentAt?: string;
 }
 
 // ── Dashboard Overview ────────────────────────────────────────────────────────
