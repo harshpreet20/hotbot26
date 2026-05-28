@@ -409,9 +409,9 @@ export default function LeadDetailPage() {
               <GoogleMeetButton
                 entityType="lead"
                 entityId={lead.id}
-                meetUrl={(lead as Record<string, unknown>).meetUrl as string | undefined}
-                scheduledAt={(lead as Record<string, unknown>).meetScheduledAt as string | undefined}
-                onUpdate={(url, sat) => setLead((prev) => prev ? { ...prev, meetUrl: url, meetScheduledAt: sat } as Lead : prev)}
+                meetUrl={lead.meetUrl}
+                scheduledAt={lead.meetScheduledAt}
+                onUpdate={(url, sat) => setLead((prev) => prev ? { ...prev, meetUrl: url, meetScheduledAt: sat } : prev)}
               />
             </div>
 

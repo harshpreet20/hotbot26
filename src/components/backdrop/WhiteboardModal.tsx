@@ -44,7 +44,6 @@ export function WhiteboardModal({ entityType, entityId, entityLabel, onClose }: 
   const [title, setTitle]           = useState("Whiteboard");
   const [creating, setCreating]     = useState(false);
   const [shareToast, setShareToast] = useState(false);
-  const excalidrawRef = useRef<{ getSceneElements: () => unknown; getAppState: () => unknown } | null>(null);
   const saveTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const h = useCallback(() => ({ Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" }), []);
@@ -205,7 +204,6 @@ export function WhiteboardModal({ entityType, entityId, entityLabel, onClose }: 
         ) : (
           <Excalidraw
             key={active.id}
-            ref={excalidrawRef as never}
             initialData={initialData}
             onChange={onChange}
             UIOptions={{

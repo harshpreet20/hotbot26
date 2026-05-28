@@ -113,6 +113,9 @@ export interface Lead {
   // Journey tracking
   sessionId?: string | null;
   journeyStage?: string | null;
+  // Collaboration
+  meetUrl?: string | null;
+  meetScheduledAt?: string | null;
 }
 
 export interface Contact {
@@ -326,6 +329,8 @@ export interface Ticket {
   raisedAgainst?: string;   // username of teammate this issue is about
   raisedBy?: string;        // username of staff member who raised it
   clientId?: string;        // optional link to a specific client
+  // Collaboration
+  meetUrl?: string | null;
   // Tracking
   ip?: string;
   comments?: TicketComment[];

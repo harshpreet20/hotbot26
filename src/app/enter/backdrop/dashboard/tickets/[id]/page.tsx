@@ -462,8 +462,8 @@ export default function TicketDetailPage() {
             <GoogleMeetButton
               entityType="ticket"
               entityId={ticket.id}
-              meetUrl={(ticket as Record<string, unknown>).meetUrl as string | undefined}
-              onUpdate={(url) => setTicket((prev) => prev ? { ...prev, meetUrl: url } as Ticket : prev)}
+              meetUrl={ticket.meetUrl}
+              onUpdate={(url) => setTicket((prev) => prev ? { ...prev, meetUrl: url } : prev)}
             />
           </SidebarField>
 
