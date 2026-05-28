@@ -520,23 +520,23 @@ export default function LeadsPage() {
                 ))}
                 <div>
                   <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Service</label>
-                  <select value={newLead.service} onChange={(e) => setNewLead((p) => ({ ...p, service: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
-                    <option value="">Select service…</option>
-                    {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <select value={newLead.service} onChange={(e) => setNewLead((p) => ({ ...p, service: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm outline-none" style={{ background: "#1e293b", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>Select service…</option>
+                    {SERVICES.map((s) => <option key={s} value={s} style={{ background: "#1e293b", color: "#fff" }}>{s}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Budget</label>
-                  <select value={newLead.budget} onChange={(e) => setNewLead((p) => ({ ...p, budget: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
-                    <option value="">Select budget…</option>
-                    {BUDGETS.map((b) => <option key={b} value={b}>{b}</option>)}
+                  <select value={newLead.budget} onChange={(e) => setNewLead((p) => ({ ...p, budget: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm outline-none" style={{ background: "#1e293b", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>Select budget…</option>
+                    {BUDGETS.map((b) => <option key={b} value={b} style={{ background: "#1e293b", color: "#fff" }}>{b}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Assign To</label>
-                <select value={newLead.status} onChange={(e) => setNewLead((p) => ({ ...p, status: e.target.value as LeadStatus }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
-                  {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                <select value={newLead.status} onChange={(e) => setNewLead((p) => ({ ...p, status: e.target.value as LeadStatus }))} className="w-full px-3 py-2 rounded-xl text-sm outline-none" style={{ background: "#1e293b", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k} style={{ background: "#1e293b", color: "#fff" }}>{v.label}</option>)}
                 </select>
               </div>
               <div>
@@ -619,16 +619,16 @@ export default function LeadsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Service</label>
-                    <select value={scanLead.service} onChange={(e) => setScanLead((p) => ({ ...p, service: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
-                      <option value="">Select…</option>
-                      {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    <select value={scanLead.service} onChange={(e) => setScanLead((p) => ({ ...p, service: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm outline-none" style={{ background: "#1e293b", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>Select…</option>
+                      {SERVICES.map((s) => <option key={s} value={s} style={{ background: "#1e293b", color: "#fff" }}>{s}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Budget</label>
-                    <select value={scanLead.budget} onChange={(e) => setScanLead((p) => ({ ...p, budget: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
-                      <option value="">Select…</option>
-                      {BUDGETS.map((b) => <option key={b} value={b}>{b}</option>)}
+                    <select value={scanLead.budget} onChange={(e) => setScanLead((p) => ({ ...p, budget: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm outline-none" style={{ background: "#1e293b", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>Select…</option>
+                      {BUDGETS.map((b) => <option key={b} value={b} style={{ background: "#1e293b", color: "#fff" }}>{b}</option>)}
                     </select>
                   </div>
                 </div>

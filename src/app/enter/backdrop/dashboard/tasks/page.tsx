@@ -347,7 +347,7 @@ export default function TasksPage() {
 
   return (
     <DashboardShell>
-      <div className="flex flex-col min-h-full">
+      <div className="flex flex-col w-full min-h-screen">
 
         {/* ── header ── */}
         <header className="flex items-center justify-between px-6 py-4 border-b flex-wrap gap-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -408,7 +408,11 @@ export default function TasksPage() {
                 <input autoFocus value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} placeholder="What needs to be done?" className="fi" />
               </F>
               <F label="Description">
-                <textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows={2} placeholder="Optional context or instructions…" className="fi resize-none" />
+                <RichTextToolbar
+                  value={form.description}
+                  onChange={(v) => setForm({...form, description: v})}
+                  placeholder="Optional context or instructions…"
+                />
               </F>
               <div className="grid grid-cols-2 gap-3">
                 <F label="Priority">
@@ -770,6 +774,48 @@ export default function TasksPage() {
         option { background:#0f1626; color:#e2e8f0; }
       `}</style>
     </DashboardShell>
+  );
+}
+
+function RichTextToolbar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  function wrap(before: string, after: string) {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    const sel   = value.slice(start, end);
+    const next  = value.slice(0, start) + before + sel + after + value.slice(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + before.length, end + before.length);
+    });
+  }
+
+  const btnStyle: React.CSSProperties = {
+    padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer",
+    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8",
+    lineHeight: 1.4,
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 mb-1">
+        <button type="button" style={btnStyle} onMouseDown={(e) => { e.preventDefault(); wrap("**", "**"); }} title="Bold"><strong>B</strong></button>
+        <button type="button" style={{ ...btnStyle, fontStyle: "italic" }} onMouseDown={(e) => { e.preventDefault(); wrap("*", "*"); }} title="Italic"><em>I</em></button>
+        <button type="button" style={{ ...btnStyle, textDecoration: "underline" }} onMouseDown={(e) => { e.preventDefault(); wrap("<u>", "</u>"); }} title="Underline">U</button>
+      </div>
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="fi"
+        style={{ minHeight: 120, resize: "vertical" }}
+      />
+    </div>
   );
 }
 
