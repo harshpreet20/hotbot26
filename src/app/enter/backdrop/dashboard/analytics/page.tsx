@@ -718,7 +718,7 @@ export default function AnalyticsPage() {
 
   return (
     <DashboardShell>
-      <div style={{ padding: "24px 28px", maxWidth: 1200 }}>
+      <div style={{ padding: "24px 28px" }} className="w-full min-h-screen">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
@@ -849,7 +849,7 @@ export default function AnalyticsPage() {
         {bundle && ov && !isEmpty && (
           <>
             {/* Vital Signs — 6 cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 20 }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
               <VitalCard label="Visitors" value={ov.visitors.toLocaleString()} valueColor={COLORS.blue} trend={ov.visitorsTrend} />
               <VitalCard label="Pageviews" value={ov.pageviews.toLocaleString()} valueColor={COLORS.cyan} trend={ov.pageviewsTrend} />
               <VitalCard label="Sessions" value={ov.sessions.toLocaleString()} valueColor={COLORS.purple} trend={ov.visitorsTrend} />
@@ -893,7 +893,7 @@ export default function AnalyticsPage() {
               <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 18px" }}>
                 Traffic Intelligence — Last 30 Days
               </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
                 {/* Column 1 — Source Categories */}
                 <div>
@@ -933,10 +933,10 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Live Feed + Traffic Pulse */}
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 3fr", gap: 16, marginBottom: 16 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
 
               {/* Live Feed */}
-              <div style={CARD}>
+              <div style={CARD} className="lg:col-span-2">
                 <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
                   Live Feed
                 </p>
@@ -944,7 +944,7 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Traffic Pulse */}
-              <div style={CARD}>
+              <div style={CARD} className="lg:col-span-3">
                 <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 12px" }}>
                   Traffic Pulse · Last 30 Days
                 </p>
@@ -971,7 +971,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Top Pages + Traffic Sources + Devices */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div style={CARD}>
                 <p style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 14px" }}>
                   Top Pages
@@ -1002,7 +1002,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Conversion Funnel + AI Debrief */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
               {/* Conversion Funnel — top events */}
               <div style={CARD}>
