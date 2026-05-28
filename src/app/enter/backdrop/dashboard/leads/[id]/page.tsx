@@ -29,14 +29,15 @@ const STATUS_META: Record<LeadStatus, { label: string; color: string }> = {
 };
 
 const UPDATE_ICONS: Record<UpdateType, string> = {
-  note:           "📝",
-  call:           "📞",
-  email:          "✉️",
-  meeting:        "🤝",
-  status_change:  "🔄",
-  assignment:     "👤",
-  task_linked:    "✅",
-  invoice_linked: "🧾",
+  note:                  "📝",
+  call:                  "📞",
+  email:                 "✉️",
+  meeting:               "🤝",
+  status_change:         "🔄",
+  assignment:            "👤",
+  task_linked:           "✅",
+  invoice_linked:        "🧾",
+  account_status_change: "🔒",
 };
 
 export default function LeadDetailPage() {
