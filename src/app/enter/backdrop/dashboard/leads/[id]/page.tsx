@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
+import { GoogleMeetButton } from "@/components/backdrop/GoogleMeetButton";
 import type { Lead, LeadStatus, CRMUpdate, CRMTask, Invoice, UpdateType, TaskPriority } from "@/types/dashboard";
 
 function getSecret() {
@@ -399,6 +400,18 @@ export default function LeadDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Google Meet */}
+            <div className="rounded-2xl p-5" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+              <h2 className="text-white text-sm font-semibold mb-3">Google Meet</h2>
+              <GoogleMeetButton
+                entityType="lead"
+                entityId={lead.id}
+                meetUrl={(lead as Record<string, unknown>).meetUrl as string | undefined}
+                scheduledAt={(lead as Record<string, unknown>).meetScheduledAt as string | undefined}
+                onUpdate={(url, sat) => setLead((prev) => prev ? { ...prev, meetUrl: url, meetScheduledAt: sat } as Lead : prev)}
+              />
             </div>
 
             {/* Quick stats */}

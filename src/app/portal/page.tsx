@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -151,6 +152,19 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 // ── Main Portal Page ──────────────────────────────────────────────────────────
 
 export default function CustomerPortalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0f1a" }}>
+        <p className="text-slate-400">Loading…</p>
+      </div>
+    }>
+      <PortalInner />
+    </Suspense>
+  );
+}
+
+function PortalInner() {
+  const searchParams = useSearchParams();
   const [clientId,   setClientId]   = useState("");
   const [verifying,  setVerifying]  = useState(false);
   const [error,      setError]      = useState("");
@@ -158,9 +172,10 @@ export default function CustomerPortalPage() {
   const [loading,    setLoading]    = useState(false);
   const [activeTab,  setActiveTab]  = useState<"projects" | "tickets" | "invoices" | "whiteboards">("projects");
 
-  // Restore saved client ID
+  // Restore saved client ID or use URL param
   useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY);
+    const urlClientId = searchParams.get("clientId")?.toUpperCase();
+    const saved = urlClientId || localStorage.getItem(LS_KEY);
     if (saved) {
       setClientId(saved);
       void loadPortal(saved);

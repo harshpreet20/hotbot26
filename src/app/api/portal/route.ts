@@ -110,8 +110,8 @@ async function fetchInvoices(client: Client) {
   if (!email) return [];
   const { data, error } = await sb()
     .from("invoices")
-    .select("id, invoice_number, status, due_date, currency, total, created_at, items")
-    .or(`client_email.ilike.${email},client_id.eq.${client.clientId}`)
+    .select("id, invoice_number, status, due_date, currency, total, created_at")
+    .ilike("client_email", email)
     .order("created_at", { ascending: false })
     .limit(20);
   if (error) return [];
@@ -121,36 +121,38 @@ async function fetchInvoices(client: Client) {
     status:        inv.status,
     dueDate:       inv.due_date,
     currency:      inv.currency,
-    total:         inv.total,
+    total:         Number(inv.total ?? 0),
     createdAt:     inv.created_at,
-    itemCount:     Array.isArray(inv.items) ? (inv.items as unknown[]).length : 0,
+    itemCount:     0,
   }));
 }
 
 async function fetchWhiteboards(clientId: string) {
   if (!isSupabaseEnabled()) return [];
+  // Get the client's project IDs first
+  const { data: projects, error: projErr } = await sb()
+    .from("projects")
+    .select("id")
+    .eq("client_id", clientId);
+  if (projErr || !projects || projects.length === 0) return [];
+
+  const projectIds = (projects as { id: string }[]).map((p) => p.id);
+
   const { data, error } = await sb()
     .from("whiteboard_sessions")
     .select("id, title, share_token, entity_type, entity_id, updated_at")
     .eq("entity_type", "project")
+    .in("entity_id", projectIds)
     .order("updated_at", { ascending: false })
     .limit(20);
   if (error) return [];
-  // Only return whiteboards that belong to this client's projects
-  // We check against projects table
-  const { data: projects } = await sb()
-    .from("projects")
-    .select("id")
-    .eq("client_id", clientId);
-  const projectIds = new Set((projects ?? []).map((p: { id: string }) => p.id));
-  return (data ?? [])
-    .filter((w: Record<string, unknown>) => projectIds.has(w.entity_id as string))
-    .map((w: Record<string, unknown>) => ({
-      id:          w.id,
-      title:       w.title,
-      shareToken:  w.share_token,
-      entityType:  w.entity_type,
-      entityId:    w.entity_id,
-      updatedAt:   w.updated_at,
-    }));
+
+  return (data ?? []).map((w: Record<string, unknown>) => ({
+    id:         w.id,
+    title:      w.title,
+    shareToken: w.share_token,
+    entityType: w.entity_type,
+    entityId:   w.entity_id,
+    updatedAt:  w.updated_at,
+  }));
 }

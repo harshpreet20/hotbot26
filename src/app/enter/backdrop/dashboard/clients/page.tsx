@@ -529,6 +529,15 @@ export default function ClientsPage() {
                             >
                               ✉ Emails
                             </button>
+                            <a
+                              href={`/portal?clientId=${encodeURIComponent(c.clientId)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
+                              title="View client portal"
+                            >
+                              ↗ Portal
+                            </a>
                             {canWrite && (
                               <button
                                 onClick={() => { setEditing(c); setError(""); }}

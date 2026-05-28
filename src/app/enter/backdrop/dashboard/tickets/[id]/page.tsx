@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
+import { GoogleMeetButton } from "@/components/backdrop/GoogleMeetButton";
+import { WhiteboardModal } from "@/components/backdrop/WhiteboardModal";
 import type { Ticket, TicketStatus, TicketPriority, TicketCategory, TicketComment, TicketActivity } from "@/types/dashboard";
 
 function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
@@ -64,6 +66,7 @@ export default function TicketDetailPage() {
   const [titleVal, setTitleVal]     = useState("");
   const [editDesc, setEditDesc]     = useState(false);
   const [descVal, setDescVal]       = useState("");
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -454,6 +457,28 @@ export default function TicketDetailPage() {
             </div>
           </SidebarField>
 
+          {/* Google Meet */}
+          <SidebarField label="Google Meet">
+            <GoogleMeetButton
+              entityType="ticket"
+              entityId={ticket.id}
+              meetUrl={(ticket as Record<string, unknown>).meetUrl as string | undefined}
+              onUpdate={(url) => setTicket((prev) => prev ? { ...prev, meetUrl: url } as Ticket : prev)}
+            />
+          </SidebarField>
+
+          {/* Whiteboard */}
+          <SidebarField label="Whiteboard">
+            <button
+              onClick={() => setWhiteboardOpen(true)}
+              className="flex items-center gap-2 w-full px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Open Whiteboard
+            </button>
+          </SidebarField>
+
           {/* Requester */}
           <SidebarField label="Requester">
             <p className="text-slate-300 text-sm">{ticket.requesterName}</p>
@@ -470,6 +495,15 @@ export default function TicketDetailPage() {
           </SidebarField>
         </aside>
       </div>
+
+      {whiteboardOpen && ticket && (
+        <WhiteboardModal
+          entityType="ticket"
+          entityId={ticket.id}
+          entityLabel={ticket.ticketNumber + " · " + ticket.title}
+          onClose={() => setWhiteboardOpen(false)}
+        />
+      )}
     </DashboardShell>
   );
 }
