@@ -85,7 +85,7 @@ async function fetchTickets(client: Client) {
   const email = client.email?.toLowerCase();
   return allTickets
     .filter((t) => {
-      if (client.clientId && (t as Record<string, unknown>).clientId === client.clientId) return true;
+      if (client.clientId && t.clientId === client.clientId) return true;
       if (email && t.requesterEmail?.toLowerCase() === email) return true;
       return false;
     })
