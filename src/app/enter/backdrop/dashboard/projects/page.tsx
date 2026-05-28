@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
+import { WhiteboardModal } from "@/components/backdrop/WhiteboardModal";
+import { GoogleMeetButton } from "@/components/backdrop/GoogleMeetButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,9 @@ interface Project {
   created_by?: string | null;
   created_at: string;
   updated_at: string;
+  meet_url?: string | null;
+  meet_scheduled_at?: string | null;
+  whiteboard_data?: Record<string, unknown> | null;
 }
 
 interface Client {
@@ -109,6 +114,8 @@ function ProjectCard({
   clientName,
   onEdit,
   onDelete,
+  onWhiteboard,
+  onMeetUpdate,
   canWrite,
   isAdmin,
 }: {
@@ -116,6 +123,8 @@ function ProjectCard({
   clientName: string;
   onEdit: (p: Project) => void;
   onDelete: (p: Project) => void;
+  onWhiteboard: (p: Project) => void;
+  onMeetUpdate: (projectId: string, url: string | null, scheduledAt?: string | null) => void;
   canWrite: boolean;
   isAdmin: boolean;
 }) {
@@ -123,12 +132,14 @@ function ProjectCard({
 
   return (
     <div
-      className="rounded-xl p-3.5 mb-2 cursor-pointer group transition-all duration-150 hover:translate-y-[-1px]"
+      className="rounded-xl p-3.5 mb-2 group transition-all duration-150 hover:translate-y-[-1px]"
       style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-      onClick={() => canWrite && onEdit(project)}
     >
       {/* Name + priority */}
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div
+        className="flex items-start justify-between gap-2 mb-1.5 cursor-pointer"
+        onClick={() => canWrite && onEdit(project)}
+      >
         <p className="text-slate-100 text-sm font-medium leading-snug flex-1 min-w-0 truncate">{project.name}</p>
         <PriorityBadge priority={project.priority} />
       </div>
@@ -142,8 +153,34 @@ function ProjectCard({
       {/* Progress bar */}
       <ProgressBar value={project.progress} />
 
+      {/* Collab actions */}
+      <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+        {/* Whiteboard */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onWhiteboard(project); }}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white transition-colors"
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+          title="Open Whiteboard"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Whiteboard
+        </button>
+
+        {/* Google Meet */}
+        <div onClick={(e) => e.stopPropagation()}>
+          <GoogleMeetButton
+            entityType="project"
+            entityId={project.id}
+            meetUrl={project.meet_url}
+            scheduledAt={project.meet_scheduled_at}
+            onUpdate={(url, sat) => onMeetUpdate(project.id, url, sat)}
+            compact
+          />
+        </div>
+      </div>
+
       {/* Footer */}
-      <div className="flex items-center justify-between mt-2.5 gap-2">
+      <div className="flex items-center justify-between mt-2 gap-2">
         <div className="flex items-center gap-1 flex-wrap">
           {assigned.slice(0, 3).map((u) => (
             <span
@@ -212,6 +249,9 @@ export default function ProjectsPage() {
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
   const [search, setSearch]       = useState("");
+
+  // Whiteboard & Meet state
+  const [whiteboardProject, setWhiteboardProject] = useState<Project | null>(null);
 
   const [form, setForm] = useState(emptyForm());
 
@@ -383,6 +423,12 @@ export default function ProjectsPage() {
     });
   }
 
+  function handleMeetUpdate(projectId: string, url: string | null, scheduledAt?: string | null) {
+    setProjects((prev) => prev.map((p) =>
+      p.id === projectId ? { ...p, meet_url: url, meet_scheduled_at: scheduledAt ?? p.meet_scheduled_at } : p
+    ));
+  }
+
   function buildPayload() {
     return {
       name:            form.name.trim(),
@@ -492,6 +538,8 @@ export default function ProjectsPage() {
                           clientName={clientName(p.client_id)}
                           onEdit={openEdit}
                           onDelete={handleDelete}
+                          onWhiteboard={setWhiteboardProject}
+                          onMeetUpdate={handleMeetUpdate}
                           canWrite={canWrite}
                           isAdmin={isAdmin}
                         />
@@ -701,6 +749,16 @@ export default function ProjectsPage() {
             </div>
           </form>
         </div>
+      )}
+
+      {/* Whiteboard Modal */}
+      {whiteboardProject && (
+        <WhiteboardModal
+          entityType="project"
+          entityId={whiteboardProject.id}
+          entityLabel={whiteboardProject.name}
+          onClose={() => setWhiteboardProject(null)}
+        />
       )}
 
       <style jsx>{`
