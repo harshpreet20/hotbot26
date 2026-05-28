@@ -57,12 +57,14 @@ export async function PATCH(req: NextRequest) {
 
   // Log the action in crm_updates if it's a lead
   if (body.entityType === "lead" && meetUrl) {
-    await sb().from("crm_updates").insert({
-      lead_id:    body.entityId,
-      type:       "meeting",
-      content:    `Google Meet scheduled: ${meetUrl}${body.scheduledAt ? ` at ${new Date(body.scheduledAt).toLocaleString("en-IN")}` : ""}`,
-      created_by: session.username,
-    }).catch(() => null);
+    try {
+      await sb().from("crm_updates").insert({
+        lead_id:    body.entityId,
+        type:       "meeting",
+        content:    `Google Meet scheduled: ${meetUrl}${body.scheduledAt ? ` at ${new Date(body.scheduledAt).toLocaleString("en-IN")}` : ""}`,
+        created_by: session.username,
+      });
+    } catch { /* non-critical */ }
   }
 
   return NextResponse.json({ meetUrl, entity: data });
