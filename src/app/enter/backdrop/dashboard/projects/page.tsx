@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
-import type { Project, ProjectStatus } from "@/types/dashboard";
+import type { Project, ProjectStatus, Client } from "@/types/dashboard";
 
 function getToken() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
@@ -45,6 +45,10 @@ export default function ProjectsPage() {
     status: "planning" as ProjectStatus, startDate: "", endDate: "", color: "#6366f1",
     budget: "", currency: "USD",
   });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/dashboard/projects", {
@@ -59,9 +63,27 @@ export default function ProjectsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    fetch("/api/dashboard/clients", { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(r => r.ok ? r.json() as Promise<{ clients: Client[] }> : Promise.reject())
+      .then(d => setClients(d.clients ?? []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target as Node)) {
+        setShowClientDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   function openCreate() {
     setEditing(null);
     setForm({ name:"", description:"", clientId:"", clientEmail:"", clientName:"", status:"planning", startDate:"", endDate:"", color:"#6366f1", budget:"", currency:"USD" });
+    setClientSearch("");
     setShowForm(true);
     setError("");
   }
@@ -73,6 +95,7 @@ export default function ProjectsPage() {
       clientName: p.clientName ?? "", status: p.status, startDate: p.startDate ?? "", endDate: p.endDate ?? "",
       color: p.color ?? "#6366f1", budget: p.budget ? String(p.budget / 100) : "", currency: p.currency ?? "USD",
     });
+    setClientSearch(p.clientName || p.clientId);
     setShowForm(true);
     setError("");
   }
@@ -137,7 +160,7 @@ export default function ProjectsPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div>
@@ -175,20 +198,56 @@ export default function ProjectsPage() {
                     <input value={form.name} onChange={(e) => setForm({...form,name:e.target.value})} placeholder="e.g. Website Redesign"
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50" />
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Client ID *</label>
-                    <input value={form.clientId} onChange={(e) => setForm({...form,clientId:e.target.value})} placeholder="HBS-XXXXX"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Client Email</label>
-                    <input value={form.clientEmail} onChange={(e) => setForm({...form,clientEmail:e.target.value})} placeholder="client@co.com"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Client Name</label>
-                    <input value={form.clientName} onChange={(e) => setForm({...form,clientName:e.target.value})}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none" />
+                  <div className="col-span-2" ref={clientDropdownRef}>
+                    <label className="text-xs text-slate-400 mb-1 block">Client *</label>
+                    <div className="relative">
+                      <input
+                        value={clientSearch}
+                        onChange={(e) => {
+                          setClientSearch(e.target.value);
+                          setShowClientDropdown(true);
+                          if (!e.target.value) setForm({...form, clientId:"", clientEmail:"", clientName:""});
+                        }}
+                        onFocus={() => setShowClientDropdown(true)}
+                        placeholder="Search by name, email or ID…"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                      />
+                      {form.clientId && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+                          {form.clientId}
+                        </span>
+                      )}
+                      {showClientDropdown && (
+                        <div className="absolute z-50 top-full mt-1 w-full rounded-xl overflow-hidden shadow-xl" style={{ background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", maxHeight:200, overflowY:"auto" }}>
+                          {clients
+                            .filter(c => {
+                              const q = clientSearch.toLowerCase();
+                              return !q || c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.clientId?.toLowerCase().includes(q);
+                            })
+                            .slice(0, 10)
+                            .map(c => (
+                              <button key={c.id} type="button"
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                onClick={() => {
+                                  setForm({...form, clientId: c.clientId, clientEmail: c.email, clientName: c.name});
+                                  setClientSearch(c.name);
+                                  setShowClientDropdown(false);
+                                }}>
+                                <div className="text-white font-medium">{c.name}</div>
+                                <div className="text-slate-500 text-xs">{c.email} · {c.clientId}</div>
+                              </button>
+                            ))
+                          }
+                          {clients.filter(c => {
+                            const q = clientSearch.toLowerCase();
+                            return !q || c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.clientId?.toLowerCase().includes(q);
+                          }).length === 0 && (
+                            <div className="px-3 py-2.5 text-xs text-slate-500">No matching clients</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {form.clientEmail && <p className="text-xs text-slate-500 mt-1">{form.clientEmail}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Status</label>

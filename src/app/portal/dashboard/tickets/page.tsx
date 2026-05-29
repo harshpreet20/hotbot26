@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface Ticket {
   id: string;
@@ -98,13 +99,25 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function PortalTicketsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding:32, color:"#64748b", fontSize:14 }}>Loading…</div>}>
+      <TicketsInner />
+    </Suspense>
+  );
+}
+
+function TicketsInner() {
+  const searchParams = useSearchParams();
+  const isFeatureTab = searchParams.get("tab") === "feature";
+  const didAutoOpen = useRef(false);
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({ title: "", category: "general", priority: "medium", description: "" });
+  const [form, setForm] = useState({ title: "", category: isFeatureTab ? "feature" : "general", priority: "medium", description: "" });
 
   function loadTickets() {
     return fetch("/api/portal/tickets")
@@ -118,7 +131,16 @@ export default function PortalTicketsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = filter === "all" ? tickets : tickets.filter((t) => t.status === filter);
+  useEffect(() => {
+    if (isFeatureTab && !didAutoOpen.current) {
+      didAutoOpen.current = true;
+      setForm(f => ({ ...f, category: "feature" }));
+      setShowForm(true);
+    }
+  }, [isFeatureTab]);
+
+  const baseTickets = isFeatureTab ? tickets.filter(t => t.category === "feature") : tickets;
+  const filtered = filter === "all" ? baseTickets : baseTickets.filter((t) => t.status === filter);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,34 +171,41 @@ export default function PortalTicketsPage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
         <div>
           <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#f1f5f9", letterSpacing: "-0.2px" }}>
-            My Tickets
+            {isFeatureTab ? "Feature Requests" : "My Tickets"}
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} total
+            {isFeatureTab
+              ? "Share ideas to improve our products and services"
+              : `${tickets.length} ticket${tickets.length !== 1 ? "s" : ""} total`}
           </p>
         </div>
-        <button
-          onClick={() => { setShowForm(!showForm); setFormError(""); }}
-          style={{
-            padding: "9px 18px",
-            borderRadius: 16,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            color: "#ffffff",
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-            border: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            transition: "opacity 0.2s",
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-          {showForm ? "Cancel" : "New Ticket"}
-        </button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {isFeatureTab && (
+            <button
+              onClick={() => { setForm(f=>({...f,category:"feature",priority:"medium"})); setShowForm(!showForm); setFormError(""); }}
+              style={{
+                padding: "9px 18px", borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)",
+                display: "flex", alignItems: "center", gap: 6, transition: "opacity 0.2s",
+              }}
+            >
+              ⭐ {showForm ? "Cancel" : "+ Request Feature"}
+            </button>
+          )}
+          <button
+            onClick={() => { setForm(f=>({...f,category:isFeatureTab?"feature":"general"})); setShowForm(!showForm); setFormError(""); }}
+            style={{
+              padding: "9px 18px", borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              color: "#ffffff", background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              border: "none", display: "flex", alignItems: "center", gap: 6, transition: "opacity 0.2s",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            {showForm ? "Cancel" : "New Ticket"}
+          </button>
+        </div>
       </div>
 
       {/* New ticket form */}
@@ -191,7 +220,7 @@ export default function PortalTicketsPage() {
           }}
         >
           <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 600, color: "#e2e8f0" }}>
-            Submit a Support Ticket
+            {form.category === "feature" ? "Submit a Feature Request" : "Submit a Support Ticket"}
           </h2>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>

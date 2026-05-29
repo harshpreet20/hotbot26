@@ -171,7 +171,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-3xl">
+      <div className="p-6">
         <div className="flex items-center justify-between mb-7">
           <div>
             <div className="flex items-center gap-3">

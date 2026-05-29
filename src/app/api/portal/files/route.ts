@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getPortalUser } from "@/lib/portalAuth";
+import { readAll } from "@/lib/store";
+import { sb, isSupabaseEnabled } from "@/lib/supabase";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import { newId } from "@/lib/store";
+
+interface ClientResource {
+  id: string;
+  clientId: string;
+  projectId?: string;
+  name: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  category?: string;
+  uploadedBy: string;
+  uploadedByType: "admin" | "client";
+  visibility: "both" | "admin_only";
+  createdAt: string;
+}
+
+function ip(req: NextRequest) {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+export async function GET(req: NextRequest) {
+  const user = await getPortalUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const clientRef = user.clientRef || user.clientId;
+  const all = await readAll<ClientResource>("client_resources");
+  const files = all.filter(f =>
+    (f.clientId === clientRef || f.clientId === user.clientId) &&
+    f.visibility !== "admin_only"
+  );
+
+  return NextResponse.json({ files });
+}
+
+export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(ip(req), "portal-uploads", { limit: 20, windowMs: 60_000 });
+  if (limited) return limited;
+  const user = await getPortalUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const formData = await req.formData();
+  const file      = formData.get("file") as File | null;
+  const projectId = formData.get("projectId") as string | null;
+  const category  = (formData.get("category") as string | null) ?? "general";
+
+  if (!file) return NextResponse.json({ error: "file required" }, { status: 400 });
+
+  const clientId = user.clientRef || user.clientId || "";
+  const id       = newId();
+  const ext      = file.name.split(".").pop() ?? "";
+  const path     = `${clientId}/${id}${ext ? `.${ext}` : ""}`;
+  let   fileUrl  = "";
+
+  if (isSupabaseEnabled()) {
+    const bytes = await file.arrayBuffer();
+    const { data, error } = await sb().storage
+      .from("client-files")
+      .upload(path, bytes, { contentType: file.type, upsert: false });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data: urlData } = sb().storage.from("client-files").getPublicUrl(data.path);
+    fileUrl = urlData.publicUrl;
+  } else {
+    fileUrl = `/api/portal/files/${id}`;
+  }
+
+  const resource: ClientResource = {
+    id,
+    clientId,
+    projectId: projectId ?? undefined,
+    name:            file.name,
+    fileUrl,
+    fileName:        file.name,
+    fileSize:        file.size,
+    mimeType:        file.type,
+    category,
+    uploadedBy:      user.name || user.email,
+    uploadedByType:  "client",
+    visibility:      "both",
+    createdAt:       new Date().toISOString(),
+  };
+
+  if (isSupabaseEnabled()) {
+    const { error } = await sb().from("client_resources").insert({
+      id:               resource.id,
+      client_id:        resource.clientId,
+      project_id:       resource.projectId ?? null,
+      name:             resource.name,
+      file_url:         resource.fileUrl,
+      file_name:        resource.fileName,
+      file_size:        resource.fileSize,
+      mime_type:        resource.mimeType,
+      category:         resource.category,
+      uploaded_by:      resource.uploadedBy,
+      uploaded_by_type: resource.uploadedByType,
+      visibility:       resource.visibility,
+      created_at:       resource.createdAt,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ file: resource }, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const user = await getPortalUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const all = await readAll<ClientResource>("client_resources");
+  const clientRef = user.clientRef || user.clientId;
+  const existing  = all.find(f => f.id === id && f.clientId === clientRef && f.uploadedByType === "client");
+  if (!existing) return NextResponse.json({ error: "Not found or not authorized" }, { status: 404 });
+
+  if (isSupabaseEnabled()) {
+    const ext  = existing.fileName.split(".").pop() ?? "";
+    const path = `${existing.clientId}/${id}${ext ? `.${ext}` : ""}`;
+    await sb().storage.from("client-files").remove([path]).catch(() => {});
+    await sb().from("client_resources").delete().eq("id", id);
+  }
+
+  return NextResponse.json({ ok: true });
+}

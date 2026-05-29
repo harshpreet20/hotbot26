@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
     updatedAt:   now,
   };
 
-  await insert<Project>("projects", project);
+  // Supabase projects table uses auto-generated UUID — omit our text id
+  const { id: _id, ...projectWithoutId } = project;
+  await insert<Omit<Project, "id">>("projects", projectWithoutId);
   return NextResponse.json({ project }, { status: 201 });
 }
 

@@ -179,7 +179,7 @@ export default function LeadDetailPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-4xl">
+      <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-7">
           <div>
