@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join("\n");
 
     const msg = await client.messages.create({
-      model: "claude-opus-4-8",
+      model: "claude-opus-4-5-20250929",
       max_tokens: 4096,
       system: `You are a senior business development consultant at a top digital agency. Write polished, persuasive business proposals in markdown format. Structure: Executive Summary, Understanding of Requirements, Proposed Solution & Scope, Deliverables, Timeline, Pricing, Why Us, Terms & Next Steps. Tone: professional, confident, client-focused. Do not use placeholder text — write real, substantive content based on the brief.`,
       messages: [{

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     try {
       const client = new Anthropic();
       const msg = await client.messages.create({
-        model: "claude-opus-4-8",
+        model: "claude-opus-4-5-20250929",
         max_tokens: 4096,
         system: `You are an expert project manager and ISO-certified technical writer at a professional services agency. Generate a Standard Operating Procedure (SOP) in markdown format that follows ISO 9001 documentation standards.
 
@@ -100,11 +100,12 @@ Use [PLACEHOLDER] markers wherever specific names/dates/values should be filled 
         messages: [{ role: "user", content: `Write a comprehensive SOP for the following project brief:\n\n${body.brief}\n\nProject title: ${body.title || "Project SOP"}` }],
       });
       content = msg.content[0].type === "text" ? msg.content[0].text : "";
-    } catch {
-      return NextResponse.json({ error: "AI generation failed. Please try again or write manually." }, { status: 502 });
+    } catch (err) {
+      console.error("[sop] Anthropic generation failed:", err instanceof Error ? err.message : err);
+      content = `# ${body.title || "Project SOP"}\n\n> ⚠️ AI generation failed — please fill in the template manually.\n\n---\n**Document ID:** SOP-[AUTO]\n**Version:** v1.0\n**Date:** [DATE]\n**Prepared By:** [AUTHOR]\n**Approved By:** [APPROVER]\n**Review Date:** [DATE + 12 months]\n---\n\n## 1. Purpose\n[Why this SOP exists]\n\n## 2. Scope\n[Who and what this covers]\n\n## 3. Definitions\n[Key terms]\n\n## 4. Responsibilities\n| Role | Responsibility |\n|------|---------------|\n| [ROLE] | [RESPONSIBILITY] |\n\n## 5. Prerequisites\n- [Prerequisite]\n\n## 6. Procedure\n### 6.1 [Phase]\n1. [Step] — **Owner:** [ROLE] **Duration:** [TIME]\n\n## 7. Success Criteria\n- [ ] [Criterion]\n\n## 8. References\n- [Reference]\n\n## 9. Change Log\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| v1.0 | [DATE] | [AUTHOR] | Initial release |\n\n---\n## Brief\n${body.brief}`;
     }
   } else {
-    content = `# ${body.title || "Project SOP"}\n\n*AI generation unavailable — ANTHROPIC_API_KEY not configured.*\n\n## Brief\n\n${body.brief}\n\n## Steps\n\n1. \n2. \n3. `;
+    content = `# ${body.title || "Project SOP"}\n\n> ⚠️ AI generation unavailable — ANTHROPIC_API_KEY not configured. Fill in the template below.\n\n---\n**Document ID:** SOP-[AUTO]\n**Version:** v1.0\n**Date:** [DATE]\n**Prepared By:** [AUTHOR]\n**Approved By:** [APPROVER]\n**Review Date:** [DATE + 12 months]\n---\n\n## 1. Purpose\n[Why this SOP exists]\n\n## 2. Scope\n[Who and what this covers]\n\n## 3. Definitions\n[Key terms]\n\n## 4. Responsibilities\n| Role | Responsibility |\n|------|---------------|\n| [ROLE] | [RESPONSIBILITY] |\n\n## 5. Prerequisites\n- [Prerequisite]\n\n## 6. Procedure\n### 6.1 [Phase]\n1. [Step] — **Owner:** [ROLE] **Duration:** [TIME]\n\n## 7. Success Criteria\n- [ ] [Criterion]\n\n## 8. References\n- [Reference]\n\n## 9. Change Log\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| v1.0 | [DATE] | [AUTHOR] | Initial release |\n\n---\n## Brief\n${body.brief}`;
   }
 
   const now = new Date().toISOString();

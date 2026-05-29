@@ -118,6 +118,7 @@ export default function ProjectDetailPage() {
   const [sopContent, setSopContent]     = useState("");
   const [generatingSOP, setGeneratingSOP] = useState(false);
   const [savingSOP, setSavingSOP]       = useState(false);
+  const [sopError, setSopError]         = useState("");
 
   const load = useCallback(async () => {
     const secret = tok();
@@ -408,6 +409,7 @@ export default function ProjectDetailPage() {
   async function generateSOP() {
     if (!sopBrief.trim() || !project) return;
     setGeneratingSOP(true);
+    setSopError("");
     try {
       const res = await fetch("/api/dashboard/sop", {
         method: "POST",
@@ -415,7 +417,13 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({ projectId: id, clientId: project.clientId, title: sopTitle || `${project.name} SOP`, brief: sopBrief }),
       });
       const data = await res.json() as { sop?: ProjectSOP; error?: string };
-      if (data.sop) { setActiveSOP(data.sop); setSopContent(data.sop.content); await load(); }
+      if (data.sop) {
+        setActiveSOP(data.sop); setSopContent(data.sop.content); await load();
+      } else {
+        setSopError(data.error ?? `Server error (${res.status}). Check that your role allows SOP generation.`);
+      }
+    } catch {
+      setSopError("Network error — could not reach the server.");
     } finally { setGeneratingSOP(false); }
   }
 
@@ -909,6 +917,11 @@ export default function ProjectDetailPage() {
                   <button onClick={() => void generateSOP()} disabled={generatingSOP||!sopBrief.trim()} style={{ ...BTN, alignSelf:"flex-start", background:"rgba(139,92,246,0.15)", color:"#a78bfa", border:"1px solid rgba(139,92,246,0.3)", opacity:generatingSOP||!sopBrief.trim()?0.5:1 }}>
                     {generatingSOP ? "✨ Generating SOP…" : "✨ Generate SOP with AI"}
                   </button>
+                  {sopError && (
+                    <div style={{ padding:"10px 14px", borderRadius:12, background:"rgba(248,113,113,0.08)", border:"1px solid rgba(248,113,113,0.25)", color:"#f87171", fontSize:12 }}>
+                      {sopError}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
