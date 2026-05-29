@@ -42,14 +42,14 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center hover:opacity-80 transition-opacity shrink-0"
+          className="flex items-center hover:opacity-90 transition-opacity shrink-0 mr-6"
         >
           <Image
             src="/logos/hotbot-logo.svg"
             alt="HotBot Studios - AI Automation & Digital Marketing Agency"
-            width={200}
-            height={48}
-            className="h-10 w-auto object-contain"
+            width={240}
+            height={56}
+            className="h-12 w-auto object-contain"
             priority
             unoptimized
           />
@@ -74,14 +74,14 @@ export function Navbar() {
         {/* CTA + Mobile Toggle */}
         <div className="flex items-center gap-2 shrink-0">
           <Link
-            href="/tickets"
+            href="https://www.hotbotstudios.com/portal/login"
             className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors"
             style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 9a3 3 0 010-6h20a3 3 0 010 6" /><path d="M2 15a3 3 0 000 6h20a3 3 0 000-6" />
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
-            Raise a Ticket
+            Customer Login
           </Link>
           <button
             onClick={() => openForm("get-started", pathname)}
@@ -123,11 +123,14 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              href="/tickets"
-              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center"
+              href="https://www.hotbotstudios.com/portal/login"
+              className="mt-1 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 text-center flex items-center justify-center gap-2"
               style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
             >
-              Raise a Ticket
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              Customer Login
             </Link>
             <button
               onClick={() => openForm("get-started", pathname)}

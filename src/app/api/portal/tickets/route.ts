@@ -10,12 +10,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   if (isSupabaseEnabled()) {
+    // Match on: requester_email, client_email, or client_id (HBS-xxx ref or internal UUID)
+    const orFilter = [
+      `requester_email.eq.${user.email}`,
+      `client_email.eq.${user.email}`,
+      ...(user.clientRef ? [`client_id.eq.${user.clientRef}`] : []),
+      ...(user.clientId ? [`client_id.eq.${user.clientId}`] : []),
+    ].join(",");
+
     const { data: rows, error } = await sb()
       .from("tickets")
       .select(
-        "id, ticket_number, title, status, priority, category, created_at, updated_at, resolved_at"
+        "id, ticket_number, title, status, priority, category, client_email, requester_email, created_at, updated_at, resolved_at"
       )
-      .or(`requester_email.eq.${user.email},client_id.eq.${user.clientRef}`)
+      .or(orFilter)
+      .neq("status", "draft")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -51,6 +60,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     priority: string;
     category?: string;
     requesterEmail?: string;
+    clientEmail?: string;
     clientId?: string;
     createdAt?: string;
     created_at?: string;
@@ -63,7 +73,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const tickets = allTickets
     .filter(
       (t) =>
-        t.requesterEmail === user.email || t.clientId === user.clientRef
+        t.status !== "draft" && (
+          t.requesterEmail === user.email ||
+          t.clientEmail === user.email ||
+          t.clientId === user.clientRef ||
+          t.clientId === user.clientId
+        )
     )
     .map((t) => ({
       id: t.id,
