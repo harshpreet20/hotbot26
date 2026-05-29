@@ -113,7 +113,7 @@ export default function NewInvoicePage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-3xl">
+      <div className="p-6 w-full">
         <div className="flex items-center justify-between mb-7">
           <div>
             <h1 className="text-white text-xl font-semibold">New Invoice</h1>

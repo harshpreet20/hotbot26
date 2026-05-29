@@ -386,6 +386,76 @@ export interface Client {
   portalInviteSentAt?: string;
 }
 
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  clientId: string;
+  clientEmail?: string;
+  clientName?: string;
+  status: ProjectStatus;
+  startDate?: string;   // ISO date YYYY-MM-DD
+  endDate?: string;
+  color?: string;       // hex e.g. "#6366f1"
+  budget?: number;      // cents
+  currency?: string;
+  tags?: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Meetings ──────────────────────────────────────────────────────────────────
+
+export type MeetingStatus = "scheduled" | "completed" | "cancelled" | "rescheduled";
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  clientId?: string;
+  clientEmail?: string;
+  clientName?: string;
+  hostUsername: string;
+  attendees?: string[];  // emails
+  startTime: string;     // ISO datetime
+  endTime: string;
+  meetLink?: string;
+  googleEventId?: string;
+  status: MeetingStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Whiteboard ────────────────────────────────────────────────────────────────
+
+export interface WhiteboardElement {
+  id: string;
+  type: "stroke" | "rect" | "text";
+  points?: number[][];  // for stroke: [[x,y],...]
+  x?: number; y?: number; width?: number; height?: number;
+  text?: string;
+  color: string;
+  lineWidth?: number;
+}
+
+export interface Whiteboard {
+  id: string;
+  name: string;
+  clientId?: string;
+  clientEmail?: string;
+  elements: string;     // JSON of WhiteboardElement[]
+  createdBy: string;
+  lastEditedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Dashboard Overview ────────────────────────────────────────────────────────
 
 export interface DashboardOverview {

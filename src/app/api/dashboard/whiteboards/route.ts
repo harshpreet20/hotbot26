@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from "next/server";
+import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
+import { rateLimitResponse } from "@/lib/rateLimit";
+import type { Whiteboard } from "@/types/dashboard";
+
+function ip(req: NextRequest) {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+export async function GET(req: NextRequest) {
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const clientId = searchParams.get("clientId");
+  const id = searchParams.get("id");
+
+  let boards = await readAll<Whiteboard>("whiteboards");
+  if (id) {
+    const board = boards.find((b) => b.id === id);
+    return board
+      ? NextResponse.json({ whiteboard: board })
+      : NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (clientId) boards = boards.filter((b) => b.clientId === clientId || b.clientEmail === clientId);
+
+  return NextResponse.json({ whiteboards: boards });
+}
+
+export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  if (limited) return limited;
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json() as Partial<Whiteboard>;
+  if (!body.name?.trim()) return NextResponse.json({ error: "name required" }, { status: 400 });
+
+  const now = new Date().toISOString();
+  const board: Whiteboard = {
+    id:            newId(),
+    name:          body.name.trim(),
+    clientId:      body.clientId,
+    clientEmail:   body.clientEmail,
+    elements:      body.elements ?? "[]",
+    createdBy:     session.username,
+    lastEditedBy:  session.username,
+    createdAt:     now,
+    updatedAt:     now,
+  };
+
+  await insert<Whiteboard>("whiteboards", board);
+  return NextResponse.json({ whiteboard: board }, { status: 201 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  if (limited) return limited;
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json() as { id: string; elements?: string; name?: string };
+  if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const all = await readAll<Whiteboard>("whiteboards");
+  const existing = all.find((b) => b.id === body.id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const updated: Whiteboard = {
+    ...existing,
+    name:         body.name?.trim()  ?? existing.name,
+    elements:     body.elements      ?? existing.elements,
+    lastEditedBy: session.username,
+    updatedAt:    new Date().toISOString(),
+  };
+
+  await updateById<Whiteboard>("whiteboards", body.id, updated);
+  return NextResponse.json({ whiteboard: updated });
+}
+
+export async function DELETE(req: NextRequest) {
+  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  if (limited) return limited;
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  await removeById("whiteboards", id);
+  return NextResponse.json({ ok: true });
+}

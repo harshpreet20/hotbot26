@@ -155,9 +155,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   return res;
 }
 
-// DELETE — logout
+// DELETE — logout or account deletion
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const action = new URL(req.url).searchParams.get("action");
   const token = req.cookies.get(COOKIE_NAME)?.value;
+
+  if (action === "delete-account") {
+    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const user = await getPortalSession(token);
+    if (!user) return NextResponse.json({ error: "Session invalid" }, { status: 401 });
+
+    if (isSupabaseEnabled()) {
+      await sb()
+        .from("client_users")
+        .update({ deleted_at: new Date().toISOString(), is_active: false })
+        .eq("id", user.id);
+    }
+
+    await deletePortalSession(token);
+    const res = NextResponse.json({ success: true, message: "Account scheduled for deletion in 30 days." });
+    clearSessionCookie(res);
+    return res;
+  }
 
   if (token) {
     await deletePortalSession(token);

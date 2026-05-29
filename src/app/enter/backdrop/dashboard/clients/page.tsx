@@ -137,6 +137,19 @@ export default function ClientsPage() {
     finally { setSaving(false); }
   }
 
+  async function handleImpersonate(email: string) {
+    try {
+      const res = await fetch("/api/dashboard/clients/portal-impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ clientEmail: email }),
+      });
+      if (!res.ok) { alert("Impersonation failed — check the client has a portal account"); return; }
+      const d = await res.json() as { redirectUrl?: string };
+      if (d.redirectUrl) window.open(d.redirectUrl, "_blank");
+    } catch { alert("Network error"); }
+  }
+
   async function handlePortalInvite(id: string) {
     setInviting(id);
     setInviteMsg(null);
@@ -419,16 +432,14 @@ export default function ClientsPage() {
                                 {inviting === c.id ? "Sending…" : inviteMsg?.id === c.id ? inviteMsg.msg : "⬡ Portal Invite"}
                               </button>
                             )}
-                            {isAdmin && c.email && (
-                              <a
-                                href="/portal/dashboard"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-slate-500 hover:text-violet-400 transition-colors"
-                                title="Open customer portal"
+                            {getRole() === "super_admin" && c.email && (
+                              <button
+                                onClick={() => void handleImpersonate(c.email!)}
+                                className="text-xs text-violet-500 hover:text-violet-300 transition-colors"
+                                title="Open portal as this client (no password required)"
                               >
-                                View Portal ↗
-                              </a>
+                                View as Client ↗
+                              </button>
                             )}
                             {canWrite && (
                               <button
