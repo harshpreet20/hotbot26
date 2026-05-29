@@ -60,7 +60,9 @@ export async function GET(req: NextRequest) {
     const doc = docs.find(d => d.id === id);
     return doc ? NextResponse.json({ document: doc }) : NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const projectId = searchParams.get("projectId");
   if (clientId) docs = docs.filter(d => d.clientId === clientId || d.clientEmail === clientId);
+  if (projectId) docs = docs.filter(d => (d as { projectId?: string }).projectId === projectId);
 
   return NextResponse.json({ documents: docs });
 }
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
   if (!body.clientId?.trim()) return NextResponse.json({ error: "clientId required" }, { status: 400 });
 
   const now = new Date().toISOString();
-  const doc: PortalDocument = {
+  const doc: PortalDocument & { projectId?: string } = {
     id:          newId(),
     title:       body.title.trim(),
     type:        body.type ?? "proposal",
@@ -85,6 +87,7 @@ export async function POST(req: NextRequest) {
     clientId:    body.clientId.trim(),
     clientEmail: body.clientEmail?.trim(),
     clientName:  body.clientName?.trim(),
+    projectId:   (body as { projectId?: string }).projectId,
     comments:    [],
     suggestions: [],
     signatures:  [],

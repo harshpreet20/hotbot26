@@ -73,8 +73,9 @@ function Canvas({
 
   useEffect(() => { redraw(elements); }, [elements]);
 
-  function getPos(e: React.MouseEvent): [number,number] {
-    const rect = canvasRef.current!.getBoundingClientRect();
+  function getPos(e: React.MouseEvent): [number,number] | null {
+    if (!canvasRef.current) return null;
+    const rect = canvasRef.current.getBoundingClientRect();
     return [e.clientX - rect.left, e.clientY - rect.top];
   }
 
@@ -82,12 +83,16 @@ function Canvas({
     if (tool === "text") {
       const text = prompt("Enter text:");
       if (!text) return;
-      const [x,y] = getPos(e);
+      const pos = getPos(e);
+      if (!pos) return;
+      const [x,y] = pos;
       setElements(prev => [...prev, { type:"text", x, y, text, color }]);
       return;
     }
     drawing.current = true;
-    const [x,y] = getPos(e);
+    const pos = getPos(e);
+    if (!pos) return;
+    const [x,y] = pos;
     startPos.current = [x,y];
     if (tool === "pen" || tool === "eraser") {
       currentEl.current = { type:"stroke", points:[[x,y]], color: tool==="eraser"?"#0f1629":color, width: tool==="eraser"?24:lineWidth };
@@ -98,7 +103,9 @@ function Canvas({
 
   function onMouseMove(e: React.MouseEvent) {
     if (!drawing.current || !currentEl.current) return;
-    const [x,y] = getPos(e);
+    const pos = getPos(e);
+    if (!pos) return;
+    const [x,y] = pos;
     if (currentEl.current.type === "stroke") {
       currentEl.current.points.push([x,y]);
     } else if (currentEl.current.type === "rect") {

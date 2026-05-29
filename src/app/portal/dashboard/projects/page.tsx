@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Project, ProjectStatus } from "@/types/dashboard";
 
 const STATUS_META: Record<ProjectStatus, { label: string; color: string; bg: string; border: string }> = {
@@ -29,6 +30,7 @@ function formatDate(d?: string) {
 type ViewMode = "list" | "kanban" | "gantt";
 
 export default function PortalProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading]   = useState(true);
   const [view, setView]         = useState<ViewMode>("list");
@@ -101,11 +103,11 @@ export default function PortalProjectsPage() {
             </thead>
             <tbody>
               {projects.map((p, i) => (
-                <tr key={p.id} style={{ borderBottom: i<projects.length-1?"1px solid rgba(255,255,255,0.04)":"none" }} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={p.id} style={{ borderBottom: i<projects.length-1?"1px solid rgba(255,255,255,0.04)":"none", cursor:"pointer" }} className="hover:bg-white/[0.02] transition-colors" onClick={() => router.push(`/portal/dashboard/projects/${p.id}`)}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background:p.color??"#6366f1" }} />
-                      <span className="text-white font-medium">{p.name}</span>
+                      <span className="text-white font-medium hover:text-indigo-300 transition-colors">{p.name}</span>
                     </div>
                     {p.description && <p className="text-xs text-slate-500 mt-0.5 ml-5">{p.description}</p>}
                   </td>
@@ -132,7 +134,7 @@ export default function PortalProjectsPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   {colP.map(p => (
-                    <div key={p.id} className="rounded-2xl p-4" style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+                    <div key={p.id} className="rounded-2xl p-4 cursor-pointer hover:border-white/15 transition-all" style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }} onClick={() => router.push(`/portal/dashboard/projects/${p.id}`)}>
                       <div className="flex items-start gap-2 mb-2">
                         <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ background:p.color??"#6366f1" }} />
                         <div className="min-w-0">

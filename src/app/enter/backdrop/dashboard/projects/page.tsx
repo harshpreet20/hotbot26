@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Project, ProjectStatus, Client } from "@/types/dashboard";
 
@@ -33,6 +34,7 @@ function formatDate(d?: string) {
 }
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>("list");
@@ -317,10 +319,10 @@ export default function ProjectsPage() {
                 {projects.map((p, i) => (
                   <tr key={p.id} style={{ borderBottom: i < projects.length-1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
                     className="hover:bg-white/2 transition-colors">
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => router.push(`/enter/backdrop/dashboard/projects/${p.id}`)}>
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: p.color ?? "#6366f1" }} />
-                        <span className="text-white font-medium">{p.name}</span>
+                        <span className="text-white font-medium hover:text-indigo-300 transition-colors">{p.name}</span>
                       </div>
                       {p.description && <p className="text-xs text-slate-500 mt-0.5 ml-4.5">{p.description}</p>}
                     </td>
@@ -356,7 +358,8 @@ export default function ProjectsPage() {
                   <div className="flex flex-col gap-3">
                     {colProjects.map((p) => (
                       <div key={p.id} className="rounded-2xl p-4 cursor-pointer transition-all hover:border-white/15"
-                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+                        onClick={() => router.push(`/enter/backdrop/dashboard/projects/${p.id}`)}>
                         <div className="flex items-start gap-2 mb-2">
                           <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ background: p.color ?? "#6366f1" }} />
                           <div className="min-w-0">
@@ -370,7 +373,7 @@ export default function ProjectsPage() {
                             {formatDate(p.startDate)} — {formatDate(p.endDate)}
                           </div>
                         )}
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
                           <button onClick={() => openEdit(p)} className="text-xs text-slate-500 hover:text-indigo-400 transition-colors">Edit</button>
                           <button onClick={() => handleDelete(p.id)} className="text-xs text-slate-600 hover:text-red-400 transition-colors">Delete</button>
                         </div>

@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
   const upcoming = searchParams.get("upcoming");
 
   let meetings = await readAll<Meeting>("meetings");
+  const projectId = searchParams.get("projectId");
   if (clientId) meetings = meetings.filter((m) => m.clientId === clientId || m.clientEmail === clientId);
+  if (projectId) meetings = meetings.filter((m) => (m as { projectId?: string }).projectId === projectId);
   if (upcoming === "true") {
     const now = new Date().toISOString();
     meetings = meetings.filter((m) => m.startTime >= now && m.status === "scheduled");
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!body.endTime)        return NextResponse.json({ error: "endTime required" }, { status: 400 });
 
   const now = new Date().toISOString();
-  const meeting: Meeting = {
+  const meeting: Meeting & { projectId?: string } = {
     id:            newId(),
     title:         body.title.trim(),
     description:   body.description?.trim(),
@@ -52,6 +54,7 @@ export async function POST(req: NextRequest) {
     meetLink:      body.meetLink?.trim(),
     status:        "scheduled",
     notes:         body.notes?.trim(),
+    projectId:     (body as { projectId?: string }).projectId,
     createdAt:     now,
     updatedAt:     now,
   };

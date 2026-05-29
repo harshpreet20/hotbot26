@@ -8,25 +8,31 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = await readAll<CRMUpdate>("crm_updates");
-  const leadId  = new URL(req.url).searchParams.get("leadId");
-  return NextResponse.json({ updates: leadId ? updates.filter((u) => u.leadId === leadId) : updates });
+  const params    = new URL(req.url).searchParams;
+  const leadId    = params.get("leadId");
+  const projectId = params.get("projectId");
+  let filtered = updates;
+  if (leadId) filtered = filtered.filter((u) => u.leadId === leadId);
+  if (projectId) filtered = filtered.filter((u) => (u as { projectId?: string }).projectId === projectId);
+  return NextResponse.json({ updates: filtered });
 }
 
 export async function POST(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json() as Partial<CRMUpdate>;
-  if (!body.leadId) return NextResponse.json({ error: "leadId required" }, { status: 400 });
+  const body = await req.json() as Partial<CRMUpdate> & { projectId?: string };
+  if (!body.leadId && !body.projectId) return NextResponse.json({ error: "leadId or projectId required" }, { status: 400 });
 
-  const update: CRMUpdate = {
+  const update: CRMUpdate & { projectId?: string } = {
     id:        newId(),
-    leadId:    body.leadId,
+    leadId:    body.leadId ?? "",
     type:      body.type    ?? "note",
     content:   body.content ?? "",
     createdAt: new Date().toISOString(),
     createdBy: session.username,
     metadata:  body.metadata,
+    projectId: body.projectId,
   };
 
   try {

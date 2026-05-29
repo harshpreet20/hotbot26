@@ -214,6 +214,7 @@ export interface CRMTask {
   blogId?: string;
   callbackId?: string;
   newsletterId?: string;
+  projectId?: string;
   // Denormalized display info (set on create/update, avoids extra fetches)
   linkedEntityType?: LinkedEntityType;
   linkedEntityLabel?: string;   // human-readable name/title of the linked entity
@@ -428,6 +429,7 @@ export interface Meeting {
   googleEventId?: string;
   status: MeetingStatus;
   notes?: string;
+  projectId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -450,6 +452,22 @@ export interface Whiteboard {
   clientId?: string;
   clientEmail?: string;
   elements: string;     // JSON of WhiteboardElement[]
+  projectId?: string;
+  createdBy: string;
+  lastEditedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Project SOP ───────────────────────────────────────────────────────────────
+
+export interface ProjectSOP {
+  id: string;
+  projectId: string;
+  clientId: string;
+  title: string;
+  brief: string;
+  content: string;      // markdown
   createdBy: string;
   lastEditedBy?: string;
   createdAt: string;

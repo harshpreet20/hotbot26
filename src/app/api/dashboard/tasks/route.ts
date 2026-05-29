@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
     ["blogId",       "blogId"],
     ["callbackId",   "callbackId"],
     ["newsletterId", "newsletterId"],
+    ["projectId",    "projectId"],
     ["assignedTo",   "assignedTo"],
     ["status",       "status"],
   ];
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     blogId:            body.blogId,
     callbackId:        body.callbackId,
     newsletterId:      body.newsletterId,
+    projectId:         body.projectId,
     linkedEntityType:  body.linkedEntityType,
     linkedEntityLabel: body.linkedEntityLabel ?? "",
   };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, removeById, newId, insert } from "@/lib/store";
+import { readAll, removeById, newId, insert, updateById } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rateLimit";
 
@@ -148,6 +148,37 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ file: resource }, { status: 201 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await authorizeAny(extractToken(req));
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!ALLOWED_ROLES.includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await req.json() as { id: string; visibility?: "both" | "admin_only" };
+  if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  try {
+    const all = await readAll<ClientResource>("client_resources");
+    const existing = all.find(f => f.id === body.id);
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const updated: ClientResource = {
+      ...existing,
+      visibility: body.visibility ?? existing.visibility,
+    };
+
+    if (isSupabaseEnabled()) {
+      const { error } = await sb().from("client_resources").update({ visibility: updated.visibility }).eq("id", body.id);
+      if (error) return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    } else {
+      await updateById<ClientResource>("client_resources", body.id, updated);
+    }
+
+    return NextResponse.json({ file: updated });
+  } catch {
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest) {

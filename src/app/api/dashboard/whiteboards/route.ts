@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
       ? NextResponse.json({ whiteboard: board })
       : NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const projectId = searchParams.get("projectId");
   if (clientId) boards = boards.filter((b) => b.clientId === clientId || b.clientEmail === clientId);
+  if (projectId) boards = boards.filter((b) => (b as { projectId?: string }).projectId === projectId);
 
   return NextResponse.json({ whiteboards: boards });
 }
@@ -38,12 +40,13 @@ export async function POST(req: NextRequest) {
   if (!body.name?.trim()) return NextResponse.json({ error: "name required" }, { status: 400 });
 
   const now = new Date().toISOString();
-  const board: Whiteboard = {
+  const board: Whiteboard & { projectId?: string } = {
     id:            newId(),
     name:          body.name.trim(),
     clientId:      body.clientId,
     clientEmail:   body.clientEmail,
     elements:      body.elements ?? "[]",
+    projectId:     (body as { projectId?: string }).projectId,
     createdBy:     session.username,
     lastEditedBy:  session.username,
     createdAt:     now,
