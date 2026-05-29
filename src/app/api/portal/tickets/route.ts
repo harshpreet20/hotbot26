@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { getPortalUser } from "@/lib/portalAuth";
+import { readAll, insert, newId } from "@/lib/store";
 
 // GET — list tickets for the authenticated portal user
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -50,7 +51,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // In-memory fallback
-  const { readAll } = await import("@/lib/store");
   const allTickets = (await readAll("tickets")) as Array<{
     id: string;
     ticketNumber?: string;
@@ -93,4 +93,68 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }));
 
   return NextResponse.json({ tickets });
+}
+
+// POST — create a new support ticket from the portal
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const user = await getPortalUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json() as {
+    title?: string;
+    description?: string;
+    priority?: string;
+    category?: string;
+  };
+
+  if (!body.title?.trim()) {
+    return NextResponse.json({ error: "title required" }, { status: 400 });
+  }
+
+  const now = new Date().toISOString();
+  const title = body.title.trim();
+  const description = body.description?.trim() ?? "";
+  const priority = (["low", "medium", "high", "critical"].includes(body.priority ?? "")) ? body.priority! : "medium";
+  const category = (["bug", "feature", "support", "billing", "general"].includes(body.category ?? "")) ? body.category! : "general";
+
+  const allTickets = (await readAll("tickets")) as Array<{ ticketNumber?: string; ticket_number?: string }>;
+  const nums = allTickets.map((t) => {
+    const num = parseInt(((t.ticketNumber ?? t.ticket_number) || "").replace(/\D/g, ""), 10);
+    return isNaN(num) ? 0 : num;
+  });
+  const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  const ticketNumber = `TKT-${String(nextNum).padStart(4, "0")}`;
+  const id = newId();
+
+  const ticket = {
+    id,
+    ticketNumber,
+    title,
+    description,
+    status: "open",
+    priority,
+    category,
+    requesterName: user.name,
+    requesterEmail: user.email,
+    clientEmail: user.email,
+    clientId: user.clientRef || user.clientId || undefined,
+    isInternal: false,
+    labels: [],
+    comments: [],
+    activity: [{ id: newId(), ticketId: id, type: "created", actorName: user.name, createdAt: now }],
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  try {
+    await insert("tickets", ticket);
+  } catch {
+    return NextResponse.json({ error: "Failed to create ticket" }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    ticket: { id, ticketNumber, title, status: "open", priority, category, createdAt: now },
+  }, { status: 201 });
 }

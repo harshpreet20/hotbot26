@@ -49,10 +49,20 @@ function InvoiceIcon() {
   );
 }
 
+function TaskIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const navItems = [
   { label: "Overview", href: "/portal/dashboard", icon: GridIcon, exact: true },
-  { label: "Tickets", href: "/portal/dashboard/tickets", icon: TicketIcon, exact: false },
+  { label: "Tickets",  href: "/portal/dashboard/tickets",  icon: TicketIcon,  exact: false },
   { label: "Invoices", href: "/portal/dashboard/invoices", icon: InvoiceIcon, exact: false },
+  { label: "Tasks",    href: "/portal/dashboard/tasks",    icon: TaskIcon,    exact: false },
 ];
 
 export default function PortalDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -125,9 +135,9 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
       {/* Sidebar */}
       <aside
         style={{
-          width: 220,
+          width: 228,
           flexShrink: 0,
-          background: "rgba(255,255,255,0.02)",
+          background: "rgba(255,255,255,0.025)",
           borderRight: "1px solid rgba(255,255,255,0.07)",
           display: "flex",
           flexDirection: "column",
@@ -146,7 +156,7 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
               fontWeight: 700,
               color: "#ffffff",
               letterSpacing: "-0.2px",
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
             HotBot Studios
@@ -159,8 +169,8 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
               color: "#8b5cf6",
               background: "rgba(139,92,246,0.12)",
               border: "1px solid rgba(139,92,246,0.2)",
-              borderRadius: 6,
-              padding: "2px 8px",
+              borderRadius: 20,
+              padding: "3px 10px",
               letterSpacing: "0.4px",
               textTransform: "uppercase",
             }}
@@ -182,16 +192,28 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  padding: "9px 12px",
-                  borderRadius: 8,
+                  padding: "9px 14px",
+                  borderRadius: 14,
                   fontSize: 14,
                   fontWeight: active ? 600 : 400,
                   color: active ? "#e2e8f0" : "#64748b",
                   background: active ? "rgba(99,102,241,0.12)" : "transparent",
                   border: active ? "1px solid rgba(99,102,241,0.2)" : "1px solid transparent",
                   textDecoration: "none",
-                  marginBottom: 2,
+                  marginBottom: 3,
                   transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.color = "#cbd5e1";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.color = "#64748b";
+                    e.currentTarget.style.background = "transparent";
+                  }
                 }}
               >
                 <span style={{ color: active ? "#6366f1" : "#475569" }}>
@@ -211,7 +233,7 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
           }}
         >
           {user && (
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 12 }}>
               <div
                 style={{
                   fontSize: 13,
@@ -242,10 +264,10 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
             onClick={handleSignOut}
             style={{
               width: "100%",
-              padding: "8px 12px",
+              padding: "9px 12px",
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 8,
+              borderRadius: 14,
               color: "#64748b",
               fontSize: 13,
               fontWeight: 500,

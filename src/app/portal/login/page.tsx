@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 const inputStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 10,
+  borderRadius: 14,
   color: "#e2e8f0",
   padding: "10px 14px",
   fontSize: 14,
@@ -83,7 +83,7 @@ export default function PortalLoginPage() {
           style={{
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: 20,
+            borderRadius: 28,
             padding: "32px 28px",
           }}
         >
@@ -152,7 +152,7 @@ export default function PortalLoginPage() {
                 style={{
                   background: "rgba(239,68,68,0.1)",
                   border: "1px solid rgba(239,68,68,0.25)",
-                  borderRadius: 8,
+                  borderRadius: 14,
                   padding: "10px 12px",
                   fontSize: 13,
                   color: "#fca5a5",
@@ -172,7 +172,7 @@ export default function PortalLoginPage() {
                   ? "rgba(99,102,241,0.5)"
                   : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
                 border: "none",
-                borderRadius: 10,
+                borderRadius: 16,
                 color: "#ffffff",
                 fontSize: 14,
                 fontWeight: 600,

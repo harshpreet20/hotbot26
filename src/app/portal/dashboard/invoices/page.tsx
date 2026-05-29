@@ -39,8 +39,8 @@ function StatusBadge({ status }: { status: string }) {
     <span
       style={{
         display: "inline-block",
-        padding: "2px 8px",
-        borderRadius: 6,
+        padding: "3px 12px",
+        borderRadius: 20,
         fontSize: 11,
         fontWeight: 500,
         color: s.text,
@@ -109,15 +109,7 @@ export default function PortalInvoicesPage() {
         }}
       >
         <div>
-          <h1
-            style={{
-              margin: "0 0 4px",
-              fontSize: 22,
-              fontWeight: 700,
-              color: "#f1f5f9",
-              letterSpacing: "-0.2px",
-            }}
-          >
+          <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#f1f5f9", letterSpacing: "-0.2px" }}>
             My Invoices
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
@@ -128,8 +120,8 @@ export default function PortalInvoicesPage() {
         {outstanding > 0 && (
           <div
             style={{
-              padding: "12px 18px",
-              borderRadius: 10,
+              padding: "12px 20px",
+              borderRadius: 20,
               background: "rgba(239,68,68,0.07)",
               border: "1px solid rgba(239,68,68,0.2)",
             }}
@@ -163,7 +155,7 @@ export default function PortalInvoicesPage() {
               onClick={() => setFilter(key)}
               style={{
                 padding: "6px 14px",
-                borderRadius: 8,
+                borderRadius: 14,
                 fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 cursor: "pointer",
@@ -210,7 +202,7 @@ export default function PortalInvoicesPage() {
             padding: "60px 20px",
             background: "rgba(255,255,255,0.02)",
             border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 14,
+            borderRadius: 24,
           }}
         >
           <p style={{ color: "#475569", fontSize: 14, margin: 0 }}>
@@ -220,7 +212,7 @@ export default function PortalInvoicesPage() {
       ) : (
         <div
           style={{
-            borderRadius: 14,
+            borderRadius: 20,
             overflow: "hidden",
             border: "1px solid rgba(255,255,255,0.07)",
           }}

@@ -38,14 +38,17 @@ const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
   { key: "closed",      label: "Closed"      },
 ];
 
+const CATEGORIES = ["general", "support", "billing", "bug", "feature"];
+const PRIORITIES  = ["low", "medium", "high", "critical"];
+
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_STYLES[status] ?? { text: "#94a3b8", bg: "rgba(100,116,139,0.1)", border: "rgba(100,116,139,0.25)" };
   return (
     <span
       style={{
         display: "inline-block",
-        padding: "2px 8px",
-        borderRadius: 6,
+        padding: "3px 12px",
+        borderRadius: 20,
         fontSize: 11,
         fontWeight: 500,
         color: s.text,
@@ -64,47 +67,238 @@ function StatusBadge({ status }: { status: string }) {
 function PriorityBadge({ priority }: { priority: string }) {
   const color = PRIORITY_COLORS[priority?.toLowerCase()] ?? "#94a3b8";
   return (
-    <span
-      style={{
-        fontSize: 12,
-        fontWeight: 600,
-        color,
-        textTransform: "capitalize",
-      }}
-    >
+    <span style={{ fontSize: 12, fontWeight: 600, color, textTransform: "capitalize" }}>
       {priority || "—"}
     </span>
   );
 }
 
+const selectStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 14,
+  color: "#e2e8f0",
+  padding: "9px 12px",
+  fontSize: 13,
+  outline: "none",
+  width: "100%",
+  cursor: "pointer",
+};
+
+const inputStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 14,
+  color: "#e2e8f0",
+  padding: "9px 12px",
+  fontSize: 13,
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
 export default function PortalTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({ title: "", category: "general", priority: "medium", description: "" });
 
-  useEffect(() => {
-    fetch("/api/portal/tickets")
+  function loadTickets() {
+    return fetch("/api/portal/tickets")
       .then((r) => r.json())
       .then((d) => setTickets(d.tickets ?? d ?? []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(console.error);
+  }
+
+  useEffect(() => {
+    loadTickets().finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = filter === "all" ? tickets : tickets.filter((t) => t.status === filter);
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError("");
+    if (!form.title.trim()) { setFormError("Title is required."); return; }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/portal/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || "Failed to submit ticket."); return; }
+      setShowForm(false);
+      setForm({ title: "", category: "general", priority: "medium", description: "" });
+      await loadTickets();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div style={{ padding: "32px 36px 48px" }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1
-          style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#f1f5f9", letterSpacing: "-0.2px" }}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
+        <div>
+          <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#f1f5f9", letterSpacing: "-0.2px" }}>
+            My Tickets
+          </h1>
+          <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} total
+          </p>
+        </div>
+        <button
+          onClick={() => { setShowForm(!showForm); setFormError(""); }}
+          style={{
+            padding: "9px 18px",
+            borderRadius: 16,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            color: "#ffffff",
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "opacity 0.2s",
+          }}
         >
-          My Tickets
-        </h1>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-          {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} total
-        </p>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          {showForm ? "Cancel" : "New Ticket"}
+        </button>
       </div>
+
+      {/* New ticket form */}
+      {showForm && (
+        <div
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(99,102,241,0.25)",
+            borderRadius: 24,
+            padding: "24px",
+            marginBottom: 24,
+          }}
+        >
+          <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 600, color: "#e2e8f0" }}>
+            Submit a Support Ticket
+          </h2>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#94a3b8", marginBottom: 6 }}>
+                Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Briefly describe your issue"
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#94a3b8", marginBottom: 6 }}>
+                  Category
+                </label>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={selectStyle}>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c} style={{ background: "#0f1729" }}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#94a3b8", marginBottom: 6 }}>
+                  Priority
+                </label>
+                <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} style={selectStyle}>
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p} style={{ background: "#0f1729" }}>
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#94a3b8", marginBottom: 6 }}>
+                Description
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Provide more details about your issue..."
+                rows={4}
+                style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+              />
+            </div>
+            {formError && (
+              <div
+                style={{
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.25)",
+                  borderRadius: 14,
+                  padding: "10px 14px",
+                  fontSize: 13,
+                  color: "#fca5a5",
+                }}
+              >
+                {formError}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setShowForm(false); setFormError(""); }}
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: 14,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  color: "#64748b",
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  padding: "9px 22px",
+                  borderRadius: 14,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: submitting ? "not-allowed" : "pointer",
+                  color: "#ffffff",
+                  background: submitting ? "rgba(99,102,241,0.5)" : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {submitting ? "Submitting..." : "Submit Ticket"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Status filter tabs */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
@@ -116,7 +310,7 @@ export default function PortalTicketsPage() {
               onClick={() => setFilter(key)}
               style={{
                 padding: "6px 14px",
-                borderRadius: 8,
+                borderRadius: 14,
                 fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 cursor: "pointer",
@@ -134,23 +328,8 @@ export default function PortalTicketsPage() {
 
       {/* Content */}
       {loading ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: 200,
-            color: "#475569",
-            fontSize: 14,
-          }}
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ animation: "spin 1s linear infinite", marginRight: 10 }}
-          >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, color: "#475569", fontSize: 14 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite", marginRight: 10 }}>
             <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
             <path d="M12 2a10 10 0 0 1 10 10" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" />
           </svg>
@@ -163,31 +342,20 @@ export default function PortalTicketsPage() {
             padding: "60px 20px",
             background: "rgba(255,255,255,0.02)",
             border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 14,
+            borderRadius: 24,
           }}
         >
           <p style={{ color: "#475569", fontSize: 14, margin: 0 }}>
             {filter === "all"
-              ? "No tickets yet."
+              ? "No tickets yet. Click \"New Ticket\" to submit one."
               : `No ${filter.replace(/_/g, " ")} tickets.`}
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            borderRadius: 14,
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
+        <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr
-                style={{
-                  background: "rgba(255,255,255,0.025)",
-                  borderBottom: "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
+              <tr style={{ background: "rgba(255,255,255,0.025)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 {["Ticket #", "Title", "Category", "Priority", "Status", "Date"].map((h) => (
                   <th
                     key={h}
@@ -212,8 +380,7 @@ export default function PortalTicketsPage() {
                 <tr
                   key={ticket.id}
                   style={{
-                    borderBottom:
-                      i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                    borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                     background: "transparent",
                     transition: "background 0.12s",
                   }}
@@ -224,36 +391,13 @@ export default function PortalTicketsPage() {
                     (e.currentTarget as HTMLElement).style.background = "transparent";
                   }}
                 >
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      fontFamily: "monospace",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#6366f1",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: "#6366f1", whiteSpace: "nowrap" }}>
                     {ticket.ticketNumber}
                   </td>
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      color: "#cbd5e1",
-                      fontWeight: 500,
-                      maxWidth: 280,
-                    }}
-                  >
+                  <td style={{ padding: "12px 16px", color: "#cbd5e1", fontWeight: 500, maxWidth: 280 }}>
                     {ticket.title}
                   </td>
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      color: "#64748b",
-                      textTransform: "capitalize",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <td style={{ padding: "12px 16px", color: "#64748b", textTransform: "capitalize", whiteSpace: "nowrap" }}>
                     {ticket.category || "—"}
                   </td>
                   <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
@@ -262,19 +406,8 @@ export default function PortalTicketsPage() {
                   <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
                     <StatusBadge status={ticket.status} />
                   </td>
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      color: "#475569",
-                      fontSize: 12,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {new Date(ticket.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                  <td style={{ padding: "12px 16px", color: "#475569", fontSize: 12, whiteSpace: "nowrap" }}>
+                    {new Date(ticket.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </td>
                 </tr>
               ))}

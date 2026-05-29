@@ -56,8 +56,8 @@ function StatusBadge({ status, type }: { status: string; type: "ticket" | "invoi
         color: s.color,
         background: s.bg,
         border: `1px solid ${s.border}`,
-        borderRadius: 6,
-        padding: "2px 8px",
+        borderRadius: 20,
+        padding: "3px 10px",
         letterSpacing: "0.3px",
         textTransform: "capitalize",
         whiteSpace: "nowrap",
@@ -74,7 +74,7 @@ function SkeletonBlock({ width = "100%", height = 14 }: { width?: string | numbe
       style={{
         width,
         height,
-        borderRadius: 6,
+        borderRadius: 8,
         background: "rgba(255,255,255,0.07)",
         animation: "pulse 1.6s ease-in-out infinite",
       }}
@@ -103,7 +103,7 @@ function formatCurrency(total: number, currency: string) {
 const cardBase: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.07)",
-  borderRadius: 14,
+  borderRadius: 24,
   padding: "20px 22px",
 };
 
@@ -177,8 +177,8 @@ export default function PortalDashboardPage() {
                   color: "#6366f1",
                   background: "rgba(99,102,241,0.1)",
                   border: "1px solid rgba(99,102,241,0.2)",
-                  borderRadius: 6,
-                  padding: "3px 10px",
+                  borderRadius: 20,
+                  padding: "4px 12px",
                   letterSpacing: "0.5px",
                   fontFamily: "monospace",
                 }}
