@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
@@ -55,6 +55,11 @@ export default function LeadDetailPage() {
   const [status,     setStatus]     = useState<LeadStatus>("new");
   const [notes,      setNotes]      = useState("");
 
+  // Team dropdown
+  const [team, setTeam]                     = useState<{username:string;role:string}[]>([]);
+  const [showAssigneeDD, setShowAssigneeDD] = useState(false);
+  const assigneeDDRef                       = useRef<HTMLDivElement>(null);
+
   // New update
   const [updateText, setUpdateText] = useState("");
   const [updateType, setUpdateType] = useState<UpdateType>("note");
@@ -68,6 +73,11 @@ export default function LeadDetailPage() {
   useEffect(() => {
     const secret = getSecret();
     if (!secret) { router.replace("/enter/backdrop"); return; }
+
+    fetch(`/api/dashboard/team`, { headers: { Authorization: `Bearer ${secret}` } })
+      .then(r => r.json() as Promise<{ members?: {username:string;role:string}[] }>)
+      .then(d => setTeam(d.members ?? []))
+      .catch(() => {});
 
     Promise.all([
       fetch(`/api/dashboard/leads`, { headers: { Authorization: `Bearer ${secret}` } })
@@ -92,6 +102,13 @@ export default function LeadDetailPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // outside-click for assignee dropdown
+    function handleClickOutside(e: MouseEvent) {
+      if (assigneeDDRef.current && !assigneeDDRef.current.contains(e.target as Node)) setShowAssigneeDD(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [id, router]);
 
   async function saveEdit() {
@@ -238,7 +255,26 @@ export default function LeadDetailPage() {
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Assigned To</p>
                   {editMode ? (
-                    <input value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} placeholder={getUsername()} className="input-field text-sm" />
+                    <div style={{ position:"relative" }} ref={assigneeDDRef}>
+                      <input value={assignedTo}
+                        onChange={e=>{ setAssignedTo(e.target.value); setShowAssigneeDD(true); }}
+                        onFocus={()=>setShowAssigneeDD(true)}
+                        placeholder="Search teammate…"
+                        className="input-field text-sm" />
+                      {showAssigneeDD && team.length > 0 && (
+                        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:50, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4 }}>
+                          {team.filter(m=>{ const q=assignedTo.toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                            <div key={m.username} onMouseDown={()=>{ setAssignedTo(m.username); setShowAssigneeDD(false); }}
+                              style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                              onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                              onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                              <span style={{ fontWeight:600, color:"#e2e8f0" }}>{m.username}</span>
+                              <span style={{ fontSize:11, color:"#64748b", marginLeft:6 }}>{m.role}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-slate-300">{lead.assignedTo || <span className="text-slate-600">Unassigned</span>}</p>
                   )}

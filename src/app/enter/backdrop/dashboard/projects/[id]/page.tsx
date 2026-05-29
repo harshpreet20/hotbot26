@@ -92,6 +92,16 @@ export default function ProjectDetailPage() {
   const startPosRef                     = useRef<[number,number]>([0,0]);
   const currentElRef                    = useRef<unknown>(null);
 
+  // Team & task edit
+  const [team, setTeam]                 = useState<{username:string;role:string}[]>([]);
+  const [editingTask, setEditingTask]   = useState<CRMTask | null>(null);
+  const [editForm, setEditForm]         = useState<Partial<CRMTask>>({});
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [showAssigneeDD, setShowAssigneeDD] = useState(false);
+  const assigneeDDRef                   = useRef<HTMLDivElement>(null);
+  const [showEditAssigneeDD, setShowEditAssigneeDD] = useState(false);
+  const editAssigneeDDRef               = useRef<HTMLDivElement>(null);
+
   // Documents
   const [showDocForm, setShowDocForm]   = useState(false);
   const [docTitle, setDocTitle]         = useState("");
@@ -114,7 +124,7 @@ export default function ProjectDetailPage() {
     if (!secret) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
     try {
-      const [pRes, tRes, fRes, mRes, bRes, dRes, sRes] = await Promise.all([
+      const [pRes, tRes, fRes, mRes, bRes, dRes, sRes, tmRes] = await Promise.all([
         fetch(`/api/dashboard/projects`, { headers: { Authorization: `Bearer ${secret}` } }),
         fetch(`/api/dashboard/tasks?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
         fetch(`/api/dashboard/files?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
@@ -122,6 +132,7 @@ export default function ProjectDetailPage() {
         fetch(`/api/dashboard/whiteboards?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
         fetch(`/api/dashboard/documents?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
         fetch(`/api/dashboard/sop?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
+        fetch(`/api/dashboard/team`, { headers: { Authorization: `Bearer ${secret}` } }),
       ]);
       const pData = await pRes.json() as { projects?: Project[] };
       const found = pData.projects?.find(p => p.id === id);
@@ -139,6 +150,8 @@ export default function ProjectDetailPage() {
       setDocs(dData.documents ?? []);
       const sData = await sRes.json() as { sops: ProjectSOP[] };
       setSops(sData.sops ?? []);
+      const tmData = await tmRes.json() as { members?: {username:string;role:string}[] };
+      setTeam(tmData.members ?? []);
     } finally { setLoading(false); }
   }, [id, router]);
 
@@ -165,6 +178,30 @@ export default function ProjectDetailPage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
       body: JSON.stringify({ id: taskId, ...patch }),
     });
+    await load();
+  }
+
+  async function deleteTask(taskId: string) {
+    setDeletingTaskId(taskId);
+    try {
+      await fetch(`/api/dashboard/tasks?id=${taskId}`, { method: "DELETE", headers: { Authorization: `Bearer ${tok()}` } });
+      await load();
+    } finally { setDeletingTaskId(null); }
+  }
+
+  function openEditTask(task: CRMTask) {
+    setEditingTask(task);
+    setEditForm({ title: task.title, priority: task.priority, status: task.status, assignedTo: task.assignedTo ?? "", dueDate: task.dueDate ?? "" });
+  }
+
+  async function saveEditTask() {
+    if (!editingTask || !editForm.title?.trim()) return;
+    await fetch("/api/dashboard/tasks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      body: JSON.stringify({ id: editingTask.id, ...editForm }),
+    });
+    setEditingTask(null);
     await load();
   }
 
@@ -248,7 +285,21 @@ export default function ProjectDetailPage() {
     }
   }
 
-  useEffect(() => { redraw(wbElements as DrawEl[]); }, [wbElements]);
+  useEffect(() => { if (!canvasRef.current) return; redraw(wbElements as DrawEl[]); }, [wbElements, activeBoard]);
+
+  useEffect(() => {
+    if (!showAssigneeDD) return;
+    function h(e: MouseEvent) { if (assigneeDDRef.current && !assigneeDDRef.current.contains(e.target as Node)) setShowAssigneeDD(false); }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [showAssigneeDD]);
+
+  useEffect(() => {
+    if (!showEditAssigneeDD) return;
+    function h(e: MouseEvent) { if (editAssigneeDDRef.current && !editAssigneeDDRef.current.contains(e.target as Node)) setShowEditAssigneeDD(false); }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [showEditAssigneeDD]);
 
   function getWbPos(e: React.MouseEvent): [number,number] | null {
     if (!canvasRef.current) return null;
@@ -483,9 +534,25 @@ export default function ProjectDetailPage() {
                   <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Due Date</label>
                   <input type="date" style={{ ...INPUT, width:"auto" }} value={taskDue} onChange={e=>setTaskDue(e.target.value)} />
                 </div>
-                <div>
+                <div style={{ position:"relative" }} ref={assigneeDDRef}>
                   <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Assignee</label>
-                  <input style={{ ...INPUT, width:"auto" }} value={taskAssignee} onChange={e=>setTaskAssignee(e.target.value)} placeholder="username" />
+                  <input style={{ ...INPUT, width:150 }} value={taskAssignee}
+                    onChange={e=>{ setTaskAssignee(e.target.value); setShowAssigneeDD(true); }}
+                    onFocus={()=>setShowAssigneeDD(true)}
+                    placeholder="Search teammate…" />
+                  {showAssigneeDD && team.length > 0 && (
+                    <div style={{ position:"absolute", top:"100%", left:0, zIndex:50, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4, minWidth:180 }}>
+                      {team.filter(m=>{ const q=taskAssignee.toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                        <div key={m.username} onMouseDown={()=>{ setTaskAssignee(m.username); setShowAssigneeDD(false); }}
+                          style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                          <span style={{ fontWeight:600, color:"#e2e8f0" }}>{m.username}</span>
+                          <span style={{ fontSize:11, color:"#64748b", marginLeft:6 }}>{m.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={() => setShowTaskForm(false)} style={{ padding:"8px 14px", borderRadius:12, fontSize:13, cursor:"pointer", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"#94a3b8" }}>Cancel</button>
@@ -512,13 +579,17 @@ export default function ProjectDetailPage() {
                             {task.dueDate && <span style={{ fontSize:10, color:"#64748b" }}>{fmtDate(task.dueDate)}</span>}
                             {task.assignedTo && <span style={{ fontSize:10, color:"#64748b" }}>@{task.assignedTo}</span>}
                           </div>
-                          <div style={{ display:"flex", gap:4, marginTop:8 }}>
+                          <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
                             {KANBAN_COLS.filter(c=>c!==col).map(c => (
                               <button key={c} onClick={() => void patchTask(task.id, { status:c as TaskStatus })}
                                 style={{ fontSize:9, padding:"2px 7px", borderRadius:8, cursor:"pointer", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.08)", color:"#64748b" }}>
                                 → {COL_LABELS[c]}
                               </button>
                             ))}
+                          </div>
+                          <div style={{ display:"flex", gap:6, marginTop:8, justifyContent:"flex-end" }}>
+                            <button onClick={() => openEditTask(task)} style={{ fontSize:10, padding:"3px 9px", borderRadius:8, cursor:"pointer", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818cf8" }}>Edit</button>
+                            {isManager && <button onClick={() => void deleteTask(task.id)} disabled={deletingTaskId===task.id} style={{ fontSize:10, padding:"3px 9px", borderRadius:8, cursor:"pointer", background:"rgba(248,113,113,0.08)", border:"1px solid rgba(248,113,113,0.2)", color:"#f87171", opacity:deletingTaskId===task.id?0.5:1 }}>{deletingTaskId===task.id?"…":"Delete"}</button>}
                           </div>
                         </div>
                       ))}
@@ -549,10 +620,14 @@ export default function ProjectDetailPage() {
                         <td style={{ padding:"10px 14px", fontSize:12, color:"#94a3b8" }}>{task.assignedTo ?? "—"}</td>
                         <td style={{ padding:"10px 14px", fontSize:12, color:"#64748b" }}>{fmtDate(task.dueDate)}</td>
                         <td style={{ padding:"10px 14px" }}>
-                          <select value={task.status} onChange={e=>void patchTask(task.id, { status:e.target.value as TaskStatus })}
-                            style={{ fontSize:11, padding:"3px 8px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"#94a3b8", cursor:"pointer" }}>
-                            {KANBAN_COLS.map(c=><option key={c} value={c}>{COL_LABELS[c]}</option>)}
-                          </select>
+                          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                            <select value={task.status} onChange={e=>void patchTask(task.id, { status:e.target.value as TaskStatus })}
+                              style={{ fontSize:11, padding:"3px 8px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"#94a3b8", cursor:"pointer" }}>
+                              {KANBAN_COLS.map(c=><option key={c} value={c}>{COL_LABELS[c]}</option>)}
+                            </select>
+                            <button onClick={() => openEditTask(task)} style={{ fontSize:10, padding:"3px 9px", borderRadius:8, cursor:"pointer", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", color:"#818cf8" }}>Edit</button>
+                            {isManager && <button onClick={() => void deleteTask(task.id)} disabled={deletingTaskId===task.id} style={{ fontSize:10, padding:"3px 9px", borderRadius:8, cursor:"pointer", background:"rgba(248,113,113,0.08)", border:"1px solid rgba(248,113,113,0.2)", color:"#f87171", opacity:deletingTaskId===task.id?0.5:1 }}>{deletingTaskId===task.id?"…":"Del"}</button>}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -837,6 +912,66 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── TASK EDIT MODAL ── */}
+        {editingTask && (
+          <div style={{ position:"fixed", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:16, background:"rgba(0,0,0,0.75)" }} onClick={e=>{ if (e.target===e.currentTarget) setEditingTask(null); }}>
+            <div style={{ width:"100%", maxWidth:480, borderRadius:20, padding:24, background:"#0f1629", border:"1px solid rgba(255,255,255,0.12)", display:"flex", flexDirection:"column", gap:16 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <h2 style={{ color:"#e2e8f0", fontSize:16, fontWeight:600 }}>Edit Task</h2>
+                <button onClick={()=>setEditingTask(null)} style={{ color:"#64748b", fontSize:18, background:"none", border:"none", cursor:"pointer", lineHeight:1 }}>✕</button>
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Title *</label>
+                <input style={INPUT} value={editForm.title ?? ""} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} autoFocus />
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div>
+                  <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Priority</label>
+                  <select style={INPUT} value={editForm.priority ?? "medium"} onChange={e=>setEditForm(f=>({...f,priority:e.target.value as TaskPriority}))}>
+                    {(["low","medium","high","urgent"] as TaskPriority[]).map(p=><option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Status</label>
+                  <select style={INPUT} value={editForm.status ?? "open"} onChange={e=>setEditForm(f=>({...f,status:e.target.value as TaskStatus}))}>
+                    {(["open","in_progress","done","cancelled"] as TaskStatus[]).map(c=><option key={c} value={c}>{{"open":"Open","in_progress":"In Progress","done":"Done","cancelled":"Cancelled"}[c]}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div style={{ position:"relative" }} ref={editAssigneeDDRef}>
+                  <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Assignee</label>
+                  <input style={INPUT} value={editForm.assignedTo ?? ""}
+                    onChange={e=>{ setEditForm(f=>({...f,assignedTo:e.target.value})); setShowEditAssigneeDD(true); }}
+                    onFocus={()=>setShowEditAssigneeDD(true)}
+                    placeholder="Search teammate…" />
+                  {showEditAssigneeDD && team.length > 0 && (
+                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:200, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4 }}>
+                      {team.filter(m=>{ const q=(editForm.assignedTo??"").toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                        <div key={m.username} onMouseDown={()=>{ setEditForm(f=>({...f,assignedTo:m.username})); setShowEditAssigneeDD(false); }}
+                          style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                          <span style={{ fontWeight:600, color:"#e2e8f0" }}>{m.username}</span>
+                          <span style={{ fontSize:11, color:"#64748b", marginLeft:6 }}>{m.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>Due Date</label>
+                  <input type="date" style={INPUT} value={editForm.dueDate ?? ""} onChange={e=>setEditForm(f=>({...f,dueDate:e.target.value||undefined}))} />
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:4 }}>
+                <button onClick={()=>setEditingTask(null)} style={{ padding:"8px 16px", borderRadius:12, fontSize:13, cursor:"pointer", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"#94a3b8" }}>Cancel</button>
+                <button onClick={()=>void saveEditTask()} disabled={!editForm.title?.trim()} style={{ ...BTN, opacity:!editForm.title?.trim()?0.5:1 }}>Save Changes</button>
+              </div>
+            </div>
           </div>
         )}
 

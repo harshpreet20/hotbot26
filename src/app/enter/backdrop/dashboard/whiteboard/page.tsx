@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Whiteboard } from "@/types/dashboard";
 
@@ -13,6 +13,30 @@ const CARD: React.CSSProperties = {
   borderRadius: 20,
   padding: "16px 20px",
 };
+
+// ── Error boundary ────────────────────────────────────────────────────────────
+class WhiteboardErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) { console.error("Whiteboard canvas error:", error); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:300, background:"rgba(248,113,113,0.05)", border:"1px solid rgba(248,113,113,0.2)", borderRadius:16, flexDirection:"column", gap:8 }}>
+          <p style={{ color:"#f87171", fontSize:13 }}>Canvas error — click to reload</p>
+          <button onClick={() => this.setState({ hasError: false })} style={{ padding:"6px 14px", borderRadius:10, fontSize:12, cursor:"pointer", background:"rgba(248,113,113,0.1)", border:"1px solid rgba(248,113,113,0.2)", color:"#f87171" }}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ── Canvas types ───────────────────────────────────────────────────────────────
 type Tool = "pen" | "rect" | "text" | "eraser";
@@ -146,6 +170,7 @@ function Canvas({
 export default function WhiteboardPage() {
   const [boards, setBoards]       = useState<Whiteboard[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [active, setActive]       = useState<Whiteboard | null>(null);
   const [elements, setElements]   = useState<DrawEl[]>([]);
   const [tool, setTool]           = useState<Tool>("pen");
@@ -160,10 +185,13 @@ export default function WhiteboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/dashboard/whiteboards", { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) { const d = await res.json() as { whiteboards: Whiteboard[] }; setBoards(d.whiteboards); }
-    } finally { setLoading(false); }
+      else { setLoadError(true); }
+    } catch { setLoadError(true); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -236,6 +264,11 @@ export default function WhiteboardPage() {
 
           {loading ? (
             <div className="text-slate-500 text-sm">Loading…</div>
+          ) : loadError ? (
+            <div style={{ textAlign:"center", padding:"24px 16px" }}>
+              <p className="text-red-400 text-sm mb-2">Failed to load whiteboards</p>
+              <button onClick={() => void load()} className="text-xs text-indigo-400 hover:text-indigo-300">Retry</button>
+            </div>
           ) : boards.length === 0 ? (
             <div style={{ ...CARD, textAlign:"center", padding:"24px 16px" }}>
               <p className="text-slate-400 text-sm">No whiteboards yet</p>
@@ -310,7 +343,9 @@ export default function WhiteboardPage() {
 
               {/* Canvas */}
               <div className="flex-1 min-h-0 overflow-auto">
-                <Canvas elements={elements} setElements={setElements} tool={tool} color={color} lineWidth={lineWidth} saving={saving} onSave={save} />
+                <WhiteboardErrorBoundary key={active?.id}>
+                  <Canvas key={active?.id} elements={elements} setElements={setElements} tool={tool} color={color} lineWidth={lineWidth} saving={saving} onSave={save} />
+                </WhiteboardErrorBoundary>
               </div>
             </>
           ) : (

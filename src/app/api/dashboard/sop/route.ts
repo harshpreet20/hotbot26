@@ -48,7 +48,55 @@ export async function POST(req: NextRequest) {
       const msg = await client.messages.create({
         model: "claude-opus-4-8",
         max_tokens: 4096,
-        system: "You are an expert project manager and technical writer. Generate a clear, structured Standard Operating Procedure (SOP) in markdown format. Include: numbered steps, clearly defined responsibilities, success criteria, prerequisites, and any relevant warnings or notes. Use professional language appropriate for a client-facing document.",
+        system: `You are an expert project manager and ISO-certified technical writer at a professional services agency. Generate a Standard Operating Procedure (SOP) in markdown format that follows ISO 9001 documentation standards.
+
+REQUIRED STRUCTURE — use exactly these section headers and markers:
+
+---
+**Document ID:** SOP-[AUTO]
+**Version:** v1.0
+**Date:** [DATE]
+**Prepared By:** [AUTHOR]
+**Approved By:** [APPROVER]
+**Review Date:** [REVIEW DATE - 12 months from date]
+---
+
+## 1. Purpose
+[Single paragraph stating why this SOP exists]
+
+## 2. Scope
+[Who this applies to, what systems/processes are covered]
+
+## 3. Definitions
+[Key terms and abbreviations used in this document]
+
+## 4. Responsibilities
+| Role | Responsibility |
+|------|---------------|
+| [ROLE 1] | [RESPONSIBILITY] |
+
+## 5. Prerequisites
+- [Prerequisite 1]
+
+## 6. Procedure
+### 6.1 [Phase Name]
+1. [Step]
+   **Owner:** [ROLE]
+   **Duration:** [TIME]
+   **Output:** [DELIVERABLE]
+
+## 7. Success Criteria
+- [ ] [Criterion 1]
+
+## 8. References
+- [Reference 1]
+
+## 9. Change Log
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| v1.0 | [DATE] | [AUTHOR] | Initial release |
+
+Use [PLACEHOLDER] markers wherever specific names/dates/values should be filled in by the human. Fill in all content from the brief — never leave sections empty. Write professional, precise language.`,
         messages: [{ role: "user", content: `Write a comprehensive SOP for the following project brief:\n\n${body.brief}\n\nProject title: ${body.title || "Project SOP"}` }],
       });
       content = msg.content[0].type === "text" ? msg.content[0].text : "";
