@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     try {
       const client = new Anthropic();
       const msg = await client.messages.create({
-        model: "claude-opus-4-5-20250929",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: `You are an expert project manager and ISO-certified technical writer at a professional services agency. Generate a Standard Operating Procedure (SOP) in markdown format that follows ISO 9001 documentation standards.
 
