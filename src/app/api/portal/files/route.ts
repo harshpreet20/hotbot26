@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPortalUser } from "@/lib/portalAuth";
-import { readAll } from "@/lib/store";
+import { readAll, removeById, newId, insert } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rateLimit";
-import { newId } from "@/lib/store";
 
 interface ClientResource {
   id: string;
@@ -30,11 +29,9 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const clientRef = user.clientRef || user.clientId;
+  if (!clientRef) return NextResponse.json({ files: [] });
   const all = await readAll<ClientResource>("client_resources");
-  const files = all.filter(f =>
-    (f.clientId === clientRef || f.clientId === user.clientId) &&
-    f.visibility !== "admin_only"
-  );
+  const files = all.filter(f => f.clientId === clientRef && f.visibility !== "admin_only");
 
   return NextResponse.json({ files });
 }
@@ -52,7 +49,8 @@ export async function POST(req: NextRequest) {
 
   if (!file) return NextResponse.json({ error: "file required" }, { status: 400 });
 
-  const clientId = user.clientRef || user.clientId || "";
+  const clientId = user.clientRef || user.clientId;
+  if (!clientId) return NextResponse.json({ error: "client identity not resolved" }, { status: 400 });
   const id       = newId();
   const ext      = file.name.split(".").pop() ?? "";
   const path     = `${clientId}/${id}${ext ? `.${ext}` : ""}`;
@@ -103,6 +101,8 @@ export async function POST(req: NextRequest) {
       created_at:       resource.createdAt,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  } else {
+    await insert<ClientResource>("client_resources", resource);
   }
 
   return NextResponse.json({ file: resource }, { status: 201 });
@@ -125,6 +125,8 @@ export async function DELETE(req: NextRequest) {
     const path = `${existing.clientId}/${id}${ext ? `.${ext}` : ""}`;
     await sb().storage.from("client-files").remove([path]).catch(() => {});
     await sb().from("client_resources").delete().eq("id", id);
+  } else {
+    await removeById("client_resources", id);
   }
 
   return NextResponse.json({ ok: true });

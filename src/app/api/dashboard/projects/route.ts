@@ -56,7 +56,10 @@ export async function POST(req: NextRequest) {
   // Supabase projects table uses auto-generated UUID — omit our text id
   const { id: _id, ...projectWithoutId } = project;
   await insert<Omit<Project, "id">>("projects", projectWithoutId);
-  return NextResponse.json({ project }, { status: 201 });
+  // Re-fetch to get the Supabase-generated UUID so callers don't get a stale local id
+  const all = await readAll<Project>("projects");
+  const saved = all.find(p => p.createdBy === session.username && p.createdAt === now) ?? project;
+  return NextResponse.json({ project: saved }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, removeById, newId } from "@/lib/store";
+import { readAll, removeById, newId, insert } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rateLimit";
 
@@ -104,6 +104,8 @@ export async function POST(req: NextRequest) {
       created_at:       resource.createdAt,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  } else {
+    await insert<ClientResource>("client_resources", resource);
   }
 
   return NextResponse.json({ file: resource }, { status: 201 });
@@ -120,11 +122,11 @@ export async function DELETE(req: NextRequest) {
 
   const all = await readAll<ClientResource>("client_resources");
   const existing = all.find(f => f.id === id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (existing && isSupabaseEnabled()) {
-    const clientId = existing.clientId;
-    const ext      = existing.fileName.split(".").pop() ?? "";
-    const path     = `${clientId}/${id}${ext ? `.${ext}` : ""}`;
+  if (isSupabaseEnabled()) {
+    const ext  = existing.fileName.split(".").pop() ?? "";
+    const path = `${existing.clientId}/${id}${ext ? `.${ext}` : ""}`;
     await sb().storage.from("client-files").remove([path]).catch(() => {});
     await sb().from("client_resources").delete().eq("id", id);
   } else {
