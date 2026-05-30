@@ -98,7 +98,7 @@ const orgSchema = {
   "@type": "Organization",
   name: "HotBot Studios",
   url: SITE_URL,
-  logo: `${SITE_URL}/logos/hotbot-logo.svg`,
+  logo: `${SITE_URL}/logos/brand-logo.png`,
   image: `${SITE_URL}/og-image.png`,
   description:
     "HotBot Studios is America's full-stack growth agency - custom AI agents, n8n workflow automation, SEO, Google Ads, content production, software development, PR, and UI/UX design for US businesses. 42+ clients.",
@@ -167,7 +167,7 @@ export default function RootLayout({
 
         {/* LCP: preload logo so browser fetches it in parallel with HTML parse.
             The Navbar is a client component so Next.js cannot inject this automatically. */}
-        <link rel="preload" as="image" href="/logos/hotbot-logo.svg" fetchPriority="high" />
+        <link rel="preload" as="image" href="/logos/brand-logo.png" fetchPriority="high" />
 
         {/* Google Analytics 4 — lazyOnload keeps it off the critical path */}
         <Script

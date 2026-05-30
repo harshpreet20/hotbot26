@@ -38,25 +38,24 @@ export function Navbar() {
         boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.3)" : "none",
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 h-[70px] flex items-center justify-between">
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center hover:opacity-90 transition-opacity shrink-0 mr-6"
+          className="flex items-center hover:opacity-90 transition-opacity shrink-0 mr-8"
         >
           <Image
-            src="/logos/hotbot-logo.svg"
+            src="/logos/brand-logo.png"
             alt="HotBot Studios - AI Automation & Digital Marketing Agency"
-            width={240}
-            height={56}
-            className="h-12 w-auto object-contain"
+            width={200}
+            height={52}
+            className="h-11 w-auto object-contain"
             priority
-            unoptimized
           />
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-8">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
