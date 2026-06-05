@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Meeting, MeetingStatus } from "@/types/dashboard";
 
@@ -52,9 +52,13 @@ export default function MeetingsPage() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
 
+  const [team, setTeam]         = useState<{username:string;role:string}[]>([]);
+  const [showHostDD, setShowHostDD] = useState(false);
+  const hostDDRef               = useRef<HTMLDivElement>(null);
+
   const [form, setForm] = useState({
     title: "", description: "", clientId: "", clientEmail: "", clientName: "",
-    attendees: "", startTime: "", endTime: "", meetLink: "", notes: "",
+    hostUsername: "", attendees: "", startTime: "", endTime: "", meetLink: "", notes: "",
     status: "scheduled" as MeetingStatus,
   });
 
@@ -71,11 +75,24 @@ export default function MeetingsPage() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    fetch("/api/dashboard/team", { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(r => r.ok ? r.json() : { members: [] })
+      .then((d: { members?: {username:string;role:string}[] }) => setTeam(d.members ?? []));
+  }, [load]);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (hostDDRef.current && !hostDDRef.current.contains(e.target as Node)) setShowHostDD(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   function openCreate() {
     setEditing(null);
-    setForm({ title:"", description:"", clientId:"", clientEmail:"", clientName:"", attendees:"", startTime:"", endTime:"", meetLink:"", notes:"", status:"scheduled" });
+    setForm({ title:"", description:"", clientId:"", clientEmail:"", clientName:"", hostUsername:"", attendees:"", startTime:"", endTime:"", meetLink:"", notes:"", status:"scheduled" });
     setError("");
     setShowForm(true);
   }
@@ -85,6 +102,7 @@ export default function MeetingsPage() {
     setForm({
       title: m.title, description: m.description ?? "", clientId: m.clientId ?? "",
       clientEmail: m.clientEmail ?? "", clientName: m.clientName ?? "",
+      hostUsername: m.hostUsername ?? "",
       attendees: (m.attendees ?? []).join(", "), startTime: m.startTime.slice(0,16),
       endTime: m.endTime.slice(0,16), meetLink: m.meetLink ?? "", notes: m.notes ?? "",
       status: m.status,
@@ -103,6 +121,7 @@ export default function MeetingsPage() {
         ...(editing ? { id: editing.id } : {}),
         title: form.title, description: form.description,
         clientId: form.clientId, clientEmail: form.clientEmail, clientName: form.clientName,
+        hostUsername: form.hostUsername,
         attendees: form.attendees.split(",").map(s => s.trim()).filter(Boolean),
         startTime: new Date(form.startTime).toISOString(),
         endTime: new Date(form.endTime).toISOString(),
@@ -200,6 +219,7 @@ export default function MeetingsPage() {
                   <p className="text-slate-400 text-xs mt-1">
                     {formatDT(m.startTime)} → {formatDT(m.endTime)}
                     {m.clientName && <span className="ml-2 text-slate-500">· {m.clientName}</span>}
+                    {m.hostUsername && <span className="ml-2 text-slate-600">· Host: {m.hostUsername}</span>}
                   </p>
                   {m.description && <p className="text-slate-500 text-xs mt-1 truncate">{m.description}</p>}
                   {m.attendees && m.attendees.length > 0 && (
@@ -260,6 +280,32 @@ export default function MeetingsPage() {
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Client Email</label>
                 <input style={INPUT} value={form.clientEmail} onChange={e => setForm(p=>({...p,clientEmail:e.target.value}))} placeholder="client@example.com" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-400 mb-1">Host (Team Member)</label>
+                <div style={{ position:"relative" }} ref={hostDDRef}>
+                  <input
+                    style={INPUT}
+                    value={form.hostUsername}
+                    onChange={e => { setForm(p=>({...p,hostUsername:e.target.value})); setShowHostDD(true); }}
+                    onFocus={() => setShowHostDD(true)}
+                    placeholder="Search teammate…"
+                  />
+                  {showHostDD && team.length > 0 && (
+                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:50, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4 }}>
+                      {team.filter(m=>{ const q=form.hostUsername.toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                        <div key={m.username}
+                          onMouseDown={() => { setForm(p=>({...p,hostUsername:m.username})); setShowHostDD(false); }}
+                          style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                          <span style={{ color:"#e2e8f0", fontWeight:600 }}>{m.username}</span>
+                          <span style={{ color:"#64748b", marginLeft:8, fontSize:11 }}>{m.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Start Time *</label>
