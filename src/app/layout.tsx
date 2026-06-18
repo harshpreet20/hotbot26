@@ -19,65 +19,62 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-5CNWV5X1KC";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "AI Automation & Digital Marketing Agency for US Businesses | HotBot Studios",
+    default:  "HotBot Studios | AI Automation & Digital Marketing Agency for US Businesses",
     template: "%s | HotBot Studios",
   },
   description:
-    "HotBot Studios is America's full-stack growth agency - custom AI agents, n8n automation, SEO, Google Ads, content production, software development, PR, and UI/UX design for US businesses. 42+ clients. Trusted by US SMBs and scale-ups.",
+    "HotBot Studios is America's full-stack growth agency — custom AI agents, performance marketing, ecommerce services, and software development under one roof. 42+ clients served. Book your free strategy call today.",
   keywords: [
     "AI automation agency USA",
     "digital marketing agency USA",
     "custom AI agents for business",
-    "n8n workflow automation",
-    "SEO agency USA",
     "AI chatbot development USA",
-    "growth agency US businesses",
+    "n8n workflow automation",
+    "ecommerce services agency",
+    "performance marketing agency USA",
     "software development agency USA",
+    "growth agency US businesses",
+    "SEO agency USA",
+    "Google Ads agency USA",
     "content production agency",
     "public relations agency USA",
     "UI UX design agency",
     "fractional CMO USA",
     "marketing consulting USA",
     "voice AI business USA",
+    "free strategy call marketing",
     "HotBot Studios",
   ],
-  authors: [{ name: "HotBot Studios", url: SITE_URL }],
-  creator: "HotBot Studios",
+  authors:   [{ name: "HotBot Studios", url: SITE_URL }],
+  creator:   "HotBot Studios",
   publisher: "HotBot Studios",
-  category: "AI Automation & Digital Marketing Agency",
+  category:  "AI Automation & Digital Marketing Agency",
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
+    type:        "website",
+    locale:      "en_US",
+    title:       "HotBot Studios | Full-Service Growth Infrastructure for US Businesses",
     description:
-      "Full-service growth infrastructure for US businesses - AI, marketing, content, software, PR, and design in one team.",
-    url: SITE_URL,
+      "AI agents, performance marketing, ecommerce, and software dev — all in one team. 42+ clients. Pioneering Digital Outreach.",
+    url:      SITE_URL,
     siteName: "HotBot Studios",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "HotBot Studios - AI Automation & Digital Marketing Agency",
-      },
-    ],
+    // images omitted — Next.js auto-fills from app/opengraph-image.tsx
   },
   twitter: {
-    card: "summary_large_image",
-    title: "HotBot Studios | AI Automation & Digital Marketing Agency USA",
+    card:        "summary_large_image",
+    title:       "HotBot Studios | Full-Service Growth Infrastructure for US Businesses",
     description:
-      "Full-service growth infrastructure for US businesses - AI, marketing, content, software, PR, and design in one team.",
-    images: ["/og-image.png"],
+      "AI agents, performance marketing, ecommerce, and software dev — all in one team. 42+ clients. Pioneering Digital Outreach.",
+    // images omitted — inherits from openGraph (opengraph-image.tsx)
   },
   robots: {
-    index: true,
+    index:  true,
     follow: true,
     googleBot: {
-      index: true,
-      follow: true,
+      index:               true,
+      follow:              true,
       "max-video-preview": -1,
       "max-image-preview": "large",
-      "max-snippet": -1,
+      "max-snippet":       -1,
     },
   },
   verification: {
@@ -87,8 +84,8 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon:    "/favicon.svg",
+    shortcut: "/favicon.svg",
   },
 };
 
@@ -99,7 +96,7 @@ const orgSchema = {
   name: "HotBot Studios",
   url: SITE_URL,
   logo: `${SITE_URL}/logos/brand-logo.png`,
-  image: `${SITE_URL}/og-image.png`,
+  image: `${SITE_URL}/opengraph-image`,
   description:
     "HotBot Studios is America's full-stack growth agency - custom AI agents, n8n workflow automation, SEO, Google Ads, content production, software development, PR, and UI/UX design for US businesses. 42+ clients.",
   foundingDate: "2023",
