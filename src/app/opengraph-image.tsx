@@ -33,6 +33,12 @@ const PILLS = [
   },
 ];
 
+const SITE_URL =
+  (process.env.NEXT_PUBLIC_SITE_URL ?? "https://hotbotstudios.com").replace(
+    /\/$/,
+    ""
+  );
+
 export default async function Image() {
   const [fontRegular, fontBold] = await Promise.all([
     fetch(
@@ -99,46 +105,15 @@ export default async function Image() {
           }}
         />
 
-        {/* H Logomark */}
-        <div
-          style={{
-            width: "78px",
-            height: "78px",
-            borderRadius: "18px",
-            background:
-              "linear-gradient(135deg, #fde68a 0%, #f59e0b 52%, #d97706 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: "22px",
-            boxShadow: "0 0 32px rgba(245,158,11,0.4)",
-          }}
-        >
-          <span
-            style={{
-              color: "#0a0a0a",
-              fontWeight: 700,
-              fontSize: "46px",
-              lineHeight: "1",
-            }}
-          >
-            H
-          </span>
-        </div>
-
-        {/* HOTBOT STUDIOS wordmark */}
-        <div
-          style={{
-            fontSize: "72px",
-            fontWeight: 700,
-            color: "#f59e0b",
-            letterSpacing: "-1.5px",
-            lineHeight: "1",
-            marginBottom: "16px",
-          }}
-        >
-          HOTBOT STUDIOS
-        </div>
+        {/* HotBot Studios logo — 944×176 source, rendered at 90px tall */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`${SITE_URL}/logos/brand-logo.png`}
+          width={483}
+          height={90}
+          alt="HotBot Studios"
+          style={{ objectFit: "contain", marginBottom: "28px" }}
+        />
 
         {/* Subtitle */}
         <div
