@@ -105,11 +105,11 @@ export default async function Image() {
           }}
         />
 
-        {/* HotBot Studios logo — 944×176 source, rendered at 90px tall */}
+        {/* HotBot Studios logo — 2172×724 source, rendered at 90px tall */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`${SITE_URL}/logos/brand-logo.png`}
-          width={483}
+          src={`${SITE_URL}/logos/sabudh-ai-logo.png`}
+          width={270}
           height={90}
           alt="HotBot Studios"
           style={{ objectFit: "contain", marginBottom: "28px" }}
