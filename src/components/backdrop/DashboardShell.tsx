@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { createClient } from "@supabase/supabase-js";
 import type { Role } from "@/types/dashboard";
 
@@ -341,8 +342,16 @@ const BADGE_KEY_MAP: Record<string, keyof BadgeCounts> = {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
-  const [role, setRole]         = useState<Role | null>(null);
-  const [username, setUsername] = useState<string>("");
+  const { data: session, status } = useSession();
+
+  // Legacy state — used only when Auth.js session is unavailable
+  const [legacyRole, setLegacyRole]         = useState<Role | null>(null);
+  const [legacyUsername, setLegacyUsername] = useState<string>("");
+
+  // Effective role/username: Auth.js session wins over legacy state
+  const role     = (session?.user?.role as Role | undefined) ?? legacyRole;
+  const username = session?.user?.username ?? legacyUsername;
+
   const [impersonatingAs, setImpersonatingAs] = useState<string | null>(null);
   const [originalUser,    setOriginalUser]    = useState<string>("");
   const [badges, setBadges]     = useState<BadgeCounts>({ tickets: 0, leads: 0, callbacks: 0, chats: 0 });
@@ -357,11 +366,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Auth.js session is the primary auth source — skip legacy logic while it's loading
+    // or once the user is confirmed authenticated.
+    if (status === "loading" || status === "authenticated") return;
 
+    // status === "unauthenticated": no Auth.js session. Try the legacy cookie path.
     const stored = sessionStorage.getItem("backdrop_secret");
     if (stored) {
-      setRole((sessionStorage.getItem("backdrop_role") as Role | null) ?? null);
-      setUsername(sessionStorage.getItem("backdrop_username") ?? "");
+      setLegacyRole((sessionStorage.getItem("backdrop_role") as Role | null) ?? null);
+      setLegacyUsername(sessionStorage.getItem("backdrop_username") ?? "");
       if (sessionStorage.getItem("backdrop_impersonating") === "1") {
         setImpersonatingAs(sessionStorage.getItem("backdrop_username") ?? "");
         setOriginalUser(sessionStorage.getItem("backdrop_original_username") ?? "");
@@ -383,14 +396,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           sessionStorage.setItem("backdrop_secret",  data.token);
           if (data.role)     sessionStorage.setItem("backdrop_role",     data.role);
           if (data.username) sessionStorage.setItem("backdrop_username", data.username);
-          setRole((data.role as Role | undefined) ?? null);
-          setUsername(data.username ?? "");
+          setLegacyRole((data.role as Role | undefined) ?? null);
+          setLegacyUsername(data.username ?? "");
         } else {
           router.replace("/enter/backdrop");
         }
       })
       .catch(() => router.replace("/enter/backdrop"));
-  }, [router]);
+  }, [router, status]);
 
   // Realtime badge counts via Supabase websocket (falls back to 10s poll)
   useEffect(() => {
@@ -483,7 +496,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem("backdrop_secret");
     sessionStorage.removeItem("backdrop_role");
     sessionStorage.removeItem("backdrop_username");
-    await fetch("/api/blog/auth", { method: "DELETE" }).catch(() => {});
+    // Clear both legacy cookie session and Auth.js JWT session
+    await Promise.allSettled([
+      fetch("/api/blog/auth", { method: "DELETE" }),
+      nextAuthSignOut({ redirect: false }),
+    ]);
     router.push("/enter/backdrop");
   }
 

@@ -15,6 +15,29 @@ import { getSession } from "@/lib/sessions";
 import { getPublishSecret } from "@/lib/adminStore";
 import type { Role, SessionInfo } from "@/types/dashboard";
 
+/**
+ * Resolves a SessionInfo from a request, preferring the Auth.js JWT session
+ * over the legacy cookie/bearer token path.  API routes can call this instead
+ * of `authorizeAny(extractToken(req))` to transparently support both auth styles.
+ */
+export async function getSessionFromRequest(req: NextRequest): Promise<SessionInfo | null> {
+  // Auth.js JWT session — primary path when AUTH_SECRET is configured
+  try {
+    const { auth } = await import("@/auth");
+    const jwtSession = await auth();
+    if (jwtSession?.user?.id) {
+      return {
+        userId:   jwtSession.user.id,
+        username: jwtSession.user.username ?? jwtSession.user.email ?? "",
+        role:     (jwtSession.user.role as Role) ?? "agent",
+      };
+    }
+  } catch { /* AUTH_SECRET not set or auth() not available — fall through */ }
+
+  // Legacy path: bearer token / backdrop_auth cookie / ?secret query param
+  return authorizeAny(extractToken(req));
+}
+
 /** Extract token from a Next.js request. */
 export function extractToken(req: NextRequest): string | null {
   // Bearer token only if non-empty — an empty Bearer ("Bearer ") falls through to cookie
