@@ -53,7 +53,12 @@ export async function POST(req: NextRequest) {
     updatedAt:     now,
   };
 
-  await insert<Whiteboard>("whiteboards", board);
+  try {
+    await insert<Whiteboard>("whiteboards", board);
+  } catch (err) {
+    console.error("[whiteboards] insert error:", err);
+    return NextResponse.json({ error: "Failed to create whiteboard" }, { status: 500 });
+  }
   return NextResponse.json({ whiteboard: board }, { status: 201 });
 }
 
@@ -78,7 +83,12 @@ export async function PATCH(req: NextRequest) {
     updatedAt:    new Date().toISOString(),
   };
 
-  await updateById<Whiteboard>("whiteboards", body.id, updated);
+  try {
+    await updateById<Whiteboard>("whiteboards", body.id, updated);
+  } catch (err) {
+    console.error("[whiteboards] update error:", err);
+    return NextResponse.json({ error: "Failed to save whiteboard" }, { status: 500 });
+  }
   return NextResponse.json({ whiteboard: updated });
 }
 
