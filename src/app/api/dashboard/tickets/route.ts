@@ -146,7 +146,12 @@ export async function PATCH(req: NextRequest) {
       activity: [...(ticket.activity ?? []), ...newActivity],
       updatedAt: now,
     };
-    await updateById<Ticket>("tickets", body.id, updatedTicket);
+    try {
+      await updateById<Ticket>("tickets", body.id, updatedTicket);
+    } catch (err) {
+      console.error("[tickets] comment update error:", err);
+      return NextResponse.json({ error: "Failed to save comment" }, { status: 500 });
+    }
 
     if (!isInternal) {
       sendStaffReplyNotification(updatedTicket, comment).catch((err) =>
@@ -195,7 +200,12 @@ export async function PATCH(req: NextRequest) {
       : ticket.resolvedAt,
   };
 
-  await updateById<Ticket>("tickets", body.id, updated);
+  try {
+    await updateById<Ticket>("tickets", body.id, updated);
+  } catch (err) {
+    console.error("[tickets] update error:", err);
+    return NextResponse.json({ error: "Failed to update ticket" }, { status: 500 });
+  }
 
   if (body.status && body.status !== prevStatus) {
     sendStatusUpdateNotification(updated, body.status).catch((err) =>

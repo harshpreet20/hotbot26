@@ -96,7 +96,12 @@ export async function POST(req: NextRequest) {
     updatedAt:   now,
   };
 
-  await insert<PortalDocument>("documents", doc);
+  try {
+    await insert<PortalDocument>("documents", doc);
+  } catch (err) {
+    console.error("[documents] insert error:", err);
+    return NextResponse.json({ error: "Failed to create document" }, { status: 500 });
+  }
   return NextResponse.json({ document: doc }, { status: 201 });
 }
 
@@ -137,7 +142,12 @@ export async function PATCH(req: NextRequest) {
     if (body.clientName)  updated.clientName  = body.clientName;
   }
 
-  await updateById<PortalDocument>("documents", body.id, updated);
+  try {
+    await updateById<PortalDocument>("documents", body.id, updated);
+  } catch (err) {
+    console.error("[documents] update error:", err);
+    return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
+  }
   return NextResponse.json({ document: updated });
 }
 
@@ -150,6 +160,15 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("documents", id);
+  const all = await readAll<PortalDocument>("documents");
+  if (!all.find((d) => d.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  try {
+    await removeById("documents", id);
+  } catch (err) {
+    console.error("[documents] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

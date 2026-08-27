@@ -10,12 +10,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   if (isSupabaseEnabled()) {
+    const orFilter = [
+      `client_email.eq.${user.email}`,
+      ...(user.clientRef ? [`client_id.eq.${user.clientRef}`] : []),
+      ...(user.clientId  ? [`client_id.eq.${user.clientId}`]  : []),
+    ].join(",");
+
     const { data: rows, error } = await sb()
       .from("invoices")
       .select(
         "id, invoice_number, status, client_name, line_items, subtotal, tax_amount, total, currency, issued_date, due_date, paid_date, notes"
       )
-      .eq("client_email", user.email)
+      .or(orFilter)
       .neq("status", "draft")
       .order("issued_date", { ascending: false });
 

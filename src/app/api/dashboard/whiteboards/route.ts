@@ -91,6 +91,15 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("whiteboards", id);
+  const all = await readAll<Whiteboard>("whiteboards");
+  if (!all.find((b) => b.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  try {
+    await removeById("whiteboards", id);
+  } catch (err) {
+    console.error("[whiteboards] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete whiteboard" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

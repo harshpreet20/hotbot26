@@ -59,7 +59,12 @@ export async function POST(req: NextRequest) {
     updatedAt:     now,
   };
 
-  await insert<Meeting>("meetings", meeting);
+  try {
+    await insert<Meeting>("meetings", meeting);
+  } catch (err) {
+    console.error("[meetings] insert error:", err);
+    return NextResponse.json({ error: "Failed to create meeting" }, { status: 500 });
+  }
   return NextResponse.json({ meeting }, { status: 201 });
 }
 
@@ -89,7 +94,12 @@ export async function PATCH(req: NextRequest) {
     updatedAt:   new Date().toISOString(),
   };
 
-  await updateById<Meeting>("meetings", body.id, updated);
+  try {
+    await updateById<Meeting>("meetings", body.id, updated);
+  } catch (err) {
+    console.error("[meetings] update error:", err);
+    return NextResponse.json({ error: "Failed to update meeting" }, { status: 500 });
+  }
   return NextResponse.json({ meeting: updated });
 }
 
@@ -102,6 +112,15 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("meetings", id);
+  const all = await readAll<Meeting>("meetings");
+  if (!all.find((m) => m.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  try {
+    await removeById("meetings", id);
+  } catch (err) {
+    console.error("[meetings] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete meeting" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

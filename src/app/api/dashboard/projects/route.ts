@@ -53,7 +53,12 @@ export async function POST(req: NextRequest) {
     updatedAt:   now,
   };
 
-  await insert<Project>("projects", project);
+  try {
+    await insert<Project>("projects", project);
+  } catch (err) {
+    console.error("[projects] insert error:", err);
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+  }
   return NextResponse.json({ project }, { status: 201 });
 }
 
@@ -84,7 +89,12 @@ export async function PATCH(req: NextRequest) {
     updatedAt:   new Date().toISOString(),
   };
 
-  await updateById<Project>("projects", body.id, updated);
+  try {
+    await updateById<Project>("projects", body.id, updated);
+  } catch (err) {
+    console.error("[projects] update error:", err);
+    return NextResponse.json({ error: "Failed to update project" }, { status: 500 });
+  }
   return NextResponse.json({ project: updated });
 }
 
@@ -100,6 +110,15 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("projects", id);
+  const all = await readAll<Project>("projects");
+  if (!all.find((p) => p.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  try {
+    await removeById("projects", id);
+  } catch (err) {
+    console.error("[projects] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete project" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

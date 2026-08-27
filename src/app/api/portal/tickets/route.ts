@@ -119,6 +119,46 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const priority = (["low", "medium", "high", "critical"].includes(body.priority ?? "")) ? body.priority! : "medium";
   const category = (["bug", "feature", "support", "billing", "general"].includes(body.category ?? "")) ? body.category! : "general";
 
+  const id = newId();
+
+  if (isSupabaseEnabled()) {
+    // Derive ticket number from current count
+    const { count } = await sb()
+      .from("tickets")
+      .select("*", { count: "exact", head: true });
+    const nextNum = (count ?? 0) + 1;
+    const ticketNumber = `TKT-${String(nextNum).padStart(4, "0")}`;
+
+    const { error: insertError } = await sb()
+      .from("tickets")
+      .insert({
+        id,
+        ticket_number: ticketNumber,
+        title,
+        description,
+        status: "open",
+        priority,
+        category,
+        requester_name: user.name,
+        requester_email: user.email,
+        client_email: user.email,
+        client_id: user.clientRef || user.clientId || null,
+        is_internal: false,
+        created_at: now,
+        updated_at: now,
+      });
+
+    if (insertError) {
+      console.error("[portal/tickets] insert error:", insertError.message);
+      return NextResponse.json({ error: "Failed to create ticket" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ticket: { id, ticketNumber, title, status: "open", priority, category, createdAt: now },
+    }, { status: 201 });
+  }
+
+  // In-memory fallback
   const allTickets = (await readAll("tickets")) as Array<{ ticketNumber?: string; ticket_number?: string }>;
   const nums = allTickets.map((t) => {
     const num = parseInt(((t.ticketNumber ?? t.ticket_number) || "").replace(/\D/g, ""), 10);
@@ -126,7 +166,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   });
   const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
   const ticketNumber = `TKT-${String(nextNum).padStart(4, "0")}`;
-  const id = newId();
 
   const ticket = {
     id,

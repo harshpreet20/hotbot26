@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function ImpersonatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hasFired = useRef(false);
 
   useEffect(() => {
+    if (hasFired.current) return;
+    if (!searchParams) return;
     const t = searchParams.get("t");
     if (!t) {
       router.replace("/portal/login?error=expired");
       return;
     }
+    hasFired.current = true;
 
     fetch(`/api/portal/impersonate?t=${encodeURIComponent(t)}`)
       .then((res) => {
