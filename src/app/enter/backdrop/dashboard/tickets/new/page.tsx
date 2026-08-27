@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { TicketPriority, TicketCategory, TicketStatus } from "@/types/dashboard";
 
-function getSecret()   { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
 function getUsername() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : ""; }
 
 const DRAFT_KEY = "backdrop_new_ticket_draft";
@@ -47,9 +46,7 @@ export default function NewTicketPage() {
 
   // Fetch team members for dropdowns
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) return;
-    fetch("/api/dashboard/team", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/team", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => setTeam((d as { members?: Member[] }).members ?? []))
       .catch(() => {});
@@ -76,7 +73,8 @@ export default function NewTicketPage() {
       const labels = labelsRaw.split(",").map((l) => l.trim()).filter(Boolean);
       const res = await fetch("/api/dashboard/tickets", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(), description: description.trim(), priority, category,
           status: submitStatus, requesterName: requesterName.trim(), requesterEmail: requesterEmail.trim(),
@@ -100,7 +98,7 @@ export default function NewTicketPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-2xl">
+      <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-white text-xl font-semibold">New Ticket</h1>

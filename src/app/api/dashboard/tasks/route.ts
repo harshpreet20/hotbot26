@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
     ["blogId",       "blogId"],
     ["callbackId",   "callbackId"],
     ["newsletterId", "newsletterId"],
+    ["projectId",    "projectId"],
     ["assignedTo",   "assignedTo"],
     ["status",       "status"],
   ];
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     blogId:            body.blogId,
     callbackId:        body.callbackId,
     newsletterId:      body.newsletterId,
+    projectId:         body.projectId,
     linkedEntityType:  body.linkedEntityType,
     linkedEntityLabel: body.linkedEntityLabel ?? "",
   };
@@ -124,14 +126,26 @@ export async function PATCH(req: NextRequest) {
 
   const updated: CRMTask = {
     ...existing,
-    ...body,
+    ...(body.title       !== undefined && { title:       body.title }),
+    ...(body.description !== undefined && { description: body.description }),
+    ...(body.status      !== undefined && { status:      body.status }),
+    ...(body.priority    !== undefined && { priority:    body.priority }),
+    ...(body.assignedTo  !== undefined && { assignedTo:  body.assignedTo }),
+    ...(body.dueDate     !== undefined && { dueDate:     body.dueDate }),
+    ...(body.projectId   !== undefined && { projectId:   body.projectId }),
     id: body.id,
     completedAt: body.status === "done" && !existing.completedAt
       ? new Date().toISOString()
-      : (body.status === "done" ? existing.completedAt : (body.completedAt ?? existing.completedAt)),
+      : (body.status === "done" ? existing.completedAt : existing.completedAt),
   };
 
-  await updateById<CRMTask>("crm_tasks", body.id, updated);
+  try {
+    await updateById<CRMTask>("crm_tasks", body.id, updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[tasks] update error:", msg);
+    return NextResponse.json({ error: "Failed to update task. Database error." }, { status: 500 });
+  }
 
   // Notify the new assignee if assignedTo changed and is not the actor
   const assigneeChanged = body.assignedTo && body.assignedTo !== existing.assignedTo;

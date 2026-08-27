@@ -55,7 +55,12 @@ export async function POST(req: NextRequest) {
     updatedAt:  now,
   };
 
-  await insert<KnowledgeEntry>("ai_knowledge_base", entry);
+  try {
+    await insert<KnowledgeEntry>("ai_knowledge_base", entry);
+  } catch (err) {
+    console.error("[knowledge] insert error:", err);
+    return NextResponse.json({ error: "Failed to create entry" }, { status: 500 });
+  }
   return NextResponse.json({ entry }, { status: 201 });
 }
 
@@ -78,6 +83,11 @@ export async function PATCH(req: NextRequest) {
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
+  const entries = await readAll<KnowledgeEntry>("ai_knowledge_base");
+  if (!entries.find((e) => e.id === body.id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const update: Partial<KnowledgeEntry> = { updatedAt: new Date().toISOString() };
   if (body.title    !== undefined) update.title    = body.title.trim();
   if (body.content  !== undefined) update.content  = body.content.trim();
@@ -85,7 +95,12 @@ export async function PATCH(req: NextRequest) {
   if (body.active   !== undefined) update.active   = body.active;
   if (body.priority !== undefined) update.priority = body.priority;
 
-  await updateById<KnowledgeEntry>("ai_knowledge_base", body.id, update);
+  try {
+    await updateById<KnowledgeEntry>("ai_knowledge_base", body.id, update);
+  } catch (err) {
+    console.error("[knowledge] update error:", err);
+    return NextResponse.json({ error: "Failed to update entry" }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
 
@@ -100,6 +115,16 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("ai_knowledge_base", id);
+  const entries = await readAll<KnowledgeEntry>("ai_knowledge_base");
+  if (!entries.find((e) => e.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  try {
+    await removeById("ai_knowledge_base", id);
+  } catch (err) {
+    console.error("[knowledge] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete entry" }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

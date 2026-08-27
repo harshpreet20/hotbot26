@@ -16,13 +16,6 @@ export const SERVICES = [
 
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "AI Automation", href: "/ai-automation" },
-  { label: "Digital Marketing", href: "/digital-marketing" },
-  { label: "Content Studio", href: "/content-studio" },
-  { label: "Software Dev", href: "/software-development" },
-  { label: "PR", href: "/public-relations" },
-  { label: "UI/UX", href: "/ui-ux-design" },
-  { label: "Consulting", href: "/marketing-consulting" },
   { label: "Blog", href: "/blog" },
 ] as const;
 

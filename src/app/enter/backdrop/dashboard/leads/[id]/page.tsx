@@ -1,14 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Lead, LeadStatus, CRMUpdate, CRMTask, Invoice, UpdateType, TaskPriority } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getUsername() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : "";
 }
@@ -55,6 +52,11 @@ export default function LeadDetailPage() {
   const [status,     setStatus]     = useState<LeadStatus>("new");
   const [notes,      setNotes]      = useState("");
 
+  // Team dropdown
+  const [team, setTeam]                     = useState<{username:string;role:string}[]>([]);
+  const [showAssigneeDD, setShowAssigneeDD] = useState(false);
+  const assigneeDDRef                       = useRef<HTMLDivElement>(null);
+
   // New update
   const [updateText, setUpdateText] = useState("");
   const [updateType, setUpdateType] = useState<UpdateType>("note");
@@ -66,17 +68,19 @@ export default function LeadDetailPage() {
   const [taskDue,      setTaskDue]      = useState("");
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
+    fetch(`/api/dashboard/team`, { credentials: "same-origin" })
+      .then(r => r.json() as Promise<{ members?: {username:string;role:string}[] }>)
+      .then(d => setTeam(d.members ?? []))
+      .catch(() => {});
 
     Promise.all([
-      fetch(`/api/dashboard/leads`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/leads`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ leads: Lead[] }>),
-      fetch(`/api/dashboard/crm-updates?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/crm-updates?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ updates: CRMUpdate[] }>),
-      fetch(`/api/dashboard/tasks?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/tasks?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ tasks: CRMTask[] }>),
-      fetch(`/api/dashboard/invoices?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/invoices?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ invoices: Invoice[] }>),
     ])
       .then(([leadData, updateData, taskData, invoiceData]) => {
@@ -92,6 +96,13 @@ export default function LeadDetailPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // outside-click for assignee dropdown
+    function handleClickOutside(e: MouseEvent) {
+      if (assigneeDDRef.current && !assigneeDDRef.current.contains(e.target as Node)) setShowAssigneeDD(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [id, router]);
 
   async function saveEdit() {
@@ -100,7 +111,8 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status, assignedTo: assignedTo || undefined, notes }),
       });
       if (res.ok) {
@@ -108,7 +120,7 @@ export default function LeadDetailPage() {
         setLead(data.lead);
         // Refetch updates to catch auto-logged status/assignment changes
         const upRes = await fetch(`/api/dashboard/crm-updates?leadId=${id}`, {
-          headers: { Authorization: `Bearer ${getSecret()}` },
+          credentials: "same-origin",
         });
         const upData = await upRes.json() as { updates: CRMUpdate[] };
         setUpdates(upData.updates);
@@ -125,7 +137,8 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch("/api/dashboard/crm-updates", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: id, type: updateType, content: updateText.trim() }),
       });
       if (res.ok) {
@@ -142,7 +155,8 @@ export default function LeadDetailPage() {
     if (!taskTitle.trim()) return;
     const res = await fetch("/api/dashboard/tasks", {
       method: "POST",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: taskTitle.trim(), leadId: id, priority: taskPriority, dueDate: taskDue || undefined }),
     });
     if (res.ok) {
@@ -155,7 +169,8 @@ export default function LeadDetailPage() {
   async function toggleTask(taskId: string, done: boolean) {
     const res = await fetch("/api/dashboard/tasks", {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: taskId, status: done ? "done" : "open" }),
     });
     if (res.ok) {
@@ -167,7 +182,7 @@ export default function LeadDetailPage() {
   async function deleteUpdate(updateId: string) {
     const res = await fetch(`/api/dashboard/crm-updates?id=${updateId}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getSecret()}` },
+      credentials: "same-origin",
     });
     if (res.ok) setUpdates((p) => p.filter((u) => u.id !== updateId));
   }
@@ -179,7 +194,7 @@ export default function LeadDetailPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-4xl">
+      <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-7">
           <div>
@@ -238,7 +253,26 @@ export default function LeadDetailPage() {
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Assigned To</p>
                   {editMode ? (
-                    <input value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} placeholder={getUsername()} className="input-field text-sm" />
+                    <div style={{ position:"relative" }} ref={assigneeDDRef}>
+                      <input value={assignedTo}
+                        onChange={e=>{ setAssignedTo(e.target.value); setShowAssigneeDD(true); }}
+                        onFocus={()=>setShowAssigneeDD(true)}
+                        placeholder="Search teammate…"
+                        className="input-field text-sm" />
+                      {showAssigneeDD && team.length > 0 && (
+                        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:50, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4 }}>
+                          {team.filter(m=>{ const q=assignedTo.toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                            <div key={m.username} onMouseDown={()=>{ setAssignedTo(m.username); setShowAssigneeDD(false); }}
+                              style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                              onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                              onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                              <span style={{ fontWeight:600, color:"#e2e8f0" }}>{m.username}</span>
+                              <span style={{ fontSize:11, color:"#64748b", marginLeft:6 }}>{m.role}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-slate-300">{lead.assignedTo || <span className="text-slate-600">Unassigned</span>}</p>
                   )}

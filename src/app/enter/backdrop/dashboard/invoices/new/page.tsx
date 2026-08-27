@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { InvoiceLineItem } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 function newLineItem(): InvoiceLineItem {
   return { id: `li-${Date.now()}`, description: "", quantity: 1, unitPrice: 0, amount: 0 };
 }
@@ -94,7 +90,8 @@ export default function NewInvoicePage() {
     try {
       const res = await fetch("/api/dashboard/invoices", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientName, clientEmail, clientPhone, clientCompany, clientAddress, currency, issuedDate, dueDate, taxRate, discount, notes, terms, lineItems, status }),
       });
       if (!res.ok) { setError("Failed to create invoice."); return; }
@@ -113,7 +110,7 @@ export default function NewInvoicePage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-3xl">
+      <div className="p-6 w-full">
         <div className="flex items-center justify-between mb-7">
           <div>
             <h1 className="text-white text-xl font-semibold">New Invoice</h1>

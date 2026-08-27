@@ -3,10 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 type Message = { role: "user" | "assistant"; content: string; toolsUsed?: string[] };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -107,17 +103,11 @@ export default function AiAnalystPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!getSecret()) router.replace("/enter/backdrop");
-  }, [router]);
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
 
     const userMsg: Message = { role: "user", content: text.trim() };
     const next = [...messages, userMsg];
@@ -128,7 +118,8 @@ export default function AiAnalystPage() {
     try {
       const res = await fetch("/api/dashboard/ai-chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next.map(({ role, content }) => ({ role, content })) }),
       });
       if (res.status === 401 || res.status === 403) { router.replace("/enter/backdrop"); return; }

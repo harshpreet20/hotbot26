@@ -14,16 +14,24 @@ export async function DELETE(req: NextRequest) {
   const client = sb();
 
   if (before) {
-    await client.from("site_events").delete().lt("created_at", before);
-    await client.from("site_page_views").delete().lt("created_at", before);
-    const { count } = await client.from("site_sessions").delete().lt("created_at", before);
-    return NextResponse.json({ ok: true, deleted: count ?? "all" });
+    const [r1, r2, r3] = await Promise.all([
+      client.from("site_events").delete().lt("created_at", before),
+      client.from("site_page_views").delete().lt("created_at", before),
+      client.from("site_sessions").delete().lt("created_at", before),
+    ]);
+    const err = r1.error ?? r2.error ?? r3.error;
+    if (err) return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    return NextResponse.json({ ok: true, deleted: r3.count ?? "all" });
   }
 
   // Full wipe: truncate via gte epoch
-  await client.from("site_events").delete().gte("created_at", "2000-01-01");
-  await client.from("site_page_views").delete().gte("created_at", "2000-01-01");
-  const { count } = await client.from("site_sessions").delete().gte("created_at", "2000-01-01");
+  const [r1, r2, r3] = await Promise.all([
+    client.from("site_events").delete().gte("created_at", "2000-01-01"),
+    client.from("site_page_views").delete().gte("created_at", "2000-01-01"),
+    client.from("site_sessions").delete().gte("created_at", "2000-01-01"),
+  ]);
+  const err = r1.error ?? r2.error ?? r3.error;
+  if (err) return NextResponse.json({ error: "Delete failed" }, { status: 500 });
 
-  return NextResponse.json({ ok: true, deleted: count ?? "all" });
+  return NextResponse.json({ ok: true, deleted: r3.count ?? "all" });
 }

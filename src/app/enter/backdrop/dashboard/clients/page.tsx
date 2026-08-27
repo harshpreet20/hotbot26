@@ -5,9 +5,6 @@ import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Client, ClientStatus } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
@@ -47,6 +44,8 @@ export default function ClientsPage() {
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [inviting, setInviting] = useState<string | null>(null);  // clientId being invited
+  const [inviteMsg, setInviteMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
 
   // Edit state
   const [editing, setEditing]   = useState<Client | null>(null);
@@ -58,10 +57,8 @@ export default function ClientsPage() {
   const canWrite = ["admin", "super_admin", "manager", "sales"].includes(getRole());
 
   const load = useCallback(() => {
-    const token = getToken();
-    if (!token) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
-    fetch("/api/dashboard/clients", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/dashboard/clients", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));
@@ -70,7 +67,7 @@ export default function ClientsPage() {
         }
         return r.json();
       })
-      .then((d) => { if (d) setClients((d as { clients: Client[] }).clients); })
+      .then((d) => { if (d) setClients((d as { clients: Client[] }).clients ?? []); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
@@ -97,7 +94,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json() as { error?: string };
@@ -110,12 +108,15 @@ export default function ClientsPage() {
   }
 
   async function handleStatusChange(id: string, status: ClientStatus) {
-    await fetch("/api/dashboard/clients", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-      body: JSON.stringify({ id, status }),
-    });
-    setClients((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+    try {
+      const res = await fetch("/api/dashboard/clients", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) setClients((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+    } catch { /* network error — state unchanged */ }
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -125,7 +126,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editing),
       });
       if (!res.ok) { const d = await res.json() as { error?: string }; setError(d.error ?? "Failed"); return; }
@@ -135,13 +137,54 @@ export default function ClientsPage() {
     finally { setSaving(false); }
   }
 
+  async function handleImpersonate(email: string) {
+    try {
+      const res = await fetch("/api/dashboard/clients/portal-impersonate", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientEmail: email }),
+      });
+      if (!res.ok) { alert("Impersonation failed — check the client has a portal account"); return; }
+      const d = await res.json() as { redirectUrl?: string };
+      if (d.redirectUrl) window.open(d.redirectUrl, "_blank");
+    } catch { alert("Network error"); }
+  }
+
+  async function handlePortalInvite(id: string) {
+    setInviting(id);
+    setInviteMsg(null);
+    try {
+      const res = await fetch("/api/dashboard/clients/portal-invite", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: id }),
+      });
+      const data = await res.json() as { success?: boolean; email?: string; error?: string };
+      if (res.ok) {
+        setInviteMsg({ id, msg: `Invite sent to ${data.email ?? "client"}`, ok: true });
+      } else {
+        setInviteMsg({ id, msg: data.error ?? "Failed to send invite", ok: false });
+      }
+    } catch {
+      setInviteMsg({ id, msg: "Network error", ok: false });
+    } finally {
+      setInviting(null);
+      setTimeout(() => setInviteMsg(null), 4000);
+    }
+  }
+
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete client "${name}"? This cannot be undone.`)) return;
-    await fetch(`/api/dashboard/clients?id=${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${getToken()}` },
-    });
-    setClients((prev) => prev.filter((c) => c.id !== id));
+    try {
+      const res = await fetch(`/api/dashboard/clients?id=${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (res.ok) setClients((prev) => prev.filter((c) => c.id !== id));
+      else setError("Failed to delete client");
+    } catch { setError("Network error"); }
   }
 
   const counts = {
@@ -374,7 +417,7 @@ export default function ClientsPage() {
                         </td>
                         {/* Actions */}
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => setExpandedClient(isEmailExpanded ? null : c.id)}
                               className="text-xs transition-colors"
@@ -383,6 +426,26 @@ export default function ClientsPage() {
                             >
                               ✉ Emails
                             </button>
+                            {canWrite && c.email && (
+                              <button
+                                onClick={() => handlePortalInvite(c.id)}
+                                disabled={inviting === c.id}
+                                className="text-xs transition-colors disabled:opacity-50"
+                                style={{ color: inviteMsg?.id === c.id && inviteMsg.ok ? "#34d399" : inviteMsg?.id === c.id && !inviteMsg.ok ? "#f87171" : "#6366f1" }}
+                                title="Send portal invite"
+                              >
+                                {inviting === c.id ? "Sending…" : inviteMsg?.id === c.id ? inviteMsg.msg : "⬡ Portal Invite"}
+                              </button>
+                            )}
+                            {getRole() === "super_admin" && c.email && (
+                              <button
+                                onClick={() => void handleImpersonate(c.email!)}
+                                className="text-xs text-violet-500 hover:text-violet-300 transition-colors"
+                                title="Open portal as this client (no password required)"
+                              >
+                                View as Client ↗
+                              </button>
+                            )}
                             {canWrite && (
                               <button
                                 onClick={() => { setEditing(c); setError(""); }}

@@ -3,9 +3,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
@@ -125,8 +122,6 @@ export default function EmailLogsPage() {
   const limit = 50;
 
   const load = useCallback(async (p: number, q: string, t: string, s: string, silent = false) => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     if (!silent) setLoading(true);
     const params = new URLSearchParams({ page: String(p), limit: String(limit) });
     if (q) params.set("q", q);
@@ -134,7 +129,7 @@ export default function EmailLogsPage() {
     if (s) params.set("status", s);
     try {
       const res = await fetch(`/api/dashboard/email-logs?${params}`, {
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       if (res.status === 401 || res.status === 403) { router.replace("/enter/backdrop"); return; }
       const data = await res.json() as { logs: EmailLog[]; total: number; stats: Stats };
@@ -149,11 +144,10 @@ export default function EmailLogsPage() {
 
   async function deleteLog(id: string) {
     if (!window.confirm("Delete this email log entry?")) return;
-    const secret = getSecret();
     try {
       const res = await fetch(`/api/dashboard/email-logs?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       if (res.ok) {
         setLogs((prev) => prev.filter((l) => l.id !== id));

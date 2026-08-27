@@ -42,16 +42,16 @@ function timeAgo(iso: string) {
 
 export default function OverviewPage() {
   const router = useRouter();
-  const [data, setData]       = useState<DashboardOverview | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState<DashboardOverview | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [noAccess, setNoAccess] = useState(false);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
     const dataRoles = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance"];
-    if (!dataRoles.includes(role)) { setLoading(false); return; }
-    fetch('/api/dashboard/overview', { headers: { Authorization: `Bearer ${secret}` } })
+    if (!dataRoles.includes(role)) { setLoading(false); setNoAccess(true); return; }
+    fetch('/api/dashboard/overview', { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           sessionStorage.removeItem("backdrop_secret");
@@ -63,7 +63,7 @@ export default function OverviewPage() {
         return r.json();
       })
       .then((d) => { if (d) setData(d as DashboardOverview); })
-      .catch(console.error)
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -82,7 +82,8 @@ export default function OverviewPage() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           </div>
-        ) : !data ? (<p className="text-slate-500 text-sm">Welcome to Backdrop. You have limited dashboard access based on your role.</p>) : (
+        ) : fetchError ? (<p className="text-red-400 text-sm">Failed to load dashboard data. Please refresh and try again.</p>
+        ) : noAccess || !data ? (<p className="text-slate-500 text-sm">Welcome to Backdrop. You have limited dashboard access based on your role.</p>) : (
           <>
             {/* Stats grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

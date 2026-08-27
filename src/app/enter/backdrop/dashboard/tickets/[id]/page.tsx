@@ -1,11 +1,9 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Ticket, TicketStatus, TicketPriority, TicketCategory, TicketComment, TicketActivity } from "@/types/dashboard";
-
-function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
 
 const STATUS_META: Record<TicketStatus, { label: string; color: string }> = {
   draft:       { label: "Draft",       color: "#64748b" },
@@ -66,10 +64,24 @@ export default function TicketDetailPage() {
   const [descVal, setDescVal]       = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Team dropdown for assignee
+  const [team, setTeam]                     = useState<{username:string;role:string}[]>([]);
+  const [showAssigneeDD, setShowAssigneeDD] = useState(false);
+  const [assigneeInput, setAssigneeInput]   = useState("");
+  const assigneeDDRef                       = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch(`/api/dashboard/tickets?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+    fetch(`/api/dashboard/team`, { credentials: "same-origin" })
+      .then(r => r.json() as Promise<{ members?: {username:string;role:string}[] }>)
+      .then(d => setTeam(d.members ?? []))
+      .catch(() => {});
+
+    function handleClickOutside(e: MouseEvent) {
+      if (assigneeDDRef.current && !assigneeDDRef.current.contains(e.target as Node)) setShowAssigneeDD(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+
+    fetch(`/api/dashboard/tickets?id=${id}`, { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
         return r.json();
@@ -79,12 +91,15 @@ export default function TicketDetailPage() {
           setTicket(d.ticket as Ticket);
           setTitleVal((d.ticket as Ticket).title);
           setDescVal((d.ticket as Ticket).description);
+          setAssigneeInput((d.ticket as Ticket).assignedTo ?? "");
         } else if (d) {
           router.replace("/enter/backdrop/dashboard/tickets");
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [id, router]);
 
   async function patch(body: object): Promise<Ticket | null> {
@@ -92,7 +107,8 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch("/api/dashboard/tickets", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...body }),
       });
       if (!res.ok) return null;
@@ -110,7 +126,8 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch("/api/dashboard/tickets", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, type: commentTab === "note" ? "internal_note" : "comment", text: commentText.trim() }),
       });
       if (res.ok) {
@@ -150,7 +167,7 @@ export default function TicketDetailPage() {
 
   async function deleteTicket() {
     if (!confirm("Delete this ticket? This cannot be undone.")) return;
-    const res = await fetch(`/api/dashboard/tickets?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getSecret()}` } });
+    const res = await fetch(`/api/dashboard/tickets?id=${id}`, { method: "DELETE", credentials: "same-origin" });
     if (res.ok) router.push("/enter/backdrop/dashboard/tickets");
   }
 
@@ -403,17 +420,32 @@ export default function TicketDetailPage() {
 
           {/* Assignee */}
           <SidebarField label="Assignee">
-            <input
-              type="text"
-              defaultValue={ticket.assignedTo ?? ""}
-              placeholder="username"
-              className="w-full px-3 py-1.5 rounded-xl text-sm text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onBlur={(e) => {
-                const val = e.target.value.trim();
-                if (val !== (ticket.assignedTo ?? "")) patch({ assignedTo: val || null });
-              }}
-            />
+            <div style={{ position:"relative" }} ref={assigneeDDRef}>
+              <input
+                type="text"
+                value={assigneeInput}
+                placeholder="Search teammate…"
+                className="w-full px-3 py-1.5 rounded-xl text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                onChange={e=>{ setAssigneeInput(e.target.value); setShowAssigneeDD(true); }}
+                onFocus={()=>setShowAssigneeDD(true)}
+                onBlur={e=>{ const val=e.target.value.trim(); if (val!==(ticket.assignedTo??"")) patch({ assignedTo: val||null }); }}
+              />
+              {showAssigneeDD && team.length > 0 && (
+                <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:50, background:"#0f1729", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", maxHeight:200, overflowY:"auto", marginTop:4 }}>
+                  {team.filter(m=>{ const q=assigneeInput.toLowerCase(); return !q||m.username.toLowerCase().includes(q)||m.role.toLowerCase().includes(q); }).map(m=>(
+                    <div key={m.username}
+                      onMouseDown={()=>{ setAssigneeInput(m.username); setShowAssigneeDD(false); void patch({ assignedTo: m.username }); }}
+                      style={{ padding:"9px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid rgba(255,255,255,0.04)" }}
+                      onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                      onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                      <span style={{ fontWeight:600, color:"#e2e8f0" }}>{m.username}</span>
+                      <span style={{ fontSize:11, color:"#64748b", marginLeft:6 }}>{m.role}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </SidebarField>
 
           {/* Due Date */}

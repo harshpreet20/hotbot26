@@ -80,7 +80,12 @@ export async function POST(req: NextRequest) {
     updatedAt: now,
   };
 
-  await insert<Client>("clients", client);
+  try {
+    await insert<Client>("clients", client);
+  } catch (err) {
+    console.error("[clients] insert error:", err);
+    return NextResponse.json({ error: "Failed to create client" }, { status: 500 });
+  }
   return NextResponse.json({ client }, { status: 201 });
 }
 
@@ -105,6 +110,11 @@ export async function PATCH(req: NextRequest) {
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
+  const clients = await readAll<Client>("clients");
+  if (!clients.find((c) => c.id === body.id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const update: Partial<Client> = { updatedAt: new Date().toISOString() };
   if (body.name     !== undefined) update.name    = body.name.trim();
   if (body.email    !== undefined) update.email   = body.email.trim();
@@ -113,7 +123,12 @@ export async function PATCH(req: NextRequest) {
   if (body.status   !== undefined) update.status  = body.status;
   if (body.notes    !== undefined) update.notes   = body.notes.trim();
 
-  await updateById<Client>("clients", body.id, update);
+  try {
+    await updateById<Client>("clients", body.id, update);
+  } catch (err) {
+    console.error("[clients] update error:", err);
+    return NextResponse.json({ error: "Failed to update client" }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
 
@@ -124,6 +139,16 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  await removeById("clients", id);
+  const clients = await readAll<Client>("clients");
+  if (!clients.find((c) => c.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  try {
+    await removeById("clients", id);
+  } catch (err) {
+    console.error("[clients] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete client" }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

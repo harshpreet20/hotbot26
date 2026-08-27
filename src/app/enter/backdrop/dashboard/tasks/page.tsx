@@ -10,9 +10,7 @@ import type {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function getSecret()   { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret")   || "" : ""; }
 function getUsername() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : ""; }
-function authH()       { return { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" }; }
 
 // ── entity metadata ───────────────────────────────────────────────────────────
 
@@ -24,6 +22,7 @@ const ENTITY_META: Record<LinkedEntityType, { label: string; icon: string; color
   blog:       { label: "Blog Post",   icon: "📝", color: "#a78bfa", href: ()   => `/enter/backdrop/dashboard/blog` },
   callback:   { label: "Callback",    icon: "📞", color: "#fb923c", href: ()   => `/enter/backdrop/dashboard/callbacks` },
   newsletter: { label: "Newsletter",  icon: "📬", color: "#e879f9", href: ()   => `/enter/backdrop/dashboard/newsletter` },
+  project:    { label: "Project",     icon: "📁", color: "#38bdf8", href: (id) => `/enter/backdrop/dashboard/projects/${id}` },
 };
 
 const PRIORITY_META: Record<TaskPriority, { label: string; color: string }> = {
@@ -47,7 +46,7 @@ interface EntityOption { id: string; label: string; sub?: string }
 function entityIdField(type: LinkedEntityType): keyof CRMTask {
   const map: Record<LinkedEntityType, keyof CRMTask> = {
     lead: "leadId", invoice: "invoiceId", ticket: "ticketId",
-    client: "clientId", blog: "blogId", callback: "callbackId", newsletter: "newsletterId",
+    client: "clientId", blog: "blogId", callback: "callbackId", newsletter: "newsletterId", project: "projectId",
   };
   return map[type];
 }
@@ -69,8 +68,9 @@ function ProfileRow({ label, value }: { label: string; value?: string | null }) 
 export default function TasksPage() {
   const router = useRouter();
 
-  const [tasks,   setTasks]   = useState<CRMTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks,          setTasks]          = useState<CRMTask[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState<TaskStatus | "">("");
   const [showNew, setShowNew] = useState(false);
@@ -111,17 +111,24 @@ export default function TasksPage() {
   }, []);
 
   const loadTasks = useCallback((silent = false) => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     if (!silent) setLoading(true);
-    fetch("/api/dashboard/tasks", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/tasks", { credentials: "same-origin" })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) {
+          if (silent) {
+            // Don't redirect mid-background-poll — show a banner instead
+            setSessionExpired(true);
+            return null;
+          }
+          sessionStorage.clear();
+          router.replace("/enter/backdrop");
+          return null;
+        }
         return r.json();
       })
       .then((d) => {
         if (!d) return;
-        const incoming = (d as { tasks: CRMTask[] }).tasks;
+        const incoming = (d as { tasks: CRMTask[] }).tasks ?? [];
         // Fire browser notification for any new tasks added since last poll
         if (silent && taskIdsRef.current.size > 0) {
           for (const t of incoming) {
@@ -144,16 +151,14 @@ export default function TasksPage() {
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
-  // Silent background poll every 30 s with browser notification on new tasks
+  // Silent background poll every 15 s with browser notification on new tasks
   useEffect(() => {
-    const id = setInterval(() => loadTasks(true), 30_000);
+    const id = setInterval(() => loadTasks(true), 15_000);
     return () => clearInterval(id);
   }, [loadTasks]);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) return;
-    fetch("/api/dashboard/team", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/team", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => setTeam((d as { members?: { username: string; role: string }[] }).members ?? []))
       .catch(() => {});
@@ -163,42 +168,41 @@ export default function TasksPage() {
 
   const loadEntityOptions = useCallback(async (type: LinkedEntityType, q: string) => {
     setEntityLoading(true);
-    const h = { Authorization: `Bearer ${getSecret()}` };
     try {
       let opts: EntityOption[] = [];
       switch (type) {
         case "lead": {
-          const d = await fetch("/api/dashboard/leads",          { headers: h }).then((r) => r.json()) as { leads?: Lead[] };
+          const d = await fetch("/api/dashboard/leads",          { credentials: "same-origin" }).then((r) => r.json()) as { leads?: Lead[] };
           opts = (d.leads ?? []).map((l) => ({ id: l.id, label: l.name, sub: l.email || l.service || undefined }));
           break;
         }
         case "invoice": {
-          const d = await fetch("/api/dashboard/invoices",        { headers: h }).then((r) => r.json()) as { invoices?: Invoice[] };
+          const d = await fetch("/api/dashboard/invoices",        { credentials: "same-origin" }).then((r) => r.json()) as { invoices?: Invoice[] };
           opts = (d.invoices ?? []).map((i) => ({ id: i.id, label: `${i.invoiceNumber} — ${i.clientName}`, sub: `$${i.total} · ${i.status}` }));
           break;
         }
         case "ticket": {
-          const d = await fetch("/api/dashboard/tickets",         { headers: h }).then((r) => r.json()) as { tickets?: Ticket[] };
+          const d = await fetch("/api/dashboard/tickets",         { credentials: "same-origin" }).then((r) => r.json()) as { tickets?: Ticket[] };
           opts = (d.tickets ?? []).map((t) => ({ id: t.id, label: `${t.ticketNumber}: ${t.title}`, sub: `${t.status} · ${t.requesterName}` }));
           break;
         }
         case "client": {
-          const d = await fetch("/api/dashboard/clients",         { headers: h }).then((r) => r.json()) as { clients?: Client[] };
+          const d = await fetch("/api/dashboard/clients",         { credentials: "same-origin" }).then((r) => r.json()) as { clients?: Client[] };
           opts = (d.clients ?? []).map((c) => ({ id: c.id, label: c.name, sub: `${c.clientId} · ${c.status}` }));
           break;
         }
         case "blog": {
-          const d = await fetch("/api/dashboard/posts",           { headers: h }).then((r) => r.json()) as { posts?: Array<{ id: string; title: string; status?: string }> };
+          const d = await fetch("/api/dashboard/posts",           { credentials: "same-origin" }).then((r) => r.json()) as { posts?: Array<{ id: string; title: string; status?: string }> };
           opts = (d.posts ?? []).map((p) => ({ id: p.id, label: p.title, sub: p.status }));
           break;
         }
         case "callback": {
-          const d = await fetch("/api/dashboard/callbacks",       { headers: h }).then((r) => r.json()) as { callbacks?: CallbackRequest[] };
+          const d = await fetch("/api/dashboard/callbacks",       { credentials: "same-origin" }).then((r) => r.json()) as { callbacks?: CallbackRequest[] };
           opts = (d.callbacks ?? []).map((c) => ({ id: c.id, label: c.name, sub: c.phone }));
           break;
         }
         case "newsletter": {
-          const d = await fetch("/api/dashboard/newsletter",      { headers: h }).then((r) => r.json()) as { subscribers?: NewsletterSubscriber[] };
+          const d = await fetch("/api/dashboard/newsletter",      { credentials: "same-origin" }).then((r) => r.json()) as { subscribers?: NewsletterSubscriber[] };
           opts = (d.subscribers ?? []).map((s) => ({ id: s.id, label: s.email, sub: s.name || s.source }));
           break;
         }
@@ -224,29 +228,28 @@ export default function TasksPage() {
 
   async function loadContext(task: CRMTask) {
     if (ctxCache[task.id] !== undefined) return;
-    const h = { Authorization: `Bearer ${getSecret()}` };
     let ctx: Record<string, unknown> | null = null;
     try {
       if (task.leadId) {
-        const d = await fetch(`/api/dashboard/leads?id=${task.leadId}`, { headers: h }).then((r) => r.json()) as { lead?: Record<string, unknown> };
+        const d = await fetch(`/api/dashboard/leads?id=${task.leadId}`, { credentials: "same-origin" }).then((r) => r.json()) as { lead?: Record<string, unknown> };
         ctx = d.lead ?? null;
       } else if (task.invoiceId) {
-        const d = await fetch(`/api/dashboard/invoices?id=${task.invoiceId}`, { headers: h }).then((r) => r.json()) as { invoice?: Record<string, unknown> };
+        const d = await fetch(`/api/dashboard/invoices?id=${task.invoiceId}`, { credentials: "same-origin" }).then((r) => r.json()) as { invoice?: Record<string, unknown> };
         ctx = d.invoice ?? null;
       } else if (task.ticketId) {
         const d = await fetch(`/api/tickets?id=${task.ticketId}`).then((r) => r.json()) as { ticket?: Record<string, unknown> };
         ctx = d.ticket ?? null;
       } else if (task.clientId) {
-        const allClients = await fetch("/api/dashboard/clients", { headers: h }).then((r) => r.json()) as { clients?: Client[] };
+        const allClients = await fetch("/api/dashboard/clients", { credentials: "same-origin" }).then((r) => r.json()) as { clients?: Client[] };
         ctx = (allClients.clients ?? []).find((c) => c.id === task.clientId) as unknown as Record<string, unknown> ?? null;
       } else if (task.blogId) {
-        const d = await fetch(`/api/dashboard/posts?id=${task.blogId}`, { headers: h }).then((r) => r.json()) as { post?: Record<string, unknown> };
+        const d = await fetch(`/api/dashboard/posts?id=${task.blogId}`, { credentials: "same-origin" }).then((r) => r.json()) as { post?: Record<string, unknown> };
         ctx = d.post ?? null;
       } else if (task.callbackId) {
-        const all = await fetch("/api/dashboard/callbacks", { headers: h }).then((r) => r.json()) as { callbacks?: CallbackRequest[] };
+        const all = await fetch("/api/dashboard/callbacks", { credentials: "same-origin" }).then((r) => r.json()) as { callbacks?: CallbackRequest[] };
         ctx = (all.callbacks ?? []).find((c) => c.id === task.callbackId) as unknown as Record<string, unknown> ?? null;
       } else if (task.newsletterId) {
-        const all = await fetch("/api/dashboard/newsletter", { headers: h }).then((r) => r.json()) as { subscribers?: NewsletterSubscriber[] };
+        const all = await fetch("/api/dashboard/newsletter", { credentials: "same-origin" }).then((r) => r.json()) as { subscribers?: NewsletterSubscriber[] };
         ctx = (all.subscribers ?? []).find((s) => s.id === task.newsletterId) as unknown as Record<string, unknown> ?? null;
       }
     } catch { /* context is optional */ }
@@ -275,7 +278,7 @@ export default function TasksPage() {
         linkedEntityLabel: form.linkLabel || undefined,
         ...(form.linkType && form.linkId ? { [entityIdField(form.linkType)]: form.linkId } : {}),
       };
-      const res = await fetch("/api/dashboard/tasks", { method: "POST", headers: authH(), body: JSON.stringify(payload) });
+      const res = await fetch("/api/dashboard/tasks", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (res.ok) {
         const data = await res.json() as { task: CRMTask };
         setTasks((p) => [data.task, ...p]);
@@ -289,7 +292,7 @@ export default function TasksPage() {
   // ── update status ────────────────────────────────────────────────────────────
 
   async function updateStatus(id: string, status: TaskStatus) {
-    const res = await fetch("/api/dashboard/tasks", { method: "PATCH", headers: authH(), body: JSON.stringify({ id, status }) });
+    const res = await fetch("/api/dashboard/tasks", { method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
     if (res.ok) {
       const data = await res.json() as { task: CRMTask };
       setTasks((p) => p.map((t) => t.id === id ? data.task : t));
@@ -304,7 +307,8 @@ export default function TasksPage() {
     try {
       await fetch("/api/dashboard/tickets", {
         method: "POST",
-        headers: authH(),
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title:         issueForm.title.trim(),
           description:   issueForm.description,
@@ -328,7 +332,7 @@ export default function TasksPage() {
 
   async function deleteTask(id: string) {
     if (!confirm("Delete this task?")) return;
-    const res = await fetch(`/api/dashboard/tasks?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getSecret()}` } });
+    const res = await fetch(`/api/dashboard/tasks?id=${id}`, { method: "DELETE", credentials: "same-origin" });
     if (res.ok) setTasks((p) => p.filter((t) => t.id !== id));
   }
 
@@ -348,6 +352,18 @@ export default function TasksPage() {
   return (
     <DashboardShell>
       <div className="flex flex-col min-h-full">
+
+        {/* ── session expired banner ── */}
+        {sessionExpired && (
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ background:"rgba(248,113,113,0.1)", borderBottom:"1px solid rgba(248,113,113,0.2)" }}>
+            <span className="text-sm text-red-400">Your session has expired. Please log in again to continue.</span>
+            <button onClick={() => { sessionStorage.clear(); router.replace("/enter/backdrop"); }}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+              style={{ background:"rgba(248,113,113,0.2)", color:"#f87171", border:"1px solid rgba(248,113,113,0.3)" }}>
+              Log in
+            </button>
+          </div>
+        )}
 
         {/* ── header ── */}
         <header className="flex items-center justify-between px-6 py-4 border-b flex-wrap gap-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>

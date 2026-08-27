@@ -55,10 +55,8 @@ export default function NewsletterPage() {
   const isAdmin = ["admin", "super_admin", "manager"].includes(getRole());
 
   const loadSubs = useCallback(() => {
-    const token = getToken();
-    if (!token) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
-    fetch("/api/dashboard/newsletter", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/dashboard/newsletter", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));

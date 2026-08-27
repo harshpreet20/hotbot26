@@ -155,7 +155,18 @@ export async function PATCH(req: NextRequest) {
 
   const updated: Invoice = {
     ...existing,
-    ...body,
+    // Updatable fields — server-controlled fields (invoiceNumber, createdAt, createdBy,
+    // clientId, clientName, clientEmail) are intentionally excluded and inherited from existing.
+    ...(body.status        !== undefined && { status:        body.status }),
+    ...(body.currency      !== undefined && { currency:      body.currency }),
+    ...(body.issuedDate    !== undefined && { issuedDate:    body.issuedDate }),
+    ...(body.dueDate       !== undefined && { dueDate:       body.dueDate }),
+    ...(body.notes         !== undefined && { notes:         body.notes }),
+    ...(body.terms         !== undefined && { terms:         body.terms }),
+    ...(body.clientPhone   !== undefined && { clientPhone:   body.clientPhone }),
+    ...(body.clientCompany !== undefined && { clientCompany: body.clientCompany }),
+    ...(body.clientAddress !== undefined && { clientAddress: body.clientAddress }),
+    // Computed from body inputs — override the spread above with exact values
     id:            body.id,
     lineItems,
     subtotal,
@@ -170,7 +181,13 @@ export async function PATCH(req: NextRequest) {
       : (body.paidDate ?? existing.paidDate),
   };
 
-  await updateById<Invoice>("invoices", body.id, updated);
+  try {
+    await updateById<Invoice>("invoices", body.id, updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[invoices] update error:", msg);
+    return NextResponse.json({ error: "Failed to update invoice. Database error." }, { status: 500 });
+  }
 
   // Fire-and-forget journey event when invoice is marked as paid
   if (body.status === "paid" && existing.status !== "paid") {

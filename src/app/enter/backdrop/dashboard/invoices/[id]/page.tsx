@@ -6,10 +6,6 @@ import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Invoice, InvoiceLineItem, InvoiceStatus, CRMTask } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 function newLineItem(): InvoiceLineItem {
   return { id: `li-${Date.now()}`, description: "", quantity: 1, unitPrice: 0, amount: 0 };
 }
@@ -53,13 +49,10 @@ export default function InvoiceDetailPage() {
   const [status,        setStatus]        = useState<InvoiceStatus>("draft");
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-
     Promise.all([
-      fetch(`/api/dashboard/invoices?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/invoices?id=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ invoices: Invoice[] }>),
-      fetch(`/api/dashboard/tasks?invoiceId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/tasks?invoiceId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ tasks: CRMTask[] }>),
     ])
       .then(([invData, taskData]) => {
@@ -107,7 +100,8 @@ export default function InvoiceDetailPage() {
     try {
       const res = await fetch("/api/dashboard/invoices", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, clientName, clientEmail, clientPhone, clientCompany, clientAddress, dueDate, taxRate, discount, notes, terms, lineItems, status }),
       });
       if (!res.ok) { setError("Save failed."); return; }
@@ -123,7 +117,8 @@ export default function InvoiceDetailPage() {
     try {
       const res = await fetch("/api/dashboard/invoices/send", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, recipientEmail: sendEmail }),
       });
       const data = await res.json() as { ok?: boolean; error?: string; sentTo?: string; newStatus?: InvoiceStatus };
@@ -142,7 +137,8 @@ export default function InvoiceDetailPage() {
     if (!newTask.trim()) return;
     const res = await fetch("/api/dashboard/tasks", {
       method: "POST",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: newTask.trim(), invoiceId: id, priority: "medium" }),
     });
     if (res.ok) {
@@ -155,7 +151,8 @@ export default function InvoiceDetailPage() {
   async function toggleTask(taskId: string, done: boolean) {
     const res = await fetch("/api/dashboard/tasks", {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: taskId, status: done ? "done" : "open" }),
     });
     if (res.ok) {
@@ -171,7 +168,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <DashboardShell>
-      <div className="p-6 max-w-3xl">
+      <div className="p-6">
         <div className="flex items-center justify-between mb-7">
           <div>
             <div className="flex items-center gap-3">

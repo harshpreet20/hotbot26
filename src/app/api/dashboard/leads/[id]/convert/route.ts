@@ -62,6 +62,10 @@ export async function POST(
 
   if (updateError) {
     console.error("[convert] lead update error:", updateError.message);
+    return NextResponse.json(
+      { error: "Client created but failed to update lead status", clientId },
+      { status: 500 }
+    );
   }
 
   // 5. Send client welcome email (fire-and-forget)

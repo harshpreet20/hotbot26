@@ -75,13 +75,28 @@ export async function PATCH(req: NextRequest) {
 
   const updated: Lead = {
     ...existing,
-    ...body,
-    id,
+    ...(body.name          !== undefined && { name:          body.name }),
+    ...(body.email         !== undefined && { email:         body.email }),
+    ...(body.phone         !== undefined && { phone:         body.phone }),
+    ...(body.company       !== undefined && { company:       body.company }),
+    ...(body.service       !== undefined && { service:       body.service }),
+    ...(body.budget        !== undefined && { budget:        body.budget }),
+    ...(body.message       !== undefined && { message:       body.message }),
+    ...(body.status        !== undefined && { status:        body.status }),
+    ...(body.notes         !== undefined && { notes:         body.notes }),
+    ...(body.assignedTo    !== undefined && { assignedTo:    body.assignedTo }),
+    ...(body.journeyStage  !== undefined && { journeyStage:  body.journeyStage }),
     lastUpdatedAt: new Date().toISOString(),
     lastUpdatedBy: session.username,
   };
 
-  await updateById<Lead>("leads", id, updated);
+  try {
+    await updateById<Lead>("leads", id, updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[leads] update error:", msg);
+    return NextResponse.json({ error: "Failed to update lead. Database error." }, { status: 500 });
+  }
 
   // Auto-log status change
   if (body.status && body.status !== existing.status) {

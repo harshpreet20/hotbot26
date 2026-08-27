@@ -193,7 +193,7 @@ export interface CRMUpdate {
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus   = "open" | "in_progress" | "done" | "cancelled";
-export type LinkedEntityType = "lead" | "invoice" | "ticket" | "client" | "blog" | "callback" | "newsletter";
+export type LinkedEntityType = "lead" | "invoice" | "ticket" | "client" | "blog" | "callback" | "newsletter" | "project";
 
 export interface CRMTask {
   id: string;
@@ -214,6 +214,7 @@ export interface CRMTask {
   blogId?: string;
   callbackId?: string;
   newsletterId?: string;
+  projectId?: string;
   // Denormalized display info (set on create/update, avoids extra fetches)
   linkedEntityType?: LinkedEntityType;
   linkedEntityLabel?: string;   // human-readable name/title of the linked entity
@@ -379,6 +380,112 @@ export interface Client {
   company: string;
   status: ClientStatus;
   notes: string;
+  createdAt: string;
+  updatedAt: string;
+  // Portal access
+  portalEnabled?: boolean;
+  portalInviteSentAt?: string;
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  clientId: string;
+  clientEmail?: string;
+  clientName?: string;
+  status: ProjectStatus;
+  startDate?: string;   // ISO date YYYY-MM-DD
+  endDate?: string;
+  color?: string;       // hex e.g. "#6366f1"
+  budget?: number;      // cents
+  currency?: string;
+  tags?: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Meetings ──────────────────────────────────────────────────────────────────
+
+export type MeetingStatus = "scheduled" | "completed" | "cancelled" | "rescheduled";
+
+export type MeetingAttachmentCategory = "proposal" | "agreement" | "other";
+
+export interface MeetingAttachment {
+  id: string;
+  meetingId: string;
+  name: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  category: MeetingAttachmentCategory;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  clientId?: string;
+  clientEmail?: string;
+  clientName?: string;
+  hostUsername: string;
+  attendees?: string[];  // emails
+  startTime: string;     // ISO datetime
+  endTime: string;
+  meetLink?: string;
+  googleEventId?: string;
+  googleHtmlLink?: string;  // Google Calendar event URL
+  status: MeetingStatus;
+  notes?: string;
+  projectId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Whiteboard ────────────────────────────────────────────────────────────────
+
+export interface WhiteboardElement {
+  id: string;
+  type: "stroke" | "rect" | "text";
+  points?: number[][];  // for stroke: [[x,y],...]
+  x?: number; y?: number; width?: number; height?: number;
+  text?: string;
+  color: string;
+  lineWidth?: number;
+}
+
+export interface Whiteboard {
+  id: string;
+  name: string;
+  clientId?: string;
+  clientEmail?: string;
+  elements: string;     // JSON of WhiteboardElement[]
+  projectId?: string;
+  createdBy: string;
+  lastEditedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Project SOP ───────────────────────────────────────────────────────────────
+
+export interface ProjectSOP {
+  id: string;
+  projectId: string;
+  clientId: string;
+  title: string;
+  brief: string;
+  content: string;      // markdown
+  createdBy: string;
+  lastEditedBy?: string;
   createdAt: string;
   updatedAt: string;
 }

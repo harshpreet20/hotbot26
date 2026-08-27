@@ -26,6 +26,15 @@ export async function DELETE(req: NextRequest) {
   }
 
   // Filesystem fallback
-  await removeById("contacts", id);
+  const all = await readAll<Contact>("contacts");
+  if (!all.find((c) => c.id === id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  try {
+    await removeById("contacts", id);
+  } catch (err) {
+    console.error("[contacts] delete error:", err);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

@@ -45,7 +45,6 @@ export default function ActivityPage() {
   useEffect(() => {
     const secret = getSecret();
     const role   = getRole();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     if (role !== "admin" && role !== "super_admin") {
       router.replace("/enter/backdrop/dashboard");
       return;

@@ -5,10 +5,6 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Role } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 interface TeamMember {
   username: string;
   role: Role;
@@ -33,10 +29,8 @@ export default function TeamPage() {
   const [search,  setSearch]  = useState("");
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch("/api/dashboard/team", {
-      headers: { Authorization: `Bearer ${secret}` },
+      credentials: "same-origin",
     })
       .then((r) => {
         if (r.status === 401) {

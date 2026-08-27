@@ -5,9 +5,6 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Lead, LeadStatus } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
@@ -92,11 +89,9 @@ export default function LeadsPage() {
   useEffect(() => { setRole(getRole()); }, []);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     Promise.all([
-      fetch("/api/dashboard/leads", { headers: { Authorization: `Bearer ${secret}` } }),
-      fetch("/api/dashboard/team",  { headers: { Authorization: `Bearer ${secret}` } }),
+      fetch("/api/dashboard/leads", { credentials: "same-origin" }),
+      fetch("/api/dashboard/team",  { credentials: "same-origin" }),
     ]).then(async ([lr, tr]) => {
       if (lr.status === 401) {
         sessionStorage.removeItem("backdrop_secret");
@@ -107,14 +102,13 @@ export default function LeadsPage() {
       }
       const ld = await lr.json() as { leads: Lead[] };
       const td = await tr.json().catch(() => ({ members: [] })) as { members: TeamMember[] };
-      setLeads(ld.leads);
+      setLeads(ld.leads ?? []);
       setTeam(td.members ?? []);
     }).catch(console.error).finally(() => setLoading(false));
   }, [router]);
 
   function exportCSV() {
-    const secret = getSecret();
-    fetch("/api/dashboard/leads/export", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/leads/export", { credentials: "same-origin" })
       .then(r => r.blob())
       .then(blob => {
         const url = URL.createObjectURL(blob);
@@ -128,12 +122,12 @@ export default function LeadsPage() {
   }
 
   async function updateLeadStatus(id: string, status: LeadStatus) {
-    const secret = getSecret();
     setUpdating(id);
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
       if (res.ok) {
@@ -144,12 +138,12 @@ export default function LeadsPage() {
   }
 
   async function assignLead(id: string, assignedTo: string) {
-    const secret = getSecret();
     setAssigning(id);
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, assignedTo: assignedTo || null }),
       });
       if (res.ok) {
@@ -161,12 +155,11 @@ export default function LeadsPage() {
 
   async function deleteLead(id: string, name: string) {
     if (!confirm(`Permanently delete lead "${name}"? This cannot be undone.`)) return;
-    const secret = getSecret();
     setDeleting(id);
     try {
       const res = await fetch(`/api/dashboard/leads?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       if (res.ok) {
         setLeads((prev) => prev.filter((l) => l.id !== id));
@@ -175,14 +168,13 @@ export default function LeadsPage() {
   }
 
   async function convertToClient(lead: Lead) {
-    const secret = getSecret();
     if (!confirm(`Convert ${lead.name} to a client?`)) return;
     setConverting(lead.id);
     setConvertMsg((prev) => ({ ...prev, [lead.id]: "" }));
     try {
       const res = await fetch(`/api/dashboard/leads/${lead.id}/convert`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       const data = await res.json() as { success?: boolean; error?: string };
       if (res.ok && data.success) {
@@ -200,12 +192,12 @@ export default function LeadsPage() {
     e.preventDefault();
     setAddError("");
     if (!newLead.name.trim()) { setAddError("Name is required."); return; }
-    const secret = getSecret();
     setAdding(true);
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newLead, formType: "manual", source: "manual" }),
       });
       const data = await res.json() as { lead?: Lead; error?: string };
@@ -235,10 +227,10 @@ export default function LeadsPage() {
         reader.onerror = reject;
         reader.readAsDataURL(scanFile);
       });
-      const secret = getSecret();
       const res = await fetch("/api/dashboard/scan-card", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64 }),
       });
       const data = await res.json() as { contact?: ScannedCard; error?: string };
@@ -258,12 +250,12 @@ export default function LeadsPage() {
     e.preventDefault();
     setScanError("");
     if (!scanLead.name.trim()) { setScanError("Name is required."); return; }
-    const secret = getSecret();
     setSavingScan(true);
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...scanLead, formType: "card-scan", source: "visiting-card" }),
       });
       const data = await res.json() as { lead?: Lead; error?: string };
@@ -534,7 +526,7 @@ export default function LeadsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Assign To</label>
+                <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Status</label>
                 <select value={newLead.status} onChange={(e) => setNewLead((p) => ({ ...p, status: e.target.value as LeadStatus }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
                   {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
