@@ -393,11 +393,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") : null;
     if (!secret) return;
 
+    let aborted = false;
+
     function fetchBadges() {
+      if (aborted) return;
       fetch("/api/dashboard/badge-counts", { headers: { Authorization: `Bearer ${secret}` } })
         .then((r) => {
+          if (aborted) return null;
           if (r.status === 401) {
-            // Session expired — stop polling and send user to login
+            // Session expired — silence all further callbacks, stop polling, redirect
+            aborted = true;
             if (badgeTimer.current) { clearInterval(badgeTimer.current); badgeTimer.current = null; }
             sessionStorage.clear();
             router.replace("/enter/backdrop");
@@ -405,7 +410,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           }
           return r.ok ? r.json() as Promise<BadgeCounts> : null;
         })
-        .then((d) => { if (d) setBadges(d); })
+        .then((d) => { if (d && !aborted) setBadges(d); })
         .catch(() => {});
     }
 
@@ -420,12 +425,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         .on("postgres_changes", { event: "*", schema: "public", table: "callbacks" },fetchBadges)
         .on("postgres_changes", { event: "*", schema: "public", table: "chats" },    fetchBadges)
         .subscribe();
-      return () => { void sb.removeChannel(channel); };
+      return () => { aborted = true; void sb.removeChannel(channel); };
     }
 
     // Fallback: poll every 10s if Supabase not configured
     badgeTimer.current = setInterval(fetchBadges, 10_000);
-    return () => { if (badgeTimer.current) clearInterval(badgeTimer.current); };
+    return () => { aborted = true; if (badgeTimer.current) clearInterval(badgeTimer.current); };
   }, []);
 
   // Mark badge section as seen when navigating to it
