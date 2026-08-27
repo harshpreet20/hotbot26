@@ -80,7 +80,12 @@ export async function POST(req: NextRequest) {
     updatedAt: now,
   };
 
-  await insert<Client>("clients", client);
+  try {
+    await insert<Client>("clients", client);
+  } catch (err) {
+    console.error("[clients] insert error:", err);
+    return NextResponse.json({ error: "Failed to create client" }, { status: 500 });
+  }
   return NextResponse.json({ client }, { status: 201 });
 }
 
