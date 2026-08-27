@@ -193,7 +193,7 @@ export interface CRMUpdate {
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus   = "open" | "in_progress" | "done" | "cancelled";
-export type LinkedEntityType = "lead" | "invoice" | "ticket" | "client" | "blog" | "callback" | "newsletter";
+export type LinkedEntityType = "lead" | "invoice" | "ticket" | "client" | "blog" | "callback" | "newsletter" | "project";
 
 export interface CRMTask {
   id: string;
