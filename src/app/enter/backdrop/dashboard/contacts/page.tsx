@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Contact } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 export default function ContactsPage() {
   const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -24,10 +20,8 @@ export default function ContactsPage() {
   const [deleteConfirm,  setDeleteConfirm]  = useState<string | null>(null);
 
   const fetchContacts = useCallback(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
-    fetch('/api/dashboard/contacts', { headers: { Authorization: `Bearer ${secret}` } })
+    fetch('/api/dashboard/contacts', { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           sessionStorage.removeItem("backdrop_secret");
@@ -48,12 +42,12 @@ export default function ContactsPage() {
   }, [fetchContacts, refresh]);
 
   async function convertToLead(contactId: string) {
-    const secret = getSecret();
     setConverting((prev) => ({ ...prev, [contactId]: true }));
     try {
       const res = await fetch("/api/dashboard/contacts/convert", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contactId }),
       });
       const data = await res.json() as { lead?: { id: string; name: string }; error?: string };
@@ -76,12 +70,11 @@ export default function ContactsPage() {
   }
 
   async function deleteContact(contactId: string) {
-    const secret = getSecret();
     setDeleting((prev) => ({ ...prev, [contactId]: true }));
     try {
       const res = await fetch(`/api/dashboard/contacts?id=${encodeURIComponent(contactId)}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       if (res.ok) {
         setContacts((prev) => prev.filter((c) => c.id !== contactId));

@@ -4,9 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { KnowledgeEntry } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
@@ -60,10 +57,8 @@ export default function KnowledgePage() {
   const isAdmin = ["super_admin", "admin"].includes(role);
 
   const load = useCallback(() => {
-    const token = getToken();
-    if (!token) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
-    fetch("/api/dashboard/knowledge", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/dashboard/knowledge", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));
@@ -124,7 +119,8 @@ export default function KnowledgePage() {
 
       const res = await fetch("/api/dashboard/knowledge", {
         method,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json() as { error?: string };
@@ -138,7 +134,8 @@ export default function KnowledgePage() {
   async function handleToggleActive(entry: KnowledgeEntry) {
     await fetch("/api/dashboard/knowledge", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: entry.id, active: !entry.active }),
     });
     setEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, active: !e.active } : e));
@@ -148,7 +145,7 @@ export default function KnowledgePage() {
     if (!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
     await fetch(`/api/dashboard/knowledge?id=${entry.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
     });
     setEntries((prev) => prev.filter((e) => e.id !== entry.id));
   }

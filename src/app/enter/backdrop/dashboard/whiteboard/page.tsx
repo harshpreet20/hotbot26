@@ -3,10 +3,6 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Whiteboard } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 const CARD: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -187,7 +183,7 @@ export default function WhiteboardPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      const res = await fetch("/api/dashboard/whiteboards", { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch("/api/dashboard/whiteboards", { credentials: "same-origin" });
       if (res.ok) { const d = await res.json() as { whiteboards: Whiteboard[] }; setBoards(d.whiteboards); }
       else { setLoadError(true); }
     } catch { setLoadError(true); }
@@ -207,7 +203,8 @@ export default function WhiteboardPage() {
     try {
       await fetch("/api/dashboard/whiteboards", {
         method: "PATCH",
-        headers: { "Content-Type":"application/json", Authorization:`Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify({ id: active.id, elements: JSON.stringify(elements) }),
       });
       await load();
@@ -220,7 +217,8 @@ export default function WhiteboardPage() {
     try {
       const res = await fetch("/api/dashboard/whiteboards", {
         method: "POST",
-        headers: { "Content-Type":"application/json", Authorization:`Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify({ name: newName, clientId: newClientId, clientEmail: newClientEmail }),
       });
       if (res.ok) {
@@ -234,7 +232,7 @@ export default function WhiteboardPage() {
 
   async function deleteBoard(id: string) {
     if (!confirm("Delete this whiteboard?")) return;
-    await fetch(`/api/dashboard/whiteboards?id=${id}`, { method:"DELETE", headers:{ Authorization:`Bearer ${getToken()}` } });
+    await fetch(`/api/dashboard/whiteboards?id=${id}`, { method:"DELETE", credentials: "same-origin" });
     if (active?.id === id) setActive(null);
     await load();
   }

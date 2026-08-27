@@ -6,9 +6,6 @@ import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Lead, LeadStatus, CRMUpdate, CRMTask, Invoice, UpdateType, TaskPriority } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getUsername() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : "";
 }
@@ -71,22 +68,19 @@ export default function LeadDetailPage() {
   const [taskDue,      setTaskDue]      = useState("");
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-
-    fetch(`/api/dashboard/team`, { headers: { Authorization: `Bearer ${secret}` } })
+    fetch(`/api/dashboard/team`, { credentials: "same-origin" })
       .then(r => r.json() as Promise<{ members?: {username:string;role:string}[] }>)
       .then(d => setTeam(d.members ?? []))
       .catch(() => {});
 
     Promise.all([
-      fetch(`/api/dashboard/leads`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/leads`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ leads: Lead[] }>),
-      fetch(`/api/dashboard/crm-updates?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/crm-updates?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ updates: CRMUpdate[] }>),
-      fetch(`/api/dashboard/tasks?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/tasks?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ tasks: CRMTask[] }>),
-      fetch(`/api/dashboard/invoices?leadId=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(`/api/dashboard/invoices?leadId=${id}`, { credentials: "same-origin" })
         .then((r) => r.json() as Promise<{ invoices: Invoice[] }>),
     ])
       .then(([leadData, updateData, taskData, invoiceData]) => {
@@ -117,7 +111,8 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch("/api/dashboard/leads", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status, assignedTo: assignedTo || undefined, notes }),
       });
       if (res.ok) {
@@ -125,7 +120,7 @@ export default function LeadDetailPage() {
         setLead(data.lead);
         // Refetch updates to catch auto-logged status/assignment changes
         const upRes = await fetch(`/api/dashboard/crm-updates?leadId=${id}`, {
-          headers: { Authorization: `Bearer ${getSecret()}` },
+          credentials: "same-origin",
         });
         const upData = await upRes.json() as { updates: CRMUpdate[] };
         setUpdates(upData.updates);
@@ -142,7 +137,8 @@ export default function LeadDetailPage() {
     try {
       const res = await fetch("/api/dashboard/crm-updates", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: id, type: updateType, content: updateText.trim() }),
       });
       if (res.ok) {
@@ -159,7 +155,8 @@ export default function LeadDetailPage() {
     if (!taskTitle.trim()) return;
     const res = await fetch("/api/dashboard/tasks", {
       method: "POST",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: taskTitle.trim(), leadId: id, priority: taskPriority, dueDate: taskDue || undefined }),
     });
     if (res.ok) {
@@ -172,7 +169,8 @@ export default function LeadDetailPage() {
   async function toggleTask(taskId: string, done: boolean) {
     const res = await fetch("/api/dashboard/tasks", {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: taskId, status: done ? "done" : "open" }),
     });
     if (res.ok) {
@@ -184,7 +182,7 @@ export default function LeadDetailPage() {
   async function deleteUpdate(updateId: string) {
     const res = await fetch(`/api/dashboard/crm-updates?id=${updateId}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getSecret()}` },
+      credentials: "same-origin",
     });
     if (res.ok) setUpdates((p) => p.filter((u) => u.id !== updateId));
   }

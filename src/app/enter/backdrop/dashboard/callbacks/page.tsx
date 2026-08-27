@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { CallbackRequest } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 export default function CallbacksPage() {
   const router = useRouter();
   const [items, setItems]     = useState<CallbackRequest[]>([]);
@@ -15,9 +11,7 @@ export default function CallbacksPage() {
   const [marking, setMarking] = useState<string | null>(null);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch('/api/dashboard/callbacks', { headers: { Authorization: `Bearer ${secret}` } })
+    fetch('/api/dashboard/callbacks', { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           sessionStorage.removeItem("backdrop_secret");
@@ -34,11 +28,11 @@ export default function CallbacksPage() {
   }, [router]);
 
   async function markCalled(id: string) {
-    const secret = getSecret();
     setMarking(id);
     try {
       await fetch('/api/dashboard/callbacks', {
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         method: "PATCH",
         body: JSON.stringify({ id }),
       });

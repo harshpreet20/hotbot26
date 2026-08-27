@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { TeamMessage, TeamChannel } from "@/types/dashboard";
 
-function getSecret()   { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret")  || "" : ""; }
 function getUsername() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_username") || "" : ""; }
 function getRole()     { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role")     || "" : ""; }
 
@@ -37,9 +36,7 @@ export default function TeamChatPage() {
 
   // Load channels
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch("/api/dashboard/team-chat?type=channels", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/team-chat?type=channels", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
         return r.json() as Promise<{ channels?: TeamChannel[] }>;
@@ -50,13 +47,12 @@ export default function TeamChatPage() {
 
   // Load messages when channel changes
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret || !activeChannelId) return;
+    if (!activeChannelId) return;
 
     setMessages([]);
     lastMessageIdRef.current = "";
 
-    fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`, { headers: { Authorization: `Bearer ${secret}` } })
+    fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`, { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) { router.replace("/enter/backdrop"); return null; }
         return r.json() as Promise<{ messages?: TeamMessage[] }>;
@@ -74,8 +70,7 @@ export default function TeamChatPage() {
     if (pollingRef.current) clearInterval(pollingRef.current);
 
     pollingRef.current = setInterval(() => {
-      const secret = getSecret();
-      if (!secret || !activeChannelId) return;
+      if (!activeChannelId) return;
       const since = lastMessageIdRef.current;
 
       // Build URL — omit `since` when channel is empty so first messages appear
@@ -83,7 +78,7 @@ export default function TeamChatPage() {
         ? `/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}&since=${encodeURIComponent(since)}`
         : `/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`;
 
-      fetch(url, { headers: { Authorization: `Bearer ${secret}` } })
+      fetch(url, { credentials: "same-origin" })
         .then((r) => {
           if (r.status === 401) return null;
           return r.json() as Promise<{ messages?: TeamMessage[] }>;
@@ -115,7 +110,8 @@ export default function TeamChatPage() {
     try {
       const res = await fetch("/api/dashboard/team-chat", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channelId: activeChannelId, text: text.trim(), replyTo: replyTo?.id }),
       });
       if (res.ok) {
@@ -134,7 +130,8 @@ export default function TeamChatPage() {
     if (!editText.trim()) return;
     const res = await fetch("/api/dashboard/team-chat", {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, text: editText.trim() }),
     });
     if (res.ok) {
@@ -147,7 +144,7 @@ export default function TeamChatPage() {
   async function deleteMessage(id: string) {
     const res = await fetch(`/api/dashboard/team-chat?id=${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getSecret()}` },
+      credentials: "same-origin",
     });
     if (res.ok) setMessages((p) => p.filter((m) => m.id !== id));
   }
@@ -156,7 +153,8 @@ export default function TeamChatPage() {
     if (!newChanName.trim()) return;
     const res = await fetch("/api/dashboard/team-chat", {
       method: "POST",
-      headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "channel", name: newChanName.trim(), description: newChanDesc }),
     });
     if (res.ok) {

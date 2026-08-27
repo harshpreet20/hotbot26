@@ -3,10 +3,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Client } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 interface FileResource {
   id: string;
   clientId: string;
@@ -56,7 +52,7 @@ export default function AdminFilesPage() {
     setLoading(true);
     const qs = cId ? `?clientId=${encodeURIComponent(cId)}` : "";
     const res = await fetch(`/api/dashboard/files${qs}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
     });
     if (res.ok) {
       const d = await res.json() as { files: FileResource[] };
@@ -66,7 +62,7 @@ export default function AdminFilesPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/dashboard/clients", { headers: { Authorization: `Bearer ${getToken()}` } })
+    fetch("/api/dashboard/clients", { credentials: "same-origin" })
       .then(r => r.ok ? r.json() as Promise<{ clients: Client[] }> : Promise.reject())
       .then(d => setClients(d.clients ?? []))
       .catch(() => {});
@@ -86,7 +82,7 @@ export default function AdminFilesPage() {
     try {
       const res = await fetch("/api/dashboard/files", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
         body: formData,
       });
       if (!res.ok) {
@@ -105,7 +101,7 @@ export default function AdminFilesPage() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this file?")) return;
     await fetch(`/api/dashboard/files?id=${id}`, {
-      method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` },
+      method: "DELETE", credentials: "same-origin",
     });
     await load(filterClient || undefined);
   }

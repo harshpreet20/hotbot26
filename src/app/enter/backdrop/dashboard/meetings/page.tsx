@@ -103,7 +103,7 @@ export default function MeetingsPage() {
   const loadGoogleStatus = useCallback(async () => {
     setGoogleLoading(true);
     try {
-      const res = await fetch("/api/dashboard/google-status", { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch("/api/dashboard/google-status", { credentials: "same-origin" });
       if (res.ok) {
         const d = await res.json() as { connected: boolean; email?: string };
         setGoogleConnected(d.connected);
@@ -116,7 +116,7 @@ export default function MeetingsPage() {
 
   const disconnectGoogle = async () => {
     if (!confirm("Disconnect your Google account? Future meetings won't auto-generate Meet links.")) return;
-    await fetch("/api/dashboard/google-status", { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    await fetch("/api/dashboard/google-status", { method: "DELETE", credentials: "same-origin" });
     setGoogleConnected(false);
     setGoogleEmail("");
   };
@@ -131,7 +131,7 @@ export default function MeetingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/dashboard/meetings", { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch("/api/dashboard/meetings", { credentials: "same-origin" });
       if (res.ok) {
         const d = await res.json() as { meetings: Meeting[] };
         setMeetings(d.meetings ?? []);
@@ -144,7 +144,7 @@ export default function MeetingsPage() {
   useEffect(() => {
     void load();
     void loadGoogleStatus();
-    fetch("/api/dashboard/team", { headers: { Authorization: `Bearer ${getToken()}` } })
+    fetch("/api/dashboard/team", { credentials: "same-origin" })
       .then(r => r.ok ? r.json() : { members: [] })
       .then((d: { members?: {username:string;role:string}[] }) => setTeam(d.members ?? []));
 
@@ -168,7 +168,7 @@ export default function MeetingsPage() {
     setAttachLoading(true);
     setUploadErr("");
     try {
-      const res = await fetch(`/api/dashboard/meetings/attachments?meetingId=${meetingId}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`/api/dashboard/meetings/attachments?meetingId=${meetingId}`, { credentials: "same-origin" });
       if (res.ok) {
         const d = await res.json() as { attachments: MeetingAttachment[] };
         setAttachments(d.attachments ?? []);
@@ -194,7 +194,7 @@ export default function MeetingsPage() {
     try {
       const res = await fetch("/api/dashboard/meetings/attachments", {
         method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
         body: fd,
       });
       if (!res.ok) { const d = await res.json() as { error?: string }; setUploadErr(d.error ?? "Upload failed"); }
@@ -205,7 +205,7 @@ export default function MeetingsPage() {
 
   async function deleteAttachment(att: MeetingAttachment) {
     if (!confirm(`Delete "${att.name}"?`)) return;
-    await fetch(`/api/dashboard/meetings/attachments?id=${att.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    await fetch(`/api/dashboard/meetings/attachments?id=${att.id}`, { method: "DELETE", credentials: "same-origin" });
     await loadAttachments(att.meetingId);
   }
 
@@ -266,7 +266,8 @@ export default function MeetingsPage() {
       };
       const res = await fetch("/api/dashboard/meetings", {
         method: editing ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) { const d = await res.json() as { error?: string }; setError(d.error ?? "Save failed"); return; }
@@ -278,7 +279,7 @@ export default function MeetingsPage() {
   async function deleteMeeting(id: string) {
     if (!confirm("Delete this meeting?")) return;
     try {
-      const res = await fetch(`/api/dashboard/meetings?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`/api/dashboard/meetings?id=${id}`, { method: "DELETE", credentials: "same-origin" });
       if (res.ok) { if (expandedId === id) setExpandedId(null); await load(); }
       else setError("Failed to delete meeting");
     } catch { setError("Network error"); }

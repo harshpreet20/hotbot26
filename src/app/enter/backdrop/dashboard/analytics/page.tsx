@@ -104,9 +104,6 @@ interface AIResult {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function getSecret(): string {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") ?? "" : "";
-}
 function getRole(): string {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") ?? "" : "";
 }
@@ -560,15 +557,14 @@ export default function AnalyticsPage() {
   const [liveTs,     setLiveTs]    = useState<string>(new Date().toISOString());
   const [lastPollAt, setLastPollAt] = useState<string>(new Date().toISOString());
   const [clearing,   setClearing]  = useState(false);
-  const secretRef = useRef("");
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load / refresh analytics data ────────────────────────────────────────
-  const loadData = useCallback((secret: string, isRefresh = false) => {
+  const loadData = useCallback((isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError("");
     fetch("/api/dashboard/analytics", {
-      headers: { Authorization: `Bearer ${secret}` },
+      credentials: "same-origin",
     })
       .then(r => r.json() as Promise<AnalyticsBundle & { error?: string }>)
       .then(d => {
@@ -581,15 +577,12 @@ export default function AnalyticsPage() {
 
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const secret = getSecret();
     const role   = getRole();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     if (role && role !== "super_admin" && role !== "admin") {
       router.replace("/enter/backdrop/dashboard");
       return;
     }
-    secretRef.current = secret;
-    loadData(secret);
+    loadData();
   }, [router, loadData]);
 
   // ── Live feed polling (every 10s) ─────────────────────────────────────────
@@ -660,10 +653,10 @@ export default function AnalyticsPage() {
     try {
       await fetch("/api/dashboard/analytics/clear", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${secretRef.current}` },
+        credentials: "same-origin",
       });
       setBundle(null);
-      loadData(secretRef.current);
+      loadData();
     } catch { /* ignore */ } finally {
       setClearing(false);
     }
@@ -677,7 +670,8 @@ export default function AnalyticsPage() {
     try {
       const res = await fetch("/api/dashboard/analytics", {
         method: "POST",
-        headers: { Authorization: `Bearer ${secretRef.current}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(bundle),
       });
       const d = await res.json() as AIResult & { error?: string };
@@ -772,7 +766,7 @@ export default function AnalyticsPage() {
             </button>
 
             <button
-              onClick={() => loadData(secretRef.current, true)}
+              onClick={() => loadData(true)}
               disabled={refreshing || loading}
               title="Refresh data"
               style={{

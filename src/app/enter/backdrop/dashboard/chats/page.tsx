@@ -4,12 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { ChatSession } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined"
-    ? sessionStorage.getItem("backdrop_secret") || ""
-    : "";
-}
-
 function getUsername() {
   return typeof window !== "undefined"
     ? sessionStorage.getItem("backdrop_username") || ""
@@ -25,13 +19,8 @@ export default function ChatsPage() {
   const [sending, setSending] = useState(false);
 
   const fetchSessions = useCallback(() => {
-    const secret = getSecret();
-    if (!secret) {
-      router.replace("/enter/backdrop");
-      return;
-    }
     fetch("/api/dashboard/chats", {
-      headers: { Authorization: `Bearer ${secret}` },
+      credentials: "same-origin",
     })
       .then((r) => {
         if (r.status === 401) {
@@ -73,9 +62,9 @@ export default function ChatsPage() {
     try {
       const res = await fetch("/api/dashboard/chats/reply", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getSecret()}`,
         },
         body: JSON.stringify({ sessionId: selected.id, message: agentInput.trim() }),
       });

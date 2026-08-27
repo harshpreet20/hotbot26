@@ -5,9 +5,6 @@ import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import { EntityEmailHistory } from "@/components/backdrop/EntityEmailHistory";
 import type { Client, ClientStatus } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
 function getRole() {
   return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
 }
@@ -60,10 +57,8 @@ export default function ClientsPage() {
   const canWrite = ["admin", "super_admin", "manager", "sales"].includes(getRole());
 
   const load = useCallback(() => {
-    const token = getToken();
-    if (!token) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
-    fetch("/api/dashboard/clients", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/dashboard/clients", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           ["backdrop_secret", "backdrop_role", "backdrop_username"].forEach((k) => sessionStorage.removeItem(k));
@@ -99,7 +94,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json() as { error?: string };
@@ -115,7 +111,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
       if (res.ok) setClients((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
@@ -129,7 +126,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editing),
       });
       if (!res.ok) { const d = await res.json() as { error?: string }; setError(d.error ?? "Failed"); return; }
@@ -143,7 +141,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients/portal-impersonate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientEmail: email }),
       });
       if (!res.ok) { alert("Impersonation failed — check the client has a portal account"); return; }
@@ -158,7 +157,8 @@ export default function ClientsPage() {
     try {
       const res = await fetch("/api/dashboard/clients/portal-invite", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId: id }),
       });
       const data = await res.json() as { success?: boolean; email?: string; error?: string };
@@ -180,7 +180,7 @@ export default function ClientsPage() {
     try {
       const res = await fetch(`/api/dashboard/clients?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
       });
       if (res.ok) setClients((prev) => prev.filter((c) => c.id !== id));
       else setError("Failed to delete client");

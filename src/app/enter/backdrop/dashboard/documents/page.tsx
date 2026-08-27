@@ -3,10 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { PortalDocument, DocumentSuggestion } from "@/app/api/dashboard/documents/route";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 const STATUS_META: Record<PortalDocument["status"], { label: string; color: string; bg: string }> = {
   draft:    { label: "Draft",    color: "#94a3b8", bg: "rgba(100,116,139,0.12)" },
   sent:     { label: "Sent",     color: "#60a5fa", bg: "rgba(96,165,250,0.12)"  },
@@ -43,7 +39,7 @@ export default function DocumentsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/dashboard/documents", { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch("/api/dashboard/documents", { credentials: "same-origin" });
       if (res.ok) { const d = await res.json() as { documents: PortalDocument[] }; setDocs(d.documents); }
     } finally { setLoading(false); }
   }, []);
@@ -56,7 +52,8 @@ export default function DocumentsPage() {
     try {
       const res = await fetch("/api/dashboard/documents", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       if (res.ok) { setShowForm(false); await load(); }
@@ -66,12 +63,13 @@ export default function DocumentsPage() {
   async function patch(id: string, updates: Partial<PortalDocument>) {
     await fetch("/api/dashboard/documents", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...updates }),
     });
     await load();
     if (selected?.id === id) {
-      const all = await fetch("/api/dashboard/documents", { headers: { Authorization: `Bearer ${getToken()}` } }).then(r=>r.json()) as { documents: PortalDocument[] };
+      const all = await fetch("/api/dashboard/documents", { credentials: "same-origin" }).then(r=>r.json()) as { documents: PortalDocument[] };
       const refreshed = all.documents.find(d=>d.id===id);
       if (refreshed) setSelected(refreshed);
     }
@@ -83,7 +81,7 @@ export default function DocumentsPage() {
 
   async function deletDoc(id: string) {
     if (!confirm("Delete this document?")) return;
-    await fetch(`/api/dashboard/documents?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    await fetch(`/api/dashboard/documents?id=${id}`, { method: "DELETE", credentials: "same-origin" });
     if (selected?.id === id) setSelected(null);
     await load();
   }
@@ -91,7 +89,8 @@ export default function DocumentsPage() {
   async function acceptSuggestion(docId: string, suggestionId: string) {
     await fetch("/api/dashboard/documents", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: docId, action: "accept-suggestion", suggestionId }),
     });
     await load();
@@ -103,7 +102,8 @@ export default function DocumentsPage() {
   async function rejectSuggestion(docId: string, suggestionId: string) {
     await fetch("/api/dashboard/documents", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: docId, action: "reject-suggestion", suggestionId }),
     });
     await load();

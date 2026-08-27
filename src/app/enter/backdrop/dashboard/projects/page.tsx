@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Project, ProjectStatus, Client } from "@/types/dashboard";
 
-function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 const STATUS_META: Record<ProjectStatus, { label: string; color: string; bg: string; border: string }> = {
   planning:  { label: "Planning",  color: "#94a3b8", bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.25)" },
   active:    { label: "Active",    color: "#34d399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.25)"  },
@@ -54,7 +50,7 @@ export default function ProjectsPage() {
 
   const load = useCallback(async () => {
     const res = await fetch("/api/dashboard/projects", {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: "same-origin",
     });
     if (res.ok) {
       const d = await res.json();
@@ -66,7 +62,7 @@ export default function ProjectsPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    fetch("/api/dashboard/clients", { headers: { Authorization: `Bearer ${getToken()}` } })
+    fetch("/api/dashboard/clients", { credentials: "same-origin" })
       .then(r => r.ok ? r.json() as Promise<{ clients: Client[] }> : Promise.reject())
       .then(d => setClients(d.clients ?? []))
       .catch(() => {});
@@ -119,7 +115,7 @@ export default function ProjectsPage() {
         currency: form.currency,
       };
       const res = await fetch("/api/dashboard/projects", {
-        method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        method, credentials: "same-origin", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error || "Failed"); return; }
@@ -133,7 +129,7 @@ export default function ProjectsPage() {
     if (!confirm("Delete this project?")) return;
     try {
       const res = await fetch(`/api/dashboard/projects?id=${id}`, {
-        method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` },
+        method: "DELETE", credentials: "same-origin",
       });
       if (res.ok) await load();
       else setError("Failed to delete project");

@@ -15,7 +15,6 @@ interface PortalDocument {
   clientId: string; projectId?: string; createdBy: string; createdAt: string; updatedAt: string;
 }
 
-function tok() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
 function role() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : ""; }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -121,19 +120,17 @@ export default function ProjectDetailPage() {
   const [sopError, setSopError]         = useState("");
 
   const load = useCallback(async () => {
-    const secret = tok();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     setLoading(true);
     try {
       const [pRes, tRes, fRes, mRes, bRes, dRes, sRes, tmRes] = await Promise.all([
-        fetch(`/api/dashboard/projects`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/tasks?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/files?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/meetings?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/whiteboards?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/documents?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/sop?projectId=${id}`, { headers: { Authorization: `Bearer ${secret}` } }),
-        fetch(`/api/dashboard/team`, { headers: { Authorization: `Bearer ${secret}` } }),
+        fetch(`/api/dashboard/projects`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/tasks?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/files?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/meetings?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/whiteboards?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/documents?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/sop?projectId=${id}`, { credentials: "same-origin" }),
+        fetch(`/api/dashboard/team`, { credentials: "same-origin" }),
       ]);
       const pData = await pRes.json() as { projects?: Project[] };
       const found = pData.projects?.find(p => p.id === id);
@@ -165,7 +162,8 @@ export default function ProjectDetailPage() {
     try {
       await fetch("/api/dashboard/tasks", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: taskTitle, priority: taskPriority, dueDate: taskDue || undefined, assignedTo: taskAssignee || undefined, projectId: id }),
       });
       setTaskTitle(""); setTaskDue(""); setTaskAssignee(""); setShowTaskForm(false);
@@ -176,7 +174,8 @@ export default function ProjectDetailPage() {
   async function patchTask(taskId: string, patch: Partial<CRMTask>) {
     await fetch("/api/dashboard/tasks", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: taskId, ...patch }),
     });
     await load();

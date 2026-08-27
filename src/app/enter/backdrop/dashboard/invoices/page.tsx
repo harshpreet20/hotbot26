@@ -5,10 +5,6 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Invoice, InvoiceStatus } from "@/types/dashboard";
 
-function getSecret() {
-  return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : "";
-}
-
 const STATUS_META: Record<InvoiceStatus, { label: string; color: string }> = {
   draft:     { label: "Draft",     color: "#64748b" },
   sent:      { label: "Sent",      color: "#3b82f6" },
@@ -32,9 +28,7 @@ export default function InvoicesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch("/api/dashboard/invoices", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/invoices", { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           sessionStorage.clear();
@@ -49,12 +43,12 @@ export default function InvoicesPage() {
   }, [router]);
 
   async function updateStatus(id: string, status: InvoiceStatus) {
-    const secret = getSecret();
     setUpdating(id);
     try {
       const res = await fetch("/api/dashboard/invoices", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
       if (res.ok) {
@@ -69,11 +63,10 @@ export default function InvoicesPage() {
 
   async function deleteInvoice(id: string) {
     if (!confirm("Delete this invoice? This cannot be undone.")) return;
-    const secret = getSecret();
     try {
       const res = await fetch(`/api/dashboard/invoices?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${secret}` },
+        credentials: "same-origin",
       });
       if (res.ok) setInvoices((prev) => prev.filter((inv) => inv.id !== id));
     } catch { /* network error — state unchanged */ }
