@@ -22,7 +22,7 @@ async function verifyRecaptcha(token: string | null): Promise<boolean> {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  const limited = rateLimitResponse(ip, "contact", { limit: 5, windowMs: 5 * 60_000 });
+  const limited = await rateLimitResponse(ip, "contact", { limit: 5, windowMs: 5 * 60_000 });
   if (limited) return limited;
 
   try {

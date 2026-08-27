@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   const ip = getIp(req);
   const ua = req.headers.get("user-agent") ?? "unknown";
 
-  const { allowed } = rateLimit(ip, "auth", { limit: 10, windowMs: 60_000 });
+  const { allowed } = await rateLimit(ip, "auth", { limit: 10, windowMs: 60_000 });
   if (!allowed) {
     log.warn("auth.rate_limit", `Rate limit hit from ${ip}`, { ip, details: { ua } });
     return NextResponse.json(

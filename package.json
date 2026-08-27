@@ -31,6 +31,8 @@
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
     "@types/pdfkit": "^0.17.6",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.3",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "googleapis": "^176.0.0",

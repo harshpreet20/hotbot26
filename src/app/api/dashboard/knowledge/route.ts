@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
-  const limited = rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const body = await req.json() as {
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
-  const limited = rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const body = await req.json() as {
@@ -109,7 +109,7 @@ export async function DELETE(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized or insufficient permissions" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
-  const limited = rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip, "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const id = new URL(req.url).searchParams.get("id");

@@ -10,7 +10,7 @@ function ip(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "proposal-generate", { limit: 5, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "proposal-generate", { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));

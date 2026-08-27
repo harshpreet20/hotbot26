@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));

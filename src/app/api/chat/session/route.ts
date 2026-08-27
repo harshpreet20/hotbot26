@@ -12,7 +12,7 @@ function getIp(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  const limited = rateLimitResponse(getIp(req), "chat-poll", {
+  const limited = await rateLimitResponse(getIp(req), "chat-poll", {
     limit: 60,
     windowMs: 60_000,
   });

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     req.headers.get("x-real-ip") ??
     "unknown";
 
-  const { allowed } = rateLimit(ip, "portal-login", { limit: 10, windowMs: 60_000 });
+  const { allowed } = await rateLimit(ip, "portal-login", { limit: 10, windowMs: 60_000 });
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later." },

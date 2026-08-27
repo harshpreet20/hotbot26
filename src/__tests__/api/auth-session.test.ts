@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 
 // Rate limiter: allow all requests (not the focus of these tests)
 vi.mock("@/lib/rateLimit", () => ({
-  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 }),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 }),
 }));
 
 vi.mock("bcryptjs", () => ({

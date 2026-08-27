@@ -1,17 +1,82 @@
 /**
- * Filesystem-based sliding-window rate limiter.
+ * Sliding-window rate limiter.
  *
- * Stores hit timestamps in /tmp/hotbot-data/rate_limits.json (Vercel) or
- * ./data/rate_limits.json (local).  Works across serverless invocations
- * within the same region because they share /tmp.
+ * Primary (when UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set):
+ *   Uses @upstash/ratelimit — works correctly across all Vercel serverless instances.
+ *
+ * Fallback (no Upstash env vars):
+ *   Filesystem-based store in /tmp/hotbot-data/rate_limits.json (Vercel) or
+ *   ./data/rate_limits.json (local). Approximate — not shared across instances.
  *
  * Usage:
- *   const result = rateLimit(ip, "forms", { limit: 5, windowMs: 60_000 });
+ *   const result = await rateLimit(ip, "forms", { limit: 5, windowMs: 60_000 });
  *   if (!result.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
  */
 
+import { NextResponse } from "next/server";
 import fs   from "fs";
 import path from "path";
+
+export interface RateLimitOptions {
+  /** Max requests allowed within the window. Default: 30 */
+  limit?: number;
+  /** Window size in milliseconds. Default: 60 000 (1 minute) */
+  windowMs?: number;
+}
+
+export interface RateLimitResult {
+  allowed:   boolean;
+  remaining: number;
+  resetAt:   number;  // Unix timestamp (ms) when the window resets
+}
+
+// ---------------------------------------------------------------------------
+// Upstash implementation
+// ---------------------------------------------------------------------------
+
+function msToUpstashDuration(ms: number): `${number} s` | `${number} m` | `${number} h` {
+  if (ms >= 3_600_000 && ms % 3_600_000 === 0) return `${ms / 3_600_000} h`;
+  if (ms >= 60_000)  return `${Math.round(ms / 60_000)} m`;
+  return `${Math.round(ms / 1_000)} s`;
+}
+
+// Lazily created Upstash clients, keyed by "limit:windowStr" to allow different configs.
+const upstashLimiters = new Map<string, import("@upstash/ratelimit").Ratelimit>();
+
+async function rateLimitUpstash(
+  identifier: string,
+  bucket: string,
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
+  const { Ratelimit } = await import("@upstash/ratelimit");
+  const { Redis }     = await import("@upstash/redis");
+
+  const limit    = options.limit    ?? 30;
+  const windowMs = options.windowMs ?? 60_000;
+  const window   = msToUpstashDuration(windowMs);
+  const cacheKey = `${limit}:${window}`;
+
+  let limiter = upstashLimiters.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(limit, window),
+      prefix: "rl",
+    });
+    upstashLimiters.set(cacheKey, limiter);
+  }
+
+  const { success, remaining, reset } = await limiter.limit(`${bucket}:${identifier}`);
+  return {
+    allowed:   success,
+    remaining: remaining,
+    resetAt:   reset,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Filesystem fallback implementation
+// ---------------------------------------------------------------------------
 
 const DATA_DIR = process.env.VERCEL
   ? "/tmp/hotbot-data"
@@ -19,7 +84,6 @@ const DATA_DIR = process.env.VERCEL
 
 const STORE_FILE = path.join(DATA_DIR, "rate_limits.json");
 
-/** Hits stored per key. Each value is an array of timestamps (ms). */
 type RateLimitStore = Record<string, number[]>;
 
 function readStore(): RateLimitStore {
@@ -36,31 +100,11 @@ function writeStore(store: RateLimitStore): void {
   fs.writeFileSync(STORE_FILE, JSON.stringify(store), "utf-8");
 }
 
-export interface RateLimitOptions {
-  /** Max number of requests allowed within the window. Default: 30 */
-  limit?: number;
-  /** Window size in milliseconds. Default: 60 000 (1 minute) */
-  windowMs?: number;
-}
-
-export interface RateLimitResult {
-  allowed:   boolean;
-  remaining: number;
-  resetAt:   number;  // Unix timestamp (ms) when the oldest hit falls out
-}
-
-/**
- * Check and record a hit for the given key.
- *
- * @param identifier  Unique key, e.g. an IP address or `${ip}:${route}`
- * @param bucket      Logical bucket name (e.g. "forms", "auth", "api")
- * @param options     Limit and window override
- */
-export function rateLimit(
+async function rateLimitFilesystem(
   identifier: string,
   bucket: string,
-  options: RateLimitOptions = {}
-): RateLimitResult {
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
   const limit    = options.limit    ?? 30;
   const windowMs = options.windowMs ?? 60_000;
   const now      = Date.now();
@@ -75,14 +119,13 @@ export function rateLimit(
 
   store[key] = hits;
 
-  // Prune keys with no recent hits to keep the file small
   const pruned: RateLimitStore = {};
   for (const [k, v] of Object.entries(store)) {
     const recent = v.filter((ts) => ts > now - windowMs * 2);
     if (recent.length > 0) pruned[k] = recent;
   }
 
-  try { writeStore(pruned); } catch { /* non-fatal - don't block request */ }
+  try { writeStore(pruned); } catch { /* non-fatal */ }
 
   return {
     allowed,
@@ -91,14 +134,37 @@ export function rateLimit(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+const useUpstash =
+  Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
+  Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+
+/**
+ * Check and record a hit for the given key.
+ *
+ * @param identifier  Unique key, e.g. an IP address or `${ip}:${route}`
+ * @param bucket      Logical bucket name (e.g. "forms", "auth", "api")
+ * @param options     Limit and window override
+ */
+export async function rateLimit(
+  identifier: string,
+  bucket: string,
+  options: RateLimitOptions = {}
+): Promise<RateLimitResult> {
+  if (useUpstash) return rateLimitUpstash(identifier, bucket, options);
+  return rateLimitFilesystem(identifier, bucket, options);
+}
+
 /** Convenience: returns a 429 NextResponse with Retry-After header, or null if allowed. */
-export function rateLimitResponse(
+export async function rateLimitResponse(
   identifier: string,
   bucket: string,
   options?: RateLimitOptions
-) {
-  const { NextResponse } = require("next/server") as typeof import("next/server");
-  const result = rateLimit(identifier, bucket, options);
+): Promise<NextResponse | null> {
+  const result = await rateLimit(identifier, bucket, options);
   if (result.allowed) return null;
   const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000);
   return NextResponse.json(
@@ -106,9 +172,9 @@ export function rateLimitResponse(
     {
       status: 429,
       headers: {
-        "Retry-After":        String(Math.max(1, retryAfter)),
-        "X-RateLimit-Limit":  String(options?.limit   ?? 30),
-        "X-RateLimit-Reset":  String(result.resetAt),
+        "Retry-After":       String(Math.max(1, retryAfter)),
+        "X-RateLimit-Limit": String(options?.limit ?? 30),
+        "X-RateLimit-Reset": String(result.resetAt),
       },
     }
   );

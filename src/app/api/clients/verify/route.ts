@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  const limited = rateLimitResponse(ip, "client-verify", { limit: 10, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip, "client-verify", { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   const body = await req.json().catch(() => ({})) as { clientId?: string };

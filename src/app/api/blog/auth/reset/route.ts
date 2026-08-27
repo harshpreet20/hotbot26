@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  const { allowed } = rateLimit(ip, "auth-reset", { limit: 3, windowMs: 5 * 60_000 });
+  const { allowed } = await rateLimit(ip, "auth-reset", { limit: 3, windowMs: 5 * 60_000 });
   if (!allowed) {
     return NextResponse.json(
       { success: false, error: "Too many reset attempts. Please wait 5 minutes." },

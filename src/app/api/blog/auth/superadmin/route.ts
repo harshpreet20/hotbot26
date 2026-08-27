@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  const { allowed } = rateLimit(ip, "auth-superadmin", { limit: 5, windowMs: 60_000 });
+  const { allowed } = await rateLimit(ip, "auth-superadmin", { limit: 5, windowMs: 60_000 });
   if (!allowed) {
     return NextResponse.json(
       { success: false, error: "Too many attempts. Please wait a minute." },

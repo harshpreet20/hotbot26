@@ -23,7 +23,7 @@ vi.mock("@/lib/rateLimit", () => {
         return { allowed, remaining: Math.max(0, limit - callCounts[key]), resetAt: Date.now() + 60_000 };
       }
     ),
-    rateLimitResponse: vi.fn().mockReturnValue(null),   // allow by default
+    rateLimitResponse: vi.fn().mockResolvedValue(null),   // allow by default
     __callCounts: callCounts,
   };
 });
@@ -353,7 +353,7 @@ describe("User credential lookup", () => {
 describe("Dashboard write routes - rate limiting guard", () => {
   beforeEach(() => {
     // Reset: allow all by default
-    vi.mocked(rateLimitResponse).mockReturnValue(null);
+    vi.mocked(rateLimitResponse).mockResolvedValue(null);
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([]);
     vi.mocked(insert).mockResolvedValue(undefined);
@@ -372,7 +372,7 @@ describe("Dashboard write routes - rate limiting guard", () => {
 
   it("POST /api/dashboard/leads returns 429 when rate limit is exceeded", async () => {
     const { NextResponse } = await import("next/server");
-    vi.mocked(rateLimitResponse).mockReturnValue(
+    vi.mocked(rateLimitResponse).mockResolvedValue(
       NextResponse.json(
         { error: "Too many requests. Please slow down and try again." },
         { status: 429, headers: { "Retry-After": "60" } }
@@ -392,7 +392,7 @@ describe("Dashboard write routes - rate limiting guard", () => {
 
   it("POST /api/dashboard/invoices returns 429 when rate limit exceeded", async () => {
     const { NextResponse } = await import("next/server");
-    vi.mocked(rateLimitResponse).mockReturnValue(
+    vi.mocked(rateLimitResponse).mockResolvedValue(
       NextResponse.json({ error: "Too many requests. Please slow down and try again." }, { status: 429 })
     );
     const { POST } = await import("@/app/api/dashboard/invoices/route");
@@ -406,7 +406,7 @@ describe("Dashboard write routes - rate limiting guard", () => {
 
   it("POST /api/dashboard/tasks returns 429 when rate limit exceeded", async () => {
     const { NextResponse } = await import("next/server");
-    vi.mocked(rateLimitResponse).mockReturnValue(
+    vi.mocked(rateLimitResponse).mockResolvedValue(
       NextResponse.json({ error: "Too many requests. Please slow down and try again." }, { status: 429 })
     );
     const { POST } = await import("@/app/api/dashboard/tasks/route");
@@ -420,7 +420,7 @@ describe("Dashboard write routes - rate limiting guard", () => {
 
   it("POST /api/dashboard/team-chat returns 429 when rate limit exceeded", async () => {
     const { NextResponse } = await import("next/server");
-    vi.mocked(rateLimitResponse).mockReturnValue(
+    vi.mocked(rateLimitResponse).mockResolvedValue(
       NextResponse.json({ error: "Too many requests. Please slow down and try again." }, { status: 429 })
     );
     const { POST } = await import("@/app/api/dashboard/team-chat/route");
@@ -439,7 +439,7 @@ describe("Dashboard write routes - rate limiting guard", () => {
 
 describe("POST /api/content/ai-detection", () => {
   beforeEach(() => {
-    vi.mocked(rateLimitResponse).mockReturnValue(null);
+    vi.mocked(rateLimitResponse).mockResolvedValue(null);
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -536,7 +536,7 @@ describe("POST /api/content/ai-detection", () => {
 
 describe("POST /api/content/plagiarism", () => {
   beforeEach(() => {
-    vi.mocked(rateLimitResponse).mockReturnValue(null);
+    vi.mocked(rateLimitResponse).mockResolvedValue(null);
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", username: "editor", role: "editor" });
   });
 
@@ -720,7 +720,7 @@ describe("GET /api/health", () => {
 
 describe("Dashboard write routes - role-based access", () => {
   beforeEach(() => {
-    vi.mocked(rateLimitResponse).mockReturnValue(null);
+    vi.mocked(rateLimitResponse).mockResolvedValue(null);
     vi.mocked(readAll).mockResolvedValue([]);
     vi.mocked(insert).mockResolvedValue(undefined);
   });

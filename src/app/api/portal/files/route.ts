@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "portal-uploads", { limit: 20, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "portal-uploads", { limit: 20, windowMs: 60_000 });
   if (limited) return limited;
   const user = await getPortalUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "portal-uploads", { limit: 20, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "portal-uploads", { limit: 20, windowMs: 60_000 });
   if (limited) return limited;
   const user = await getPortalUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

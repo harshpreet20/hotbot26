@@ -10,7 +10,7 @@ const VALID_ROLES: Role[] = ["manager", "sales", "crm_operator", "finance", "edi
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
 
-  const { allowed } = rateLimit(ip, "register", { limit: 3, windowMs: 3_600_000 });
+  const { allowed } = await rateLimit(ip, "register", { limit: 3, windowMs: 3_600_000 });
   if (!allowed) {
     return NextResponse.json({ success: false, error: "Too many registration attempts. Try again later." }, { status: 429 });
   }

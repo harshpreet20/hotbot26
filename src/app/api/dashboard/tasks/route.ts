@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));
@@ -170,7 +170,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const limited = rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));

@@ -190,7 +190,7 @@ function generateAnalysis(
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  const limited = rateLimitResponse(ip, "seo-competitor", { limit: 5, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip, "seo-competitor", { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
   try {

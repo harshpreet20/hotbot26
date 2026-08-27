@@ -21,7 +21,7 @@ vi.mock("@/lib/store", () => ({
 }));
 
 vi.mock("@/lib/rateLimit", () => ({
-  rateLimitResponse: vi.fn().mockReturnValue(null),
+  rateLimitResponse: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/ticketEmail", () => ({

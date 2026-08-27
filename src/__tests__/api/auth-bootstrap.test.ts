@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/rateLimit", () => ({
-  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 }),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 }),
 }));
 
 vi.mock("@/lib/sessions", () => ({
@@ -66,7 +66,7 @@ function postReq(body: unknown, ip = "1.2.3.4") {
 }
 
 beforeEach(() => {
-  vi.mocked(rateLimit).mockReturnValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 });
+  vi.mocked(rateLimit).mockResolvedValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 });
   vi.mocked(getUserByUsername).mockResolvedValue(MOCK_USER);
   vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
   vi.mocked(createSession).mockResolvedValue("session-token-abc");
@@ -122,7 +122,7 @@ describe("POST /api/blog/auth - bcrypt login", () => {
   });
 
   it("returns 429 when rate limit is exceeded", async () => {
-    vi.mocked(rateLimit).mockReturnValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60000 });
+    vi.mocked(rateLimit).mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60000 });
     const res  = await POST(postReq({ username: "alice", password: "pass" }));
     const body = await res.json() as Record<string, unknown>;
 

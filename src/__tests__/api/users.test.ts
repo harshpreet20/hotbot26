@@ -8,8 +8,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/rateLimit", () => ({
-  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
-  rateLimitResponse: vi.fn().mockReturnValue(null),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+  rateLimitResponse: vi.fn().mockResolvedValue(null),
 }));
 
 const { mockSignUp, mockFromFn } = vi.hoisted(() => {

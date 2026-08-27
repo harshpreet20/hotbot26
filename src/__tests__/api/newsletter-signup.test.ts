@@ -17,7 +17,7 @@ vi.mock("@/lib/store", () => ({
 }));
 
 vi.mock("@/lib/rateLimit", () => ({
-  rateLimitResponse: vi.fn().mockReturnValue(null),
+  rateLimitResponse: vi.fn().mockResolvedValue(null),
 }));
 
 import { insert, readAll, newId } from "@/lib/store";
@@ -36,7 +36,7 @@ function postReq(body: unknown, ip = "1.2.3.4") {
 
 beforeEach(() => {
   vi.mocked(readAll).mockResolvedValue([]);
-  vi.mocked(rateLimitResponse).mockReturnValue(null);
+  vi.mocked(rateLimitResponse).mockResolvedValue(null);
   vi.mocked(newId).mockReturnValue("test-id");
 });
 
@@ -142,7 +142,7 @@ describe("POST /api/forms/newsletter", () => {
 
   it("returns 429 on second POST from same IP within 60s (rate limited)", async () => {
     const { NextResponse } = await import("next/server");
-    vi.mocked(rateLimitResponse).mockReturnValueOnce(
+    vi.mocked(rateLimitResponse).mockResolvedValueOnce(
       NextResponse.json({ error: "Too many requests. Please slow down and try again." }, { status: 429 }),
     );
 

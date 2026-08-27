@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  const limited = rateLimitResponse(ip, "tickets", { limit: 5, windowMs: 10 * 60_000 });
+  const limited = await rateLimitResponse(ip, "tickets", { limit: 5, windowMs: 10 * 60_000 });
   if (limited) return limited;
 
   try {

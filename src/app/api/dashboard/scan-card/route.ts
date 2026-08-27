@@ -12,7 +12,7 @@ function getIp(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(getIp(req), "scan-card", { limit: 20, windowMs: 60_000 });
+  const limited = await rateLimitResponse(getIp(req), "scan-card", { limit: 20, windowMs: 60_000 });
   if (limited) return limited;
 
   const session = await authorizeAny(extractToken(req));

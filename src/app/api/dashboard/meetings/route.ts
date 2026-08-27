@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -136,7 +136,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const limited = rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
+  const limited = await rateLimitResponse(ip(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

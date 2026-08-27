@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     || req.headers.get("x-real-ip")
     || "unknown";
 
-  const limited = rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 });
+  const limited = await rateLimitResponse(ip, "forms", { limit: 5, windowMs: 5 * 60_000 });
   if (limited) return limited;
 
   try {
