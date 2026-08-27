@@ -1,6 +1,7 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
-import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
+import { readAll, insert, updateById, removeById } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Project } from "@/types/dashboard";
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const project: Project = {
-    id:          newId(),
+    id:          crypto.randomUUID(),
     name:        body.name.trim(),
     description: body.description?.trim(),
     clientId:    body.clientId,
@@ -53,13 +54,8 @@ export async function POST(req: NextRequest) {
     updatedAt:   now,
   };
 
-  // Supabase projects table uses auto-generated UUID — omit our text id
-  const { id: _id, ...projectWithoutId } = project;
-  await insert<Omit<Project, "id">>("projects", projectWithoutId);
-  // Re-fetch to get the Supabase-generated UUID so callers don't get a stale local id
-  const all = await readAll<Project>("projects");
-  const saved = all.find(p => p.createdBy === session.username && p.createdAt === now) ?? project;
-  return NextResponse.json({ project: saved }, { status: 201 });
+  await insert<Project>("projects", project);
+  return NextResponse.json({ project }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {

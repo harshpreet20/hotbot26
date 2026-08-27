@@ -22,6 +22,22 @@ const ALLOWED_MIME_TYPES = new Set([
   "font/ttf", "font/otf", "font/woff", "font/woff2",
 ]);
 
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
+  "image/webp": "webp", "image/avif": "avif",
+  "application/pdf": "pdf", "text/plain": "txt",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/zip": "zip",
+  "video/mp4": "mp4", "video/webm": "webm",
+  "audio/mpeg": "mp3", "audio/wav": "wav", "audio/ogg": "ogg",
+  "font/ttf": "ttf", "font/otf": "otf", "font/woff": "woff", "font/woff2": "woff2",
+};
+
 interface ClientResource {
   id: string;
   clientId: string;
@@ -85,7 +101,7 @@ export async function POST(req: NextRequest) {
   }
 
   const id       = newId();
-  const ext      = file.name.split(".").pop() ?? "";
+  const ext      = MIME_TO_EXT[file.type] ?? "";
   const safeName = id + (ext ? `.${ext}` : "");
   const path     = `${clientId}/${safeName}`;
   let   fileUrl  = "";
@@ -151,6 +167,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const limited = rateLimitResponse(ip(req), "dashboard-uploads", { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!ALLOWED_ROLES.includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

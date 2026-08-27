@@ -20,6 +20,21 @@ const ALLOWED_MIME_TYPES = new Set([
   "audio/mpeg", "audio/wav", "audio/ogg",
 ]);
 
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
+  "image/webp": "webp", "image/avif": "avif",
+  "application/pdf": "pdf", "text/plain": "txt",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/zip": "zip",
+  "video/mp4": "mp4", "video/webm": "webm",
+  "audio/mpeg": "mp3", "audio/wav": "wav", "audio/ogg": "ogg",
+};
+
 interface ClientResource {
   id: string;
   clientId: string;
@@ -80,7 +95,7 @@ export async function POST(req: NextRequest) {
   }
 
   const id       = newId();
-  const ext      = file.name.split(".").pop() ?? "";
+  const ext      = MIME_TO_EXT[file.type] ?? "";
   const safeName = id + (ext ? `.${ext}` : "");
   const path     = `${clientId}/${safeName}`;
   let   fileUrl  = "";

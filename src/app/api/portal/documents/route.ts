@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPortalUser } from "@/lib/portalAuth";
-import { readAll, updateById } from "@/lib/store";
+import { readAll, updateById, newId } from "@/lib/store";
 import type { PortalDocument, DocumentComment, DocumentSuggestion, DocumentSignature } from "@/app/api/dashboard/documents/route";
-
-function newId() {
-  return Math.random().toString(36).slice(2,10) + Date.now().toString(36);
-}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const user = await getPortalUser(req);
