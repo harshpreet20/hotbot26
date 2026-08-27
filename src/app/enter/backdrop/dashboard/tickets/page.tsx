@@ -5,8 +5,6 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Ticket, TicketStatus } from "@/types/dashboard";
 
-function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
-
 const STATUS_META: Record<TicketStatus, { label: string; color: string }> = {
   draft:       { label: "Draft",       color: "#64748b" },
   open:        { label: "Open",        color: "#3b82f6" },
@@ -29,9 +27,7 @@ export default function TicketsPage() {
   const [filter,  setFilter]  = useState<TicketStatus | "">("");
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-    fetch("/api/dashboard/tickets", { headers: { Authorization: `Bearer ${secret}` } })
+    fetch("/api/dashboard/tickets", { credentials: "same-origin" })
       .then((r) => { if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; } return r.json(); })
       .then((d) => { if (d) setTickets((d as { tickets: Ticket[] }).tickets ?? []); })
       .catch(() => setFetchError(true))

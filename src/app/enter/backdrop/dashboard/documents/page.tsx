@@ -94,7 +94,7 @@ export default function DocumentsPage() {
       body: JSON.stringify({ id: docId, action: "accept-suggestion", suggestionId }),
     });
     await load();
-    const all = await fetch("/api/dashboard/documents", { headers: { Authorization: `Bearer ${getToken()}` } }).then(r=>r.json()) as { documents: PortalDocument[] };
+    const all = await fetch("/api/dashboard/documents", { credentials: "same-origin" }).then(r=>r.json()) as { documents: PortalDocument[] };
     const refreshed = all.documents.find(d=>d.id===docId);
     if (refreshed) setSelected(refreshed);
   }
@@ -107,7 +107,7 @@ export default function DocumentsPage() {
       body: JSON.stringify({ id: docId, action: "reject-suggestion", suggestionId }),
     });
     await load();
-    const all = await fetch("/api/dashboard/documents", { headers: { Authorization: `Bearer ${getToken()}` } }).then(r=>r.json()) as { documents: PortalDocument[] };
+    const all = await fetch("/api/dashboard/documents", { credentials: "same-origin" }).then(r=>r.json()) as { documents: PortalDocument[] };
     const refreshed = all.documents.find(d=>d.id===docId);
     if (refreshed) setSelected(refreshed);
   }

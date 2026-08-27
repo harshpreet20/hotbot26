@@ -2,8 +2,6 @@
 import { useState } from "react";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 
-function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
-
 const SEGMENTS = ["Tickets","Leads","Analytics","Team Chat","Callbacks","Blog","Tasks","Invoices","Users / Team","Clients","CRM","General"];
 
 export default function BroadcastsPage() {
@@ -24,7 +22,8 @@ export default function BroadcastsPage() {
     try {
       const res = await fetch("/api/internal/feature-broadcast", {
         method:  "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getSecret()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ segment, changes: items, version: version.trim() || undefined }),
       });
       const data = await res.json() as { success?: boolean; sent?: number; error?: string };

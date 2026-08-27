@@ -184,7 +184,7 @@ export default function ProjectDetailPage() {
   async function deleteTask(taskId: string) {
     setDeletingTaskId(taskId);
     try {
-      await fetch(`/api/dashboard/tasks?id=${taskId}`, { method: "DELETE", headers: { Authorization: `Bearer ${tok()}` } });
+      await fetch(`/api/dashboard/tasks?id=${taskId}`, { method: "DELETE", credentials: "same-origin" });
       await load();
     } finally { setDeletingTaskId(null); }
   }
@@ -198,7 +198,8 @@ export default function ProjectDetailPage() {
     if (!editingTask || !editForm.title?.trim()) return;
     await fetch("/api/dashboard/tasks", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: editingTask.id, ...editForm }),
     });
     setEditingTask(null);
@@ -214,7 +215,7 @@ export default function ProjectDetailPage() {
     fd.append("file", file);
     fd.append("clientId", project.clientId);
     fd.append("projectId", id);
-    await fetch("/api/dashboard/files", { method: "POST", headers: { Authorization: `Bearer ${tok()}` }, body: fd });
+    await fetch("/api/dashboard/files", { method: "POST", credentials: "same-origin", body: fd });
     await load();
     setUploading(false);
     if (fileInput.current) fileInput.current.value = "";
@@ -226,14 +227,15 @@ export default function ProjectDetailPage() {
     // We update via a PATCH request (extending the route to support it):
     await fetch("/api/dashboard/files", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: fileId, visibility: newVis }),
     });
     await load();
   }
 
   async function deleteFile(fileId: string) {
-    await fetch(`/api/dashboard/files?id=${fileId}`, { method: "DELETE", headers: { Authorization: `Bearer ${tok()}` } });
+    await fetch(`/api/dashboard/files?id=${fileId}`, { method: "DELETE", credentials: "same-origin" });
     await load();
   }
 
@@ -244,7 +246,8 @@ export default function ProjectDetailPage() {
     try {
       await fetch("/api/dashboard/meetings", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: meetTitle, startTime: meetStart, endTime: meetEnd,
           meetLink: meetLink || undefined,
@@ -348,7 +351,8 @@ export default function ProjectDetailPage() {
     try {
       await fetch("/api/dashboard/whiteboards", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: activeBoard.id, elements: JSON.stringify(wbElements) }),
       });
       await load();
@@ -359,7 +363,8 @@ export default function ProjectDetailPage() {
     if (!newBoardName.trim()) return;
     await fetch("/api/dashboard/whiteboards", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newBoardName, clientId: project?.clientId, projectId: id }),
     });
     setNewBoardName(""); setShowBoardForm(false);
@@ -373,7 +378,8 @@ export default function ProjectDetailPage() {
     try {
       const res = await fetch("/api/dashboard/proposals/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectName: project?.name, clientName: project?.clientName, brief: briefInput }),
       });
       const data = await res.json() as { content?: string; error?: string };
@@ -387,7 +393,8 @@ export default function ProjectDetailPage() {
     try {
       await fetch("/api/dashboard/documents", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: docTitle, type: docType, content: docContent, clientId: project.clientId, clientEmail: project.clientEmail, clientName: project.clientName, projectId: id }),
       });
       setDocTitle(""); setDocContent(""); setBriefInput(""); setShowDocForm(false);
@@ -398,7 +405,8 @@ export default function ProjectDetailPage() {
   async function sendDoc(docId: string) {
     await fetch("/api/dashboard/documents", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: docId, status: "sent" }),
     });
     await load();
@@ -412,7 +420,8 @@ export default function ProjectDetailPage() {
     try {
       const res = await fetch("/api/dashboard/sop", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId: id, clientId: project.clientId, title: sopTitle || `${project.name} SOP`, brief: sopBrief }),
       });
       const data = await res.json() as { sop?: ProjectSOP; error?: string };
@@ -432,7 +441,8 @@ export default function ProjectDetailPage() {
     try {
       await fetch("/api/dashboard/sop", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: activeSOP.id, content: sopContent, title: activeSOP.title }),
       });
       await load();

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/backdrop/DashboardShell";
 import type { Ticket, TicketStatus, TicketPriority, TicketCategory, TicketComment, TicketActivity } from "@/types/dashboard";
 
-function getSecret() { return typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") || "" : ""; }
-
 const STATUS_META: Record<TicketStatus, { label: string; color: string }> = {
   draft:       { label: "Draft",       color: "#64748b" },
   open:        { label: "Open",        color: "#3b82f6" },
@@ -73,10 +71,7 @@ export default function TicketDetailPage() {
   const assigneeDDRef                       = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
-
-    fetch(`/api/dashboard/team`, { headers: { Authorization: `Bearer ${secret}` } })
+    fetch(`/api/dashboard/team`, { credentials: "same-origin" })
       .then(r => r.json() as Promise<{ members?: {username:string;role:string}[] }>)
       .then(d => setTeam(d.members ?? []))
       .catch(() => {});
@@ -86,7 +81,7 @@ export default function TicketDetailPage() {
     }
     document.addEventListener("mousedown", handleClickOutside);
 
-    fetch(`/api/dashboard/tickets?id=${id}`, { headers: { Authorization: `Bearer ${secret}` } })
+    fetch(`/api/dashboard/tickets?id=${id}`, { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
         return r.json();
@@ -112,7 +107,8 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch("/api/dashboard/tickets", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...body }),
       });
       if (!res.ok) return null;
@@ -130,7 +126,8 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch("/api/dashboard/tickets", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${getSecret()}`, "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, type: commentTab === "note" ? "internal_note" : "comment", text: commentText.trim() }),
       });
       if (res.ok) {
@@ -170,7 +167,7 @@ export default function TicketDetailPage() {
 
   async function deleteTicket() {
     if (!confirm("Delete this ticket? This cannot be undone.")) return;
-    const res = await fetch(`/api/dashboard/tickets?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getSecret()}` } });
+    const res = await fetch(`/api/dashboard/tickets?id=${id}`, { method: "DELETE", credentials: "same-origin" });
     if (res.ok) router.push("/enter/backdrop/dashboard/tickets");
   }
 
