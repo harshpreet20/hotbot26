@@ -24,6 +24,7 @@ const ENTITY_META: Record<LinkedEntityType, { label: string; icon: string; color
   blog:       { label: "Blog Post",   icon: "📝", color: "#a78bfa", href: ()   => `/enter/backdrop/dashboard/blog` },
   callback:   { label: "Callback",    icon: "📞", color: "#fb923c", href: ()   => `/enter/backdrop/dashboard/callbacks` },
   newsletter: { label: "Newsletter",  icon: "📬", color: "#e879f9", href: ()   => `/enter/backdrop/dashboard/newsletter` },
+  project:    { label: "Project",     icon: "📁", color: "#38bdf8", href: (id) => `/enter/backdrop/dashboard/projects/${id}` },
 };
 
 const PRIORITY_META: Record<TaskPriority, { label: string; color: string }> = {
@@ -47,7 +48,7 @@ interface EntityOption { id: string; label: string; sub?: string }
 function entityIdField(type: LinkedEntityType): keyof CRMTask {
   const map: Record<LinkedEntityType, keyof CRMTask> = {
     lead: "leadId", invoice: "invoiceId", ticket: "ticketId",
-    client: "clientId", blog: "blogId", callback: "callbackId", newsletter: "newsletterId",
+    client: "clientId", blog: "blogId", callback: "callbackId", newsletter: "newsletterId", project: "projectId",
   };
   return map[type];
 }

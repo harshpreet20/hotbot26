@@ -132,7 +132,6 @@ export async function PATCH(req: NextRequest) {
     ...(body.priority    !== undefined && { priority:    body.priority }),
     ...(body.assignedTo  !== undefined && { assignedTo:  body.assignedTo }),
     ...(body.dueDate     !== undefined && { dueDate:     body.dueDate }),
-    ...(body.tags        !== undefined && { tags:        body.tags }),
     ...(body.projectId   !== undefined && { projectId:   body.projectId }),
     id: body.id,
     completedAt: body.status === "done" && !existing.completedAt

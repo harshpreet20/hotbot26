@@ -85,10 +85,7 @@ export async function PATCH(req: NextRequest) {
     ...(body.status        !== undefined && { status:        body.status }),
     ...(body.notes         !== undefined && { notes:         body.notes }),
     ...(body.assignedTo    !== undefined && { assignedTo:    body.assignedTo }),
-    ...(body.journey_stage !== undefined && { journey_stage: body.journey_stage }),
-    ...(body.scheduledAt   !== undefined && { scheduledAt:   body.scheduledAt }),
-    ...(body.hostUsername  !== undefined && { hostUsername:  body.hostUsername }),
-    updatedAt:     new Date().toISOString(),
+    ...(body.journeyStage  !== undefined && { journeyStage:  body.journeyStage }),
     lastUpdatedAt: new Date().toISOString(),
     lastUpdatedBy: session.username,
   };
