@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById } from "@/lib/store";
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const project: Project = {
-    id:          crypto.randomUUID(),
+    id:          globalThis.crypto.randomUUID(),
     name:        body.name.trim(),
     description: body.description?.trim(),
     clientId:    body.clientId,
