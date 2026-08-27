@@ -414,6 +414,21 @@ export interface Project {
 
 export type MeetingStatus = "scheduled" | "completed" | "cancelled" | "rescheduled";
 
+export type MeetingAttachmentCategory = "proposal" | "agreement" | "other";
+
+export interface MeetingAttachment {
+  id: string;
+  meetingId: string;
+  name: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  category: MeetingAttachmentCategory;
+  uploadedBy: string;
+  createdAt: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -427,6 +442,7 @@ export interface Meeting {
   endTime: string;
   meetLink?: string;
   googleEventId?: string;
+  googleHtmlLink?: string;  // Google Calendar event URL
   status: MeetingStatus;
   notes?: string;
   projectId?: string;
