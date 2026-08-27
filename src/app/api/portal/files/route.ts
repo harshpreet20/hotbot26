@@ -176,7 +176,7 @@ export async function DELETE(req: NextRequest) {
     if (!existing) return NextResponse.json({ error: "Not found or not authorized" }, { status: 404 });
 
     if (isSupabaseEnabled()) {
-      const ext  = existing.fileName.split(".").pop() ?? "";
+      const ext  = MIME_TO_EXT[existing.mimeType] ?? "";
       const path = `${existing.clientId}/${id}${ext ? `.${ext}` : ""}`;
       await sb().storage.from("client-files").remove([path]).catch(() => {});
       await sb().from("client_resources").delete().eq("id", id);
