@@ -70,8 +70,9 @@ function ProfileRow({ label, value }: { label: string; value?: string | null }) 
 export default function TasksPage() {
   const router = useRouter();
 
-  const [tasks,   setTasks]   = useState<CRMTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks,          setTasks]          = useState<CRMTask[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState<TaskStatus | "">("");
   const [showNew, setShowNew] = useState(false);
@@ -117,7 +118,16 @@ export default function TasksPage() {
     if (!silent) setLoading(true);
     fetch("/api/dashboard/tasks", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => {
-        if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; }
+        if (r.status === 401) {
+          if (silent) {
+            // Don't redirect mid-background-poll — show a banner instead
+            setSessionExpired(true);
+            return null;
+          }
+          sessionStorage.clear();
+          router.replace("/enter/backdrop");
+          return null;
+        }
         return r.json();
       })
       .then((d) => {
@@ -349,6 +359,18 @@ export default function TasksPage() {
   return (
     <DashboardShell>
       <div className="flex flex-col min-h-full">
+
+        {/* ── session expired banner ── */}
+        {sessionExpired && (
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ background:"rgba(248,113,113,0.1)", borderBottom:"1px solid rgba(248,113,113,0.2)" }}>
+            <span className="text-sm text-red-400">Your session has expired. Please log in again to continue.</span>
+            <button onClick={() => { sessionStorage.clear(); router.replace("/enter/backdrop"); }}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+              style={{ background:"rgba(248,113,113,0.2)", color:"#f87171", border:"1px solid rgba(248,113,113,0.3)" }}>
+              Log in
+            </button>
+          </div>
+        )}
 
         {/* ── header ── */}
         <header className="flex items-center justify-between px-6 py-4 border-b flex-wrap gap-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>

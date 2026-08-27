@@ -395,8 +395,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
     function fetchBadges() {
       fetch("/api/dashboard/badge-counts", { headers: { Authorization: `Bearer ${secret}` } })
-        .then((r) => r.ok ? r.json() as Promise<BadgeCounts> : Promise.reject())
-        .then((d) => setBadges(d))
+        .then((r) => {
+          if (r.status === 401) {
+            // Session expired — stop polling and send user to login
+            if (badgeTimer.current) { clearInterval(badgeTimer.current); badgeTimer.current = null; }
+            sessionStorage.clear();
+            router.replace("/enter/backdrop");
+            return null;
+          }
+          return r.ok ? r.json() as Promise<BadgeCounts> : null;
+        })
+        .then((d) => { if (d) setBadges(d); })
         .catch(() => {});
     }
 
