@@ -1,0 +1,534 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // For Supabase: use the connection pooler URL (port 6543, ?pgbouncer=true)
+  // For migrations: temporarily set to the direct connection (port 5432)
+  url      = env("DATABASE_URL")
+}
+
+// ── backdrop_users ────────────────────────────────────────────────────────────
+
+model BackdropUser {
+  id        String   @id
+  email     String   @unique
+  username  String   @unique
+  role      String   @default("agent")
+  status    String   @default("approved")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("backdrop_users")
+}
+
+// ── sessions (legacy token sessions — kept alongside Auth.js JWT) ─────────────
+
+model Session {
+  token            String    @id
+  userId           String    @map("user_id")
+  username         String
+  role             String
+  createdAt        DateTime  @map("created_at")
+  expiresAt        DateTime  @map("expires_at")
+  lastAccessAt     DateTime  @map("last_access_at")
+  isImpersonating  Boolean?  @map("is_impersonating")
+  originalUserId   String?   @map("original_user_id")
+  originalUsername String?   @map("original_username")
+  originalRole     String?   @map("original_role")
+
+  @@map("sessions")
+}
+
+// ── leads ─────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id            String    @id
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  service       String?
+  budget        String?
+  message       String?
+  formType      String?   @map("form_type")
+  source        String?
+  ip            String?
+  createdAt     DateTime  @map("created_at")
+  status        String    @default("new")
+  assignedTo    String?   @map("assigned_to")
+  notes         String?
+  tags          String[]
+  lastUpdatedAt DateTime? @map("last_updated_at")
+  lastUpdatedBy String?   @map("last_updated_by")
+  sessionId     String?   @map("session_id")
+  journeyStage  String?   @map("journey_stage")
+
+  crmUpdates CRMUpdate[]
+
+  @@map("leads")
+}
+
+// ── contacts ──────────────────────────────────────────────────────────────────
+
+model Contact {
+  id        String   @id
+  name      String
+  email     String
+  phone     String
+  subject   String
+  message   String
+  source    String
+  createdAt DateTime @map("created_at")
+
+  @@map("contacts")
+}
+
+// ── newsletter ────────────────────────────────────────────────────────────────
+
+model Newsletter {
+  id            String   @id
+  name          String
+  email         String   @unique
+  whatsapp      String?
+  whatsappOptIn Boolean? @map("whatsapp_opt_in")
+  source        String
+  createdAt     DateTime @map("created_at")
+
+  @@map("newsletter")
+}
+
+// ── callbacks ─────────────────────────────────────────────────────────────────
+
+model Callback {
+  id        String   @id
+  name      String
+  phone     String
+  source    String
+  status    String   @default("pending")
+  createdAt DateTime @map("created_at")
+
+  @@map("callbacks")
+}
+
+// ── chats ─────────────────────────────────────────────────────────────────────
+
+model Chat {
+  id              String    @id
+  messages        Json
+  ip              String
+  startedAt       DateTime  @map("started_at")
+  lastMessageAt   DateTime  @map("last_message_at")
+  needsHuman      Boolean?  @map("needs_human")
+  agentUsername   String?   @map("agent_username")
+  agentTookOverAt DateTime? @map("agent_took_over_at")
+  guestName       String?   @map("guest_name")
+  guestEmail      String?   @map("guest_email")
+  guestPhone      String?   @map("guest_phone")
+
+  @@map("chats")
+}
+
+// ── crm_updates ───────────────────────────────────────────────────────────────
+
+model CRMUpdate {
+  id        String   @id
+  leadId    String   @map("lead_id")
+  type      String
+  content   String
+  createdAt DateTime @map("created_at")
+  createdBy String   @map("created_by")
+  metadata  Json?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("crm_updates")
+}
+
+// ── crm_tasks ─────────────────────────────────────────────────────────────────
+
+model CRMTask {
+  id                String    @id
+  title             String
+  description       String?
+  priority          String    @default("medium")
+  status            String    @default("open")
+  assignedTo        String?   @map("assigned_to")
+  createdBy         String    @map("created_by")
+  createdAt         DateTime  @map("created_at")
+  dueDate           DateTime? @map("due_date")
+  completedAt       DateTime? @map("completed_at")
+  leadId            String?   @map("lead_id")
+  invoiceId         String?   @map("invoice_id")
+  ticketId          String?   @map("ticket_id")
+  clientId          String?   @map("client_id")
+  blogId            String?   @map("blog_id")
+  callbackId        String?   @map("callback_id")
+  newsletterId      String?   @map("newsletter_id")
+  projectId         String?   @map("project_id")
+  linkedEntityType  String?   @map("linked_entity_type")
+  linkedEntityLabel String?   @map("linked_entity_label")
+
+  @@map("crm_tasks")
+}
+
+// ── invoices ──────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id            String    @id
+  invoiceNumber String    @unique @map("invoice_number")
+  status        String    @default("draft")
+  clientName    String    @map("client_name")
+  clientEmail   String    @map("client_email")
+  clientPhone   String?   @map("client_phone")
+  clientCompany String?   @map("client_company")
+  clientAddress String?   @map("client_address")
+  lineItems     Json      @map("line_items")
+  subtotal      Float
+  taxRate       Float     @map("tax_rate")
+  taxAmount     Float     @map("tax_amount")
+  discount      Float
+  total         Float
+  currency      String    @default("INR")
+  issuedDate    String    @map("issued_date")
+  dueDate       String    @map("due_date")
+  paidDate      String?   @map("paid_date")
+  notes         String?
+  terms         String?
+  createdAt     DateTime  @map("created_at")
+  createdBy     String    @map("created_by")
+  lastUpdatedAt DateTime? @map("last_updated_at")
+  lastUpdatedBy String?   @map("last_updated_by")
+  leadId        String?   @map("lead_id")
+
+  @@map("invoices")
+}
+
+// ── tickets ───────────────────────────────────────────────────────────────────
+
+model Ticket {
+  id             String    @id
+  ticketNumber   String    @unique @map("ticket_number")
+  title          String
+  description    String
+  status         String    @default("open")
+  priority       String    @default("medium")
+  category       String    @default("general")
+  requesterName  String    @map("requester_name")
+  requesterEmail String    @map("requester_email")
+  assignedTo     String?   @map("assigned_to")
+  labels         String[]
+  dueDate        String?   @map("due_date")
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime  @map("updated_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  isInternal     Boolean?  @map("is_internal")
+  raisedAgainst  String?   @map("raised_against")
+  raisedBy       String?   @map("raised_by")
+  clientId       String?   @map("client_id")
+  ip             String?
+
+  comments TicketComment[]
+  activity TicketActivity[]
+
+  @@map("tickets")
+}
+
+// ── ticket_comments ───────────────────────────────────────────────────────────
+
+model TicketComment {
+  id          String    @id
+  ticketId    String    @map("ticket_id")
+  text        String
+  authorName  String    @map("author_name")
+  authorEmail String?   @map("author_email")
+  isStaff     Boolean   @map("is_staff")
+  isInternal  Boolean?  @map("is_internal")
+  createdAt   DateTime  @map("created_at")
+  editedAt    DateTime? @map("edited_at")
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_comments")
+}
+
+// ── ticket_activity ───────────────────────────────────────────────────────────
+
+model TicketActivity {
+  id        String   @id
+  ticketId  String   @map("ticket_id")
+  type      String
+  actorName String   @map("actor_name")
+  createdAt DateTime @map("created_at")
+  metadata  Json?
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_activity")
+}
+
+// ── team_messages ─────────────────────────────────────────────────────────────
+
+model TeamMessage {
+  id        String    @id
+  channelId String    @map("channel_id")
+  text      String
+  createdBy String    @map("created_by")
+  createdAt DateTime  @map("created_at")
+  editedAt  DateTime? @map("edited_at")
+  replyTo   String?   @map("reply_to")
+
+  @@map("team_messages")
+}
+
+// ── team_channels ─────────────────────────────────────────────────────────────
+
+model TeamChannel {
+  id          String   @id
+  name        String   @unique
+  description String?
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @map("created_at")
+
+  @@map("team_channels")
+}
+
+// ── audit_logs ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id              String   @id
+  actorId         String   @map("actor_id")
+  actorUsername   String   @map("actor_username")
+  actorRole       String   @map("actor_role")
+  action          String
+  resourceType    String   @map("resource_type")
+  resourceId      String?  @map("resource_id")
+  details         Json
+  ip              String
+  createdAt       DateTime @map("created_at")
+  isImpersonating Boolean? @map("is_impersonating")
+  impersonatorId  String?  @map("impersonator_id")
+
+  @@map("audit_logs")
+}
+
+// ── system_logs ───────────────────────────────────────────────────────────────
+
+model SystemLog {
+  id        String   @id
+  level     String
+  message   String
+  context   Json?
+  createdAt DateTime @map("created_at")
+
+  @@map("system_logs")
+}
+
+// ── seo_scores ────────────────────────────────────────────────────────────────
+
+model SeoScore {
+  id        String   @id
+  postId    String   @map("post_id")
+  score     Int
+  details   Json?
+  createdAt DateTime @map("created_at")
+
+  @@map("seo_scores")
+}
+
+// ── analytics_snapshots ───────────────────────────────────────────────────────
+
+model AnalyticsSnapshot {
+  id        String   @id
+  data      Json
+  createdAt DateTime @map("created_at")
+
+  @@map("analytics_snapshots")
+}
+
+// ── topic_suggestions ─────────────────────────────────────────────────────────
+
+model TopicSuggestion {
+  id          String   @id
+  title       String
+  description String?
+  status      String   @default("pending")
+  createdAt   DateTime @map("created_at")
+
+  @@map("topic_suggestions")
+}
+
+// ── clients ───────────────────────────────────────────────────────────────────
+
+model Client {
+  id                 String    @id
+  clientId           String    @unique @map("client_id")
+  name               String
+  email              String
+  phone              String
+  company            String
+  status             String    @default("active")
+  notes              String    @default("")
+  createdAt          DateTime  @map("created_at")
+  updatedAt          DateTime  @map("updated_at")
+  portalEnabled      Boolean?  @map("portal_enabled")
+  portalInviteSentAt DateTime? @map("portal_invite_sent_at")
+
+  @@map("clients")
+}
+
+// ── projects ──────────────────────────────────────────────────────────────────
+
+model Project {
+  id          String   @id
+  name        String
+  description String?
+  clientId    String   @map("client_id")
+  clientEmail String?  @map("client_email")
+  clientName  String?  @map("client_name")
+  status      String   @default("planning")
+  startDate   String?  @map("start_date")
+  endDate     String?  @map("end_date")
+  color       String?
+  budget      Int?
+  currency    String?
+  tags        String[]
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @map("created_at")
+  updatedAt   DateTime @map("updated_at")
+
+  @@map("projects")
+}
+
+// ── meetings ──────────────────────────────────────────────────────────────────
+
+model Meeting {
+  id             String    @id
+  title          String
+  description    String?
+  clientId       String?   @map("client_id")
+  clientEmail    String?   @map("client_email")
+  clientName     String?   @map("client_name")
+  hostUsername   String    @map("host_username")
+  attendees      String[]
+  startTime      DateTime  @map("start_time")
+  endTime        DateTime  @map("end_time")
+  meetLink       String?   @map("meet_link")
+  googleEventId  String?   @map("google_event_id")
+  googleHtmlLink String?   @map("google_html_link")
+  status         String    @default("scheduled")
+  notes          String?
+  projectId      String?   @map("project_id")
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime  @map("updated_at")
+
+  attachments MeetingAttachment[]
+
+  @@map("meetings")
+}
+
+// ── meeting_attachments ───────────────────────────────────────────────────────
+
+model MeetingAttachment {
+  id         String   @id
+  meetingId  String   @map("meeting_id")
+  name       String
+  fileUrl    String   @map("file_url")
+  fileName   String   @map("file_name")
+  fileSize   Int      @map("file_size")
+  mimeType   String   @map("mime_type")
+  category   String
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@map("meeting_attachments")
+}
+
+// ── whiteboards ───────────────────────────────────────────────────────────────
+
+model Whiteboard {
+  id           String   @id
+  name         String
+  clientId     String?  @map("client_id")
+  clientEmail  String?  @map("client_email")
+  elements     String
+  projectId    String?  @map("project_id")
+  createdBy    String   @map("created_by")
+  lastEditedBy String?  @map("last_edited_by")
+  createdAt    DateTime @map("created_at")
+  updatedAt    DateTime @map("updated_at")
+
+  @@map("whiteboards")
+}
+
+// ── project_sops ──────────────────────────────────────────────────────────────
+
+model ProjectSOP {
+  id           String   @id
+  projectId    String   @map("project_id")
+  clientId     String   @map("client_id")
+  title        String
+  brief        String
+  content      String
+  createdBy    String   @map("created_by")
+  lastEditedBy String?  @map("last_edited_by")
+  createdAt    DateTime @map("created_at")
+  updatedAt    DateTime @map("updated_at")
+
+  @@map("project_sops")
+}
+
+// ── knowledge ─────────────────────────────────────────────────────────────────
+
+model Knowledge {
+  id        String   @id
+  title     String
+  content   String
+  category  String?
+  active    Boolean  @default(true)
+  priority  Int      @default(0)
+  createdBy String?  @map("created_by")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  @@map("knowledge")
+}
+
+// ── posts (blog) ──────────────────────────────────────────────────────────────
+
+model Post {
+  id          String    @id
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  status      String    @default("draft")
+  authorId    String    @map("author_id")
+  authorName  String    @map("author_name")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @map("created_at")
+  updatedAt   DateTime  @map("updated_at")
+  tags        String[]
+  coverImage  String?   @map("cover_image")
+  metaTitle   String?   @map("meta_title")
+  metaDesc    String?   @map("meta_desc")
+  seoScore    Int?      @map("seo_score")
+
+  @@map("posts")
+}
+
+// ── user_module_permissions ───────────────────────────────────────────────────
+
+model UserModulePermission {
+  id        String   @id
+  userId    String   @unique @map("user_id")
+  grants    String[]
+  revokes   String[]
+  updatedAt DateTime @map("updated_at")
+  updatedBy String   @map("updated_by")
+
+  @@map("user_module_permissions")
+}
