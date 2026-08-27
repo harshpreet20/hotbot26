@@ -8,11 +8,15 @@ import type { Role } from "@/types/dashboard";
 
 interface BadgeCounts { tickets: number; leads: number; callbacks: number; chats: number; }
 
+// Module-level singleton — prevents multiple GoTrueClient instances
+let _sbClient: ReturnType<typeof createClient> | null = null;
 function supabaseClient() {
+  if (_sbClient) return _sbClient;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
-  return createClient(url, key);
+  _sbClient = createClient(url, key);
+  return _sbClient;
 }
 
 interface NavItem {
@@ -390,22 +394,39 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   // Realtime badge counts via Supabase websocket (falls back to 10s poll)
   useEffect(() => {
-    const secret = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_secret") : null;
-    if (!secret) return;
-
     let aborted = false;
+
+    async function handleUnauthorized() {
+      // Session may have expired — try to restore from the httpOnly cookie
+      try {
+        const res  = await fetch("/api/blog/auth", { credentials: "same-origin" });
+        const data = await res.json() as { authenticated?: boolean; token?: string; role?: string; username?: string };
+        if (data.authenticated && data.token) {
+          // Cookie is still valid — refresh sessionStorage display values and continue
+          sessionStorage.setItem("backdrop_secret",  data.token);
+          if (data.role)     sessionStorage.setItem("backdrop_role",     data.role);
+          if (data.username) sessionStorage.setItem("backdrop_username", data.username);
+          return; // stay on the page — badge-counts will pick up on next tick
+        }
+      } catch { /* network error — fall through to login redirect */ }
+      // Cookie is also invalid — proper session expiry, redirect to login
+      if (!aborted) {
+        aborted = true;
+        if (badgeTimer.current) { clearInterval(badgeTimer.current); badgeTimer.current = null; }
+        router.replace("/enter/backdrop");
+      }
+    }
 
     function fetchBadges() {
       if (aborted) return;
-      fetch("/api/dashboard/badge-counts", { headers: { Authorization: `Bearer ${secret}` } })
+      // Use cookie auth — no Authorization header so the httpOnly backdrop_auth cookie
+      // is the credential; this survives sessionStorage clears and Vercel cold-starts
+      fetch("/api/dashboard/badge-counts", { credentials: "same-origin" })
         .then((r) => {
           if (aborted) return null;
           if (r.status === 401) {
-            // Session expired — silence all further callbacks, stop polling, redirect
-            aborted = true;
-            if (badgeTimer.current) { clearInterval(badgeTimer.current); badgeTimer.current = null; }
-            sessionStorage.clear();
-            router.replace("/enter/backdrop");
+            // Attempt silent session restore before redirecting
+            void handleUnauthorized();
             return null;
           }
           return r.ok ? r.json() as Promise<BadgeCounts> : null;

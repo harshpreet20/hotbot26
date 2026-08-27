@@ -17,8 +17,13 @@ import type { Role, SessionInfo } from "@/types/dashboard";
 
 /** Extract token from a Next.js request. */
 export function extractToken(req: NextRequest): string | null {
+  // Bearer token only if non-empty — an empty Bearer ("Bearer ") falls through to cookie
   const auth = req.headers.get("authorization");
-  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  if (auth?.startsWith("Bearer ")) {
+    const bearer = auth.slice(7).trim();
+    if (bearer) return bearer;
+  }
+  // httpOnly cookie is the primary persistent credential
   const cookie = req.cookies.get("backdrop_auth")?.value;
   if (cookie) return cookie;
   return req.nextUrl.searchParams.get("secret");
