@@ -2,10 +2,13 @@
 import Image from "next/image";
 import { useState, useEffect, useRef, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
 
 function BackdropLoginContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+
   const [username, setUsername]     = useState("");
   const [password, setPassword]     = useState("");
   const [error, setError]           = useState("");
@@ -22,6 +25,13 @@ function BackdropLoginContent() {
 
   const userRef  = useRef<HTMLInputElement>(null);
   const resetRef = useRef<HTMLInputElement>(null);
+
+  // If Auth.js session is active, redirect immediately
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/enter/backdrop/dashboard");
+    }
+  }, [status, session, router]);
 
   // ── Session check — cookie authoritative, sessionStorage for display only ──
   async function checkSession(showFormOnFail = true) {
@@ -52,16 +62,23 @@ function BackdropLoginContent() {
     if (searchParams.get("verified") === "1") {
       setNotice("Email verified! Your access request is pending administrator approval.");
     }
-    checkSession(true);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Only fall back to legacy session check if Auth.js hasn't loaded yet
+    if (status === "unauthenticated") {
+      checkSession(true);
+    } else if (status === "loading") {
+      // Wait for Auth.js status
+    }
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     function onVisibility() {
-      if (document.visibilityState === "visible") checkSession(false);
+      if (document.visibilityState === "visible" && status === "unauthenticated") {
+        checkSession(false);
+      }
     }
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Login submit ──────────────────────────────────────────────────────────
   async function handleSubmit(e: FormEvent) {
@@ -73,6 +90,19 @@ function BackdropLoginContent() {
     }
     setLoading(true);
     try {
+      // Try Auth.js signIn first (JWT-based, stateless)
+      const result = await signIn("credentials", {
+        username: username.trim(),
+        password: password.trim(),
+        redirect: false,
+      });
+
+      if (result && !result.error) {
+        router.replace("/enter/backdrop/dashboard");
+        return;
+      }
+
+      // Fall back to legacy session endpoint (sets backdrop_auth cookie)
       const res  = await fetch("/api/blog/auth", {
         method:      "POST",
         credentials: "same-origin",
@@ -87,7 +117,7 @@ function BackdropLoginContent() {
         return;
       }
       if (!res.ok || !data.success || !data.token) {
-        setError(data.error || "Something went wrong. Please try again.");
+        setError(data.error || result?.error || "Something went wrong. Please try again.");
         setPassword("");
         return;
       }
