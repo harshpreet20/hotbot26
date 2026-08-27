@@ -48,12 +48,10 @@ export default function OverviewPage() {
   const [noAccess, setNoAccess] = useState(false);
 
   useEffect(() => {
-    const secret = getSecret();
-    if (!secret) { router.replace("/enter/backdrop"); return; }
     const role = typeof window !== "undefined" ? sessionStorage.getItem("backdrop_role") || "" : "";
     const dataRoles = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance"];
     if (!dataRoles.includes(role)) { setLoading(false); setNoAccess(true); return; }
-    fetch('/api/dashboard/overview', { headers: { Authorization: `Bearer ${secret}` } })
+    fetch('/api/dashboard/overview', { credentials: "same-origin" })
       .then((r) => {
         if (r.status === 401) {
           sessionStorage.removeItem("backdrop_secret");
