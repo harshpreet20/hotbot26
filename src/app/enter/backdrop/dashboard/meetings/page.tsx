@@ -68,7 +68,7 @@ export default function MeetingsPage() {
       const res = await fetch("/api/dashboard/meetings", { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) {
         const d = await res.json() as { meetings: Meeting[] };
-        setMeetings(d.meetings);
+        setMeetings(d.meetings ?? []);
       }
     } finally {
       setLoading(false);
@@ -140,8 +140,11 @@ export default function MeetingsPage() {
 
   async function deleteMeeting(id: string) {
     if (!confirm("Delete this meeting?")) return;
-    await fetch(`/api/dashboard/meetings?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
-    await load();
+    try {
+      const res = await fetch(`/api/dashboard/meetings?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+      if (res.ok) await load();
+      else setError("Failed to delete meeting");
+    } catch { setError("Network error"); }
   }
 
   const now = new Date().toISOString();

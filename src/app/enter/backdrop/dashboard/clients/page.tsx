@@ -72,7 +72,7 @@ export default function ClientsPage() {
         }
         return r.json();
       })
-      .then((d) => { if (d) setClients((d as { clients: Client[] }).clients); })
+      .then((d) => { if (d) setClients((d as { clients: Client[] }).clients ?? []); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
@@ -112,12 +112,14 @@ export default function ClientsPage() {
   }
 
   async function handleStatusChange(id: string, status: ClientStatus) {
-    await fetch("/api/dashboard/clients", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-      body: JSON.stringify({ id, status }),
-    });
-    setClients((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+    try {
+      const res = await fetch("/api/dashboard/clients", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) setClients((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+    } catch { /* network error — state unchanged */ }
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -175,11 +177,14 @@ export default function ClientsPage() {
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete client "${name}"? This cannot be undone.`)) return;
-    await fetch(`/api/dashboard/clients?id=${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${getToken()}` },
-    });
-    setClients((prev) => prev.filter((c) => c.id !== id));
+    try {
+      const res = await fetch(`/api/dashboard/clients?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) setClients((prev) => prev.filter((c) => c.id !== id));
+      else setError("Failed to delete client");
+    } catch { setError("Network error"); }
   }
 
   const counts = {

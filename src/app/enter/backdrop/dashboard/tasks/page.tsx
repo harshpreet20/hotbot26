@@ -121,7 +121,7 @@ export default function TasksPage() {
       })
       .then((d) => {
         if (!d) return;
-        const incoming = (d as { tasks: CRMTask[] }).tasks;
+        const incoming = (d as { tasks: CRMTask[] }).tasks ?? [];
         // Fire browser notification for any new tasks added since last poll
         if (silent && taskIdsRef.current.size > 0) {
           for (const t of incoming) {

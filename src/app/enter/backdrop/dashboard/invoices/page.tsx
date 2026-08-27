@@ -43,7 +43,7 @@ export default function InvoicesPage() {
         }
         return r.json();
       })
-      .then((d) => { if (d) setInvoices((d as { invoices: Invoice[] }).invoices); })
+      .then((d) => { if (d) setInvoices((d as { invoices: Invoice[] }).invoices ?? []); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [router]);
@@ -61,7 +61,8 @@ export default function InvoicesPage() {
         const data = await res.json() as { invoice: Invoice };
         setInvoices((prev) => prev.map((inv) => inv.id === id ? data.invoice : inv));
       }
-    } finally {
+    } catch { /* network error — state unchanged */ }
+    finally {
       setUpdating(null);
     }
   }
@@ -69,11 +70,13 @@ export default function InvoicesPage() {
   async function deleteInvoice(id: string) {
     if (!confirm("Delete this invoice? This cannot be undone.")) return;
     const secret = getSecret();
-    const res = await fetch(`/api/dashboard/invoices?id=${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${secret}` },
-    });
-    if (res.ok) setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+    try {
+      const res = await fetch(`/api/dashboard/invoices?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      if (res.ok) setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+    } catch { /* network error — state unchanged */ }
   }
 
   const filtered = invoices.filter((inv) => {

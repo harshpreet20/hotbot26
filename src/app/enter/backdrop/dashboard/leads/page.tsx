@@ -107,7 +107,7 @@ export default function LeadsPage() {
       }
       const ld = await lr.json() as { leads: Lead[] };
       const td = await tr.json().catch(() => ({ members: [] })) as { members: TeamMember[] };
-      setLeads(ld.leads);
+      setLeads(ld.leads ?? []);
       setTeam(td.members ?? []);
     }).catch(console.error).finally(() => setLoading(false));
   }, [router]);
@@ -534,7 +534,7 @@ export default function LeadsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Assign To</label>
+                <label className="block text-xs text-slate-500 mb-1 uppercase tracking-wider">Status</label>
                 <select value={newLead.status} onChange={(e) => setNewLead((p) => ({ ...p, status: e.target.value as LeadStatus }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle}>
                   {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>

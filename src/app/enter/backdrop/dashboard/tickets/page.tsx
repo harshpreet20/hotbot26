@@ -24,6 +24,7 @@ export default function TicketsPage() {
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState<TicketStatus | "">("");
 
@@ -32,8 +33,8 @@ export default function TicketsPage() {
     if (!secret) { router.replace("/enter/backdrop"); return; }
     fetch("/api/dashboard/tickets", { headers: { Authorization: `Bearer ${secret}` } })
       .then((r) => { if (r.status === 401) { sessionStorage.clear(); router.replace("/enter/backdrop"); return null; } return r.json(); })
-      .then((d) => { if (d) setTickets((d as { tickets: Ticket[] }).tickets); })
-      .catch(console.error)
+      .then((d) => { if (d) setTickets((d as { tickets: Ticket[] }).tickets ?? []); })
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -88,6 +89,8 @@ export default function TicketsPage() {
         <div className="flex-1 px-6 pb-6">
           {loading ? (
             <p className="text-slate-500 text-sm py-16 text-center">Loading…</p>
+          ) : fetchError ? (
+            <p className="text-red-400 text-sm py-16 text-center">Failed to load tickets. Please refresh and try again.</p>
           ) : filtered.length === 0 ? (
             <p className="text-slate-600 text-sm py-16 text-center">
               {search || filter ? "No matching tickets." : "No tickets yet."}

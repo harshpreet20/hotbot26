@@ -131,10 +131,13 @@ export default function ProjectsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this project?")) return;
-    await fetch(`/api/dashboard/projects?id=${id}`, {
-      method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` },
-    });
-    await load();
+    try {
+      const res = await fetch(`/api/dashboard/projects?id=${id}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) await load();
+      else setError("Failed to delete project");
+    } catch { setError("Network error"); }
   }
 
   // ─── Gantt ────────────────────────────────────────────────────────────────
