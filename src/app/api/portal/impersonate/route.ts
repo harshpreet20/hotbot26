@@ -13,7 +13,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // Validate the token via the impersonation API (same process, privileged internal call)
-  const internalSecret = process.env.INTERNAL_SECRET ?? "hotbot-internal-2025";
+  const internalSecret = process.env.INTERNAL_SECRET ?? "";
   const tokenRes = await fetch(
     `${new URL(req.url).origin}/api/dashboard/clients/portal-impersonate?t=${encodeURIComponent(t)}`,
     { method: "GET", headers: { "x-internal-secret": internalSecret } }
