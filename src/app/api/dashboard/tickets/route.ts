@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, updateById, removeById, insert, newId } from "@/lib/store";
 import { sendStaffReplyNotification, sendStatusUpdateNotification } from "@/lib/ticketEmail";
-import type { Ticket, TicketComment, TicketStatus, TicketActivity, TicketPriority, TicketCategory } from "@/types/dashboard";
+import type { Ticket, TicketComment, TicketActivity, TicketStatus } from "@/types/dashboard";
+
+const TicketStatusEnum   = z.enum(["draft", "open", "in_progress", "waiting", "resolved", "closed"]);
+const TicketPriorityEnum = z.enum(["low", "medium", "high", "critical"]);
+const TicketCategoryEnum = z.enum(["bug", "feature", "support", "billing", "general"]);
+
+const CreateTicketSchema = z.object({
+  title:          z.string().min(1).max(200).trim(),
+  description:    z.string().max(10_000).optional(),
+  priority:       TicketPriorityEnum.optional(),
+  category:       TicketCategoryEnum.optional(),
+  status:         TicketStatusEnum.optional(),
+  requesterName:  z.string().max(200).optional(),
+  requesterEmail: z.string().email().max(200).optional().or(z.literal("")),
+  assignedTo:     z.string().max(100).optional(),
+  labels:         z.array(z.string().max(50)).max(20).optional(),
+  dueDate:        z.string().datetime().optional(),
+  isInternal:     z.boolean().optional(),
+  raisedAgainst:  z.string().max(100).optional(),
+  raisedBy:       z.string().max(100).optional(),
+});
+
+const UpdateTicketSchema = z.object({
+  id:          z.string().min(1),
+  status:      TicketStatusEnum.optional(),
+  assignedTo:  z.string().max(100).nullable().optional(),
+  priority:    TicketPriorityEnum.optional(),
+  category:    TicketCategoryEnum.optional(),
+  title:       z.string().min(1).max(200).trim().optional(),
+  description: z.string().max(10_000).optional(),
+  labels:      z.array(z.string().max(50)).max(20).optional(),
+  dueDate:     z.string().datetime().nullable().optional(),
+  type:        z.enum(["comment", "internal_note"]).optional(),
+  text:        z.string().max(4_000).optional(),
+});
 
 function getNextTicketNumber(tickets: Ticket[]): string {
   const nums = tickets
@@ -45,23 +80,13 @@ export async function POST(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json() as {
-    title?: string;
-    description?: string;
-    priority?: TicketPriority;
-    category?: TicketCategory;
-    status?: TicketStatus;
-    requesterName?: string;
-    requesterEmail?: string;
-    assignedTo?: string;
-    labels?: string[];
-    dueDate?: string;
-    isInternal?: boolean;
-    raisedAgainst?: string;
-    raisedBy?: string;
-  };
-
-  if (!body.title?.trim()) return NextResponse.json({ error: "title required" }, { status: 400 });
+  let body: z.infer<typeof CreateTicketSchema>;
+  try {
+    body = CreateTicketSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   const existing = await readAll<Ticket>("tickets");
   const now      = new Date().toISOString();
@@ -102,21 +127,13 @@ export async function PATCH(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json() as {
-    id?: string;
-    status?: TicketStatus;
-    assignedTo?: string | null;
-    priority?: TicketPriority;
-    category?: TicketCategory;
-    title?: string;
-    description?: string;
-    labels?: string[];
-    dueDate?: string | null;
-    type?: string;         // "comment" | "internal_note"
-    text?: string;
-  };
-
-  if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  let body: z.infer<typeof UpdateTicketSchema>;
+  try {
+    body = UpdateTicketSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   const tickets = await readAll<Ticket>("tickets");
   const ticket  = tickets.find((t) => t.id === body.id);

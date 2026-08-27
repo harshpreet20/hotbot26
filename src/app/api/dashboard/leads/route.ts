@@ -1,8 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Lead, CRMUpdate, LeadStatus } from "@/types/dashboard";
+
+const LeadStatusEnum = z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "won", "lost", "converted"]);
+
+const CreateLeadSchema = z.object({
+  name:       z.string().max(200).optional().default(""),
+  email:      z.string().email().max(200).optional().or(z.literal("")).default(""),
+  phone:      z.string().max(50).optional().default(""),
+  company:    z.string().max(200).optional().default(""),
+  service:    z.string().max(200).optional().default(""),
+  budget:     z.string().max(100).optional().default(""),
+  message:    z.string().max(10_000).optional().default(""),
+  formType:   z.string().max(50).optional(),
+  source:     z.string().max(100).optional(),
+  status:     LeadStatusEnum.optional(),
+  assignedTo: z.string().max(100).optional(),
+  notes:      z.string().max(10_000).optional(),
+  tags:       z.array(z.string().max(50)).max(20).optional(),
+});
+
+const UpdateLeadSchema = z.object({
+  id:             z.string().min(1),
+  name:           z.string().max(200).optional(),
+  email:          z.string().email().max(200).optional().or(z.literal("")),
+  phone:          z.string().max(50).optional(),
+  company:        z.string().max(200).optional(),
+  service:        z.string().max(200).optional(),
+  budget:         z.string().max(100).optional(),
+  message:        z.string().max(10_000).optional(),
+  status:         LeadStatusEnum.optional(),
+  assignedTo:     z.string().max(100).nullable().optional(),
+  notes:          z.string().max(10_000).optional(),
+  tags:           z.array(z.string().max(50)).max(20).optional(),
+  journeyStage:   z.string().max(50).optional(),
+  lastUpdatedAt:  z.string().optional(),
+});
 
 function getIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -29,16 +65,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json() as Partial<Lead>;
+  let body: z.infer<typeof CreateLeadSchema>;
+  try {
+    body = CreateLeadSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
   const lead: Lead = {
     id:         newId(),
-    name:       body.name     ?? "",
-    email:      body.email    ?? "",
-    phone:      body.phone    ?? "",
-    company:    body.company  ?? "",
-    service:    body.service  ?? "",
-    budget:     body.budget   ?? "",
-    message:    body.message  ?? "",
+    name:       body.name,
+    email:      body.email,
+    phone:      body.phone,
+    company:    body.company,
+    service:    body.service,
+    budget:     body.budget,
+    message:    body.message,
     formType:   body.formType ?? "manual",
     source:     body.source   ?? "manual",
     ip:         "",
@@ -65,9 +107,14 @@ export async function PATCH(req: NextRequest) {
   const session = await authorizeAny(extractToken(req));
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body   = await req.json() as Partial<Lead> & { id: string };
+  let body: z.infer<typeof UpdateLeadSchema>;
+  try {
+    body = UpdateLeadSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
   const { id } = body;
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const leads = await readAll<Lead>("leads");
   const existing = leads.find((l) => l.id === id);

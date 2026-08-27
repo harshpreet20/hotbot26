@@ -5,11 +5,30 @@
  * POST  /api/tickets/comment - add a public comment to a ticket
  */
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { readAll, updateById, insert, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTicketConfirmation } from "@/lib/ticketEmail";
 import { fireJourneyEvent } from "@/lib/journey";
-import type { Ticket, TicketComment, TicketCategory, TicketPriority, Client, Lead } from "@/types/dashboard";
+import type { Ticket, TicketComment, Client, Lead } from "@/types/dashboard";
+
+const NewTicketSchema = z.object({
+  title:          z.string({ error: "title is required" }).min(1, "title is required").max(200),
+  description:    z.string().max(10_000).optional().default(""),
+  requesterName:  z.string({ error: "requesterName is required" }).min(1).max(200),
+  requesterEmail: z.string({ error: "requesterEmail is required" }).email("Invalid email address").max(200),
+  category:       z.enum(["bug", "feature", "support", "billing", "general"]).optional(),
+  priority:       z.enum(["low", "medium", "high", "critical"]).optional(),
+  clientId:       z.string().max(50).optional(),
+  recaptchaToken: z.string().optional(),
+});
+
+const PublicCommentSchema = z.object({
+  type:          z.literal("comment"),
+  ticketId:      z.string({ error: "ticketId is required" }).min(1),
+  text:          z.string({ error: "text is required" }).min(1, "text is required").max(4_000),
+  requesterName: z.string().max(200).optional(),
+});
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN = 0.4;
@@ -58,41 +77,34 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const body = await req.json() as {
-      title?: string;
-      description?: string;
-      requesterName?: string;
-      requesterEmail?: string;
-      category?: TicketCategory;
-      priority?: TicketPriority;
-      clientId?: string;
-      recaptchaToken?: string;
-      // For adding a comment
-      type?: string;
-      ticketId?: string;
-      text?: string;
-    };
+    let rawBody: unknown;
+    try { rawBody = await req.json(); } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
 
-    const isHuman = await verifyRecaptcha(body.recaptchaToken ?? null);
-    if (!isHuman) return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
+    const isComment = typeof rawBody === "object" && rawBody !== null &&
+      (rawBody as Record<string, unknown>).type === "comment";
 
     // ── Add public comment ────────────────────────────────────────────────────
-    if (body.type === "comment") {
-      if (!body.ticketId || !body.text?.trim() || !body.requesterName) {
-        return NextResponse.json({ error: "ticketId, text, and requesterName required" }, { status: 400 });
+    if (isComment) {
+      let body: z.infer<typeof PublicCommentSchema>;
+      try {
+        body = PublicCommentSchema.parse(rawBody);
+      } catch (err) {
+        const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+        return NextResponse.json({ error: msg }, { status: 400 });
       }
       const tickets = await readAll<Ticket>("tickets");
       const ticket = tickets.find((t) => t.id === body.ticketId);
       if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
 
       const comment: TicketComment = {
-        id:          newId(),
-        ticketId:    body.ticketId,
-        text:        body.text.trim(),
-        authorName:  body.requesterName,
-        authorEmail: body.requesterEmail,
-        isStaff:     false,
-        createdAt:   new Date().toISOString(),
+        id:         newId(),
+        ticketId:   body.ticketId,
+        text:       body.text.trim(),
+        authorName: body.requesterName ?? "Anonymous",
+        isStaff:    false,
+        createdAt:  new Date().toISOString(),
       };
       await updateById<Ticket>("tickets", body.ticketId, {
         comments:  [...(ticket.comments ?? []), comment],
@@ -101,13 +113,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ comment }, { status: 201 });
     }
 
-    // ── Create ticket ─────────────────────────────────────────────────────────
-    if (!body.title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
-    if (!body.requesterName?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
-    if (!body.requesterEmail?.trim()) return NextResponse.json({ error: "Email required" }, { status: 400 });
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.requesterEmail.trim())) {
-      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    // ── Create new ticket ─────────────────────────────────────────────────────
+    let body: z.infer<typeof NewTicketSchema>;
+    try {
+      body = NewTicketSchema.parse(rawBody);
+    } catch (err) {
+      const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
+
+    const isHuman = await verifyRecaptcha(body.recaptchaToken ?? null);
+    if (!isHuman) return NextResponse.json({ error: "Bot check failed. Please try again." }, { status: 403 });
 
     // ── Client ID verification ────────────────────────────────────────────────
     const clientIdRaw = body.clientId?.trim().toUpperCase() ?? "";
@@ -125,10 +141,10 @@ export async function POST(req: NextRequest) {
       id:             newId(),
       ticketNumber:   getNextTicketNumber(tickets),
       title:          body.title.trim(),
-      description:    body.description?.trim() ?? "",
+      description:    body.description ?? "",
       status:         "open",
-      priority:       body.priority  ?? "medium",
-      category:       body.category  ?? "general",
+      priority:       body.priority ?? "medium",
+      category:       body.category ?? "general",
       requesterName:  body.requesterName.trim(),
       requesterEmail: body.requesterEmail.trim(),
       createdAt:      new Date().toISOString(),
@@ -138,7 +154,6 @@ export async function POST(req: NextRequest) {
     };
     await insert<Ticket>("tickets", ticket);
 
-    // Mirror as a lead so the sales team can follow up
     insert<Lead>("leads", {
       id:        newId(),
       name:      ticket.requesterName,
@@ -155,18 +170,17 @@ export async function POST(req: NextRequest) {
       status:    "new",
     }).catch((err) => console.error("[ticket] lead insert failed:", err));
 
-    // Send confirmation email to requester (non-blocking)
     sendTicketConfirmation(ticket).catch((err) =>
       console.error("[Ticket Email] Confirmation failed:", err)
     );
 
     fireJourneyEvent({
       sessionId: null,
-      email: ticket.requesterEmail,
-      stage: "lead",
-      source: "support",
-      page: req.headers.get("referer") ?? null,
-      metadata: { formType: "support-ticket", ticketNumber: ticket.ticketNumber, category: ticket.category },
+      email:     ticket.requesterEmail,
+      stage:     "lead",
+      source:    "support",
+      page:      req.headers.get("referer") ?? null,
+      metadata:  { formType: "support-ticket", ticketNumber: ticket.ticketNumber, category: ticket.category },
     }).catch(() => {});
 
     return NextResponse.json({ ticket: { id: ticket.id, ticketNumber: ticket.ticketNumber, status: ticket.status } }, { status: 201 });

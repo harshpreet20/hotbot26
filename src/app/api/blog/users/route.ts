@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getAllUsers, createUser, updateUserRole, updateUserProfile, deleteUser } from "@/lib/adminStore";
 import { revokeAllSessions } from "@/lib/sessions";
 import { authorizeAdmin, authorizeUserRead } from "@/lib/dashboardAuth";
@@ -8,7 +9,21 @@ import type { Role, UserRecord } from "@/types/dashboard";
 
 const COOKIE_NAME = "backdrop_auth";
 
-const VALID_ROLES: Role[] = ["super_admin", "admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"];
+const RoleEnum = z.enum(["super_admin", "admin", "manager", "sales", "crm_operator", "finance", "editor", "contributor", "agent"], { error: "Invalid role." });
+
+const CreateUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").max(50).trim(),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+  role:     RoleEnum.optional().default("agent"),
+  email:    z.string().email().max(200).optional(),
+});
+
+const UpdateUserSchema = z.object({
+  id:       z.string().min(1),
+  role:     RoleEnum.optional(),
+  username: z.string().min(3).max(50).trim().optional(),
+  email:    z.string().email().max(200).optional(),
+});
 
 function getToken(req: NextRequest): string | null {
   return (
@@ -44,23 +59,16 @@ export async function POST(req: NextRequest) {
   const session = await authorizeAdmin(getToken(req));
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let body: { username?: string; password?: string; role?: string };
-  try { body = await req.json() as typeof body; }
-  catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
+  let body: z.infer<typeof CreateUserSchema>;
+  try {
+    body = CreateUserSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
-  const username = (body.username || "").trim();
-  const password = (body.password || "").trim();
-  const role     = (body.role || "agent") as Role;
-
-  if (!username || username.length < 3) {
-    return NextResponse.json({ error: "Username must be at least 3 characters." }, { status: 400 });
-  }
-  if (!password || password.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
-  }
-  if (!VALID_ROLES.includes(role)) {
-    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
-  }
+  const { username, password } = body;
+  const role = body.role as Role;
 
   // Hierarchy check
   const hierarchyErr = validateCreate(session, role);
@@ -95,12 +103,15 @@ export async function PATCH(req: NextRequest) {
   const session = await authorizeAdmin(getToken(req));
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let body: { id?: string; role?: string; username?: string; email?: string };
-  try { body = await req.json() as typeof body; }
-  catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
+  let body: z.infer<typeof UpdateUserSchema>;
+  try {
+    body = UpdateUserSchema.parse(await req.json());
+  } catch (err) {
+    const msg = err instanceof z.ZodError ? err.issues[0]?.message : "Invalid request body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   const { id } = body;
-  if (!id) return NextResponse.json({ error: "User id required." }, { status: 400 });
 
   const users  = await getAllUsers();
   const target = users.find((u) => u.id === id);
@@ -130,8 +141,8 @@ export async function PATCH(req: NextRequest) {
 
   // Role update
   const { role } = body;
-  if (!role || !([...VALID_ROLES, "super_admin"] as string[]).includes(role)) {
-    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
+  if (!role) {
+    return NextResponse.json({ error: "Provide role, username, or email to update." }, { status: 400 });
   }
 
   const hierarchyErr = validateRoleChange(session, target, role as Role, users);
