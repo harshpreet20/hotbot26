@@ -145,9 +145,9 @@ export default function TasksPage() {
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
-  // Silent background poll every 30 s with browser notification on new tasks
+  // Silent background poll every 15 s with browser notification on new tasks
   useEffect(() => {
-    const id = setInterval(() => loadTasks(true), 30_000);
+    const id = setInterval(() => loadTasks(true), 15_000);
     return () => clearInterval(id);
   }, [loadTasks]);
 

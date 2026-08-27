@@ -77,11 +77,13 @@ export default function TeamChatPage() {
       const secret = getSecret();
       if (!secret || !activeChannelId) return;
       const since = lastMessageIdRef.current;
-      if (!since) return;
 
-      fetch(`/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}&since=${encodeURIComponent(since)}`, {
-        headers: { Authorization: `Bearer ${secret}` },
-      })
+      // Build URL — omit `since` when channel is empty so first messages appear
+      const url = since
+        ? `/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}&since=${encodeURIComponent(since)}`
+        : `/api/dashboard/team-chat?channelId=${encodeURIComponent(activeChannelId)}`;
+
+      fetch(url, { headers: { Authorization: `Bearer ${secret}` } })
         .then((r) => {
           if (r.status === 401) return null;
           return r.json() as Promise<{ messages?: TeamMessage[] }>;
