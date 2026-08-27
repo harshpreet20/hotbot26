@@ -80,7 +80,11 @@ export default function TeamChatPage() {
 
       fetch(url, { credentials: "same-origin" })
         .then((r) => {
-          if (r.status === 401) return null;
+          if (r.status === 401) {
+            clearInterval(pollingRef.current!);
+            router.replace("/enter/backdrop");
+            return null;
+          }
           return r.json() as Promise<{ messages?: TeamMessage[] }>;
         })
         .then((d) => {
