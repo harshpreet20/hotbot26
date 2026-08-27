@@ -47,6 +47,14 @@ export async function POST(req: NextRequest) {
 
 // Used by the impersonate page to exchange token for email (internal)
 export async function GET(req: NextRequest) {
+  // Allow either an authenticated admin session or a trusted internal call
+  const internalSecret = process.env.INTERNAL_SECRET ?? "hotbot-internal-2025";
+  const isInternal = req.headers.get("x-internal-secret") === internalSecret;
+  if (!isInternal) {
+    const session = await authorizeAny(extractToken(req));
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const t = new URL(req.url).searchParams.get("t");
   if (!t) return NextResponse.json({ error: "token required" }, { status: 400 });
 

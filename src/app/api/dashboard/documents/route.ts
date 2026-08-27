@@ -115,14 +115,14 @@ export async function PATCH(req: NextRequest) {
 
   let updated: PortalDocument = { ...existing, updatedAt: new Date().toISOString() };
 
-  if (body.action === "accept-suggestion" && body.suggestions) {
+  if (body.action === "accept-suggestion") {
     const sid = (body as { suggestionId?: string }).suggestionId as string | undefined;
     updated.suggestions = existing.suggestions.map(s =>
       s.id === sid ? { ...s, status: "accepted" as const } : s
     );
     if (sid) {
       const sugg = existing.suggestions.find(s => s.id === sid);
-      if (sugg) updated.content = existing.content.replace(sugg.originalText, sugg.suggestedText);
+      if (sugg) updated.content = existing.content.split(sugg.originalText).join(sugg.suggestedText);
     }
   } else if (body.action === "reject-suggestion") {
     const sid = (body as { suggestionId?: string }).suggestionId as string | undefined;

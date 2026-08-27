@@ -12,10 +12,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/portal/login", req.url));
   }
 
-  // Validate the token via the impersonation API (same process)
+  // Validate the token via the impersonation API (same process, privileged internal call)
+  const internalSecret = process.env.INTERNAL_SECRET ?? "hotbot-internal-2025";
   const tokenRes = await fetch(
     `${new URL(req.url).origin}/api/dashboard/clients/portal-impersonate?t=${encodeURIComponent(t)}`,
-    { method: "GET" }
+    { method: "GET", headers: { "x-internal-secret": internalSecret } }
   );
 
   if (!tokenRes.ok) {
