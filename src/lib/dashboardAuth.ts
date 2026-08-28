@@ -26,7 +26,7 @@ export async function getSessionFromRequest(req: NextRequest): Promise<SessionIn
   if (process.env.AUTH_SECRET) {
     try {
       const { auth } = await import("@/auth");
-      const jwtSession = await auth(req);
+      const jwtSession = await auth();
       if (jwtSession?.user?.id) {
         return {
           userId:   jwtSession.user.id,
