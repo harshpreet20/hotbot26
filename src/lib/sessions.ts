@@ -1,21 +1,30 @@
 /**
  * Per-user session tokens.
- * Primary:  Supabase `sessions` table (all instances share state).
- * Fallback: Local JSON file (dev mode).
+ * Primary:  Prisma / direct PostgreSQL (POSTGRES_PRISMA_URL) — bypasses RLS,
+ *           works reliably across all Vercel serverless instances.
+ * Fallback: Local JSON file (dev mode / no DB configured).
  *
  * Sessions expire after 30 days of inactivity (sliding window).
  */
 import crypto from "crypto";
-import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { _fsRead, _fsWrite } from "@/lib/store";
 import type { Role, SessionInfo } from "@/types/dashboard";
 
 const TTL_MS        = 30 * 24 * 60 * 60 * 1000; // 30 days
 const REFRESH_AFTER =       60 * 60 * 1000;       // slide after 1 h idle
 
-// ── Internal session shape (maps 1-to-1 with the `sessions` Supabase table) ──
+function isPrismaEnabled(): boolean {
+  return !!process.env.POSTGRES_PRISMA_URL;
+}
 
-interface StoredSession {
+async function db() {
+  const { prisma } = await import("@/lib/prisma");
+  return prisma;
+}
+
+// ── Filesystem fallback ───────────────────────────────────────────────────────
+
+interface FsSession {
   token:              string;
   user_id:            string;
   username:           string;
@@ -29,13 +38,23 @@ interface StoredSession {
   original_role?:     Role;
 }
 
-// ── Filesystem fallback helpers ───────────────────────────────────────────────
-
-function fsActive(): StoredSession[] {
+function fsActive(): FsSession[] {
   const now = Date.now();
-  return _fsRead<StoredSession>("sessions").filter(
+  return _fsRead<FsSession>("sessions").filter(
     (s) => new Date(s.expires_at).getTime() > now
   );
+}
+
+function toSessionInfo(s: { userId: string; username: string; role: string; isImpersonating?: boolean | null; originalUserId?: string | null; originalUsername?: string | null; originalRole?: string | null }): SessionInfo {
+  return {
+    userId:           s.userId,
+    username:         s.username,
+    role:             s.role as Role,
+    isImpersonating:  s.isImpersonating ?? undefined,
+    originalUserId:   s.originalUserId ?? undefined,
+    originalUsername: s.originalUsername ?? undefined,
+    originalRole:     s.originalRole as Role | undefined,
+  };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -47,108 +66,50 @@ export async function createSession(
 ): Promise<string> {
   const token = crypto.randomBytes(40).toString("hex");
   const now   = new Date();
-  const session: StoredSession = {
-    token,
-    user_id:        userId,
-    username,
-    role,
-    created_at:     now.toISOString(),
-    expires_at:     new Date(now.getTime() + TTL_MS).toISOString(),
-    last_access_at: now.toISOString(),
-  };
+  const expiresAt = new Date(now.getTime() + TTL_MS);
 
-  if (isSupabaseEnabled()) {
-    const { error } = await sb().from("sessions").insert(session);
-    if (error) {
-      // Supabase insert failed - could be FK violation for env-user/bootstrap (user_id
-      // doesn't exist in the users table on legacy schemas that still have the FK constraint),
-      // or schema not yet applied, or table missing.
-      //
-      // Attempt a second insert using "unknown" as user_id so the session persists in
-      // Supabase even when the originating user is synthetic (env-fallback / bootstrap).
-      // This avoids the cold-start logout issue on Vercel where /tmp is ephemeral.
-      if (error.message.includes("violates foreign key constraint") || error.code === "23503") {
-        // Ensure the "unknown" placeholder row exists in the users table so the FK is satisfied.
-        try {
-          await sb()
-            .from("users")
-            .upsert(
-              { id: "unknown", username: "_system_placeholder_", password_hash: "disabled", role: "admin", created_at: new Date().toISOString() },
-              { onConflict: "id" }
-            );
-        } catch {
-          // ignore upsert errors for placeholder row
-        }
-
-        const { error: retryError } = await sb().from("sessions").insert({
-          ...session,
-          user_id: "unknown",
-        });
-        if (!retryError) return token; // stored successfully with relaxed user_id
-      }
-      console.warn("[sessions] Supabase insert failed, using filesystem fallback:", error.message);
-      const sessions = fsActive();
-      sessions.push(session);
-      _fsWrite("sessions", sessions);
+  if (isPrismaEnabled()) {
+    try {
+      const client = await db();
+      await client.session.create({
+        data: { token, userId, username, role, createdAt: now, expiresAt, lastAccessAt: now },
+      });
+      return token;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[sessions] Prisma insert failed, using filesystem fallback:", msg);
     }
-  } else {
-    const sessions = fsActive();
-    sessions.push(session);
-    _fsWrite("sessions", sessions);
   }
 
+  const sessions = fsActive();
+  sessions.push({ token, user_id: userId, username, role, created_at: now.toISOString(), expires_at: expiresAt.toISOString(), last_access_at: now.toISOString() });
+  _fsWrite("sessions", sessions);
   return token;
 }
 
 export async function getSession(token: string): Promise<SessionInfo | null> {
   if (!token) return null;
 
-  if (isSupabaseEnabled()) {
-    const { data, error } = await sb()
-      .from("sessions")
-      .select("*")
-      .eq("token", token)
-      .gt("expires_at", new Date().toISOString())
-      .single();
-
-    if (!error && data) {
-      const session = data as StoredSession;
-      const now = Date.now();
-      if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
-        await Promise.resolve(
-          sb()
-            .from("sessions")
-            .update({
-              expires_at:     new Date(now + TTL_MS).toISOString(),
-              last_access_at: new Date(now).toISOString(),
-            })
-            .eq("token", token)
-        ).catch(() => {});
+  if (isPrismaEnabled()) {
+    try {
+      const client = await db();
+      const session = await client.session.findFirst({
+        where: { token, expiresAt: { gt: new Date() } },
+      });
+      if (session) {
+        const now = Date.now();
+        if (now - session.lastAccessAt.getTime() > REFRESH_AFTER) {
+          client.session.update({
+            where: { token },
+            data: { expiresAt: new Date(now + TTL_MS), lastAccessAt: new Date(now) },
+          }).catch(() => {});
+        }
+        return toSessionInfo(session);
       }
-      return {
-        userId:           session.user_id,
-        username:         session.username,
-        role:             session.role,
-        isImpersonating:  session.is_impersonating,
-        originalUserId:   session.original_user_id,
-        originalUsername: session.original_username,
-        originalRole:     session.original_role,
-      };
+      return null;
+    } catch (err) {
+      console.error("[sessions] Prisma getSession error:", err instanceof Error ? err.message : err);
     }
-
-    if (error) {
-      if (error.message?.includes("permission denied")) {
-        // Service role key is missing or set to the anon key.
-        // Fix: set SUPABASE_SERVICE_ROLE_KEY to the service_role secret key in Vercel.
-        console.error("[sessions] SUPABASE_SERVICE_ROLE_KEY is not the service role key — session lookup denied. Falling back to filesystem (unreliable on Vercel).");
-      } else if (error.code !== "PGRST116") {
-        // PGRST116 = "not found" (normal — no error logging needed)
-        console.error("[sessions] getSession Supabase error:", error.code, error.message);
-      }
-    }
-
-    // Token not found in Supabase — check filesystem fallback.
-    // WARNING: filesystem sessions are per-instance and ephemeral on Vercel.
   }
 
   // Filesystem fallback
@@ -156,86 +117,92 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
   const idx = sessions.findIndex((s) => s.token === token);
   if (idx === -1) return null;
 
-  const session = sessions[idx];
+  const s = sessions[idx];
   const now = Date.now();
-  if (now - new Date(session.last_access_at).getTime() > REFRESH_AFTER) {
-    sessions[idx] = {
-      ...session,
-      expires_at:     new Date(now + TTL_MS).toISOString(),
-      last_access_at: new Date(now).toISOString(),
-    };
+  if (now - new Date(s.last_access_at).getTime() > REFRESH_AFTER) {
+    sessions[idx] = { ...s, expires_at: new Date(now + TTL_MS).toISOString(), last_access_at: new Date(now).toISOString() };
     try { _fsWrite("sessions", sessions); } catch { /* non-fatal */ }
   }
 
   return {
-    userId:           session.user_id,
-    username:         session.username,
-    role:             session.role,
-    isImpersonating:  session.is_impersonating,
-    originalUserId:   session.original_user_id,
-    originalUsername: session.original_username,
-    originalRole:     session.original_role,
+    userId:           s.user_id,
+    username:         s.username,
+    role:             s.role,
+    isImpersonating:  s.is_impersonating,
+    originalUserId:   s.original_user_id,
+    originalUsername: s.original_username,
+    originalRole:     s.original_role,
   };
 }
 
-/** Create an impersonation session for super_admin to act as another user. */
 export async function createImpersonationSession(
   impersonator: { userId: string; username: string; role: Role },
   target: { userId: string; username: string; role: Role },
 ): Promise<string> {
   const token = crypto.randomBytes(40).toString("hex");
   const now   = new Date();
-  const IMPERSONATION_TTL = 2 * 60 * 60 * 1000; // 2 hours max
-  const session: StoredSession = {
-    token,
-    user_id:            target.userId,
-    username:           target.username,
-    role:               target.role,
-    created_at:         now.toISOString(),
-    expires_at:         new Date(now.getTime() + IMPERSONATION_TTL).toISOString(),
-    last_access_at:     now.toISOString(),
-    is_impersonating:   true,
-    original_user_id:   impersonator.userId,
-    original_username:  impersonator.username,
-    original_role:      impersonator.role,
-  };
+  const IMPERSONATION_TTL = 2 * 60 * 60 * 1000;
+  const expiresAt = new Date(now.getTime() + IMPERSONATION_TTL);
 
-  if (isSupabaseEnabled()) {
-    const { error } = await sb().from("sessions").insert(session);
-    if (!error) return token;
-    if (error.message.includes("violates foreign key constraint") || error.code === "23503") {
-      try {
-        await sb()
-          .from("users")
-          .upsert(
-            { id: target.userId, username: target.username, password_hash: "disabled", role: target.role, created_at: new Date().toISOString() },
-            { onConflict: "id" }
-          );
-      } catch { /* ignore */ }
-      const { error: retryError } = await sb().from("sessions").insert({ ...session });
-      if (!retryError) return token;
+  if (isPrismaEnabled()) {
+    try {
+      const client = await db();
+      await client.session.create({
+        data: {
+          token,
+          userId:           target.userId,
+          username:         target.username,
+          role:             target.role,
+          createdAt:        now,
+          expiresAt,
+          lastAccessAt:     now,
+          isImpersonating:  true,
+          originalUserId:   impersonator.userId,
+          originalUsername: impersonator.username,
+          originalRole:     impersonator.role,
+        },
+      });
+      return token;
+    } catch (err) {
+      console.warn("[sessions] Prisma impersonation insert failed:", err instanceof Error ? err.message : err);
     }
-    console.warn("[sessions] Impersonation session Supabase insert failed:", error.message);
-    // Last resort: filesystem (ephemeral on Vercel — impersonation may not survive cross-instance)
   }
+
   const sessions = fsActive();
-  sessions.push(session);
+  sessions.push({
+    token,
+    user_id:           target.userId,
+    username:          target.username,
+    role:              target.role,
+    created_at:        now.toISOString(),
+    expires_at:        expiresAt.toISOString(),
+    last_access_at:    now.toISOString(),
+    is_impersonating:  true,
+    original_user_id:  impersonator.userId,
+    original_username: impersonator.username,
+    original_role:     impersonator.role,
+  });
   _fsWrite("sessions", sessions);
   return token;
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  if (isSupabaseEnabled()) {
-    await Promise.resolve(sb().from("sessions").delete().eq("token", token)).catch(() => {});
+  if (isPrismaEnabled()) {
+    try {
+      const client = await db();
+      await client.session.deleteMany({ where: { token } });
+    } catch { /* non-fatal */ }
   }
-  // Always clean filesystem too - session may have been stored there as fallback.
   _fsWrite("sessions", fsActive().filter((s) => s.token !== token));
 }
 
 export async function revokeAllSessions(userId: string): Promise<void> {
-  if (isSupabaseEnabled()) {
-    await sb().from("sessions").delete().eq("user_id", userId);
-    return;
+  if (isPrismaEnabled()) {
+    try {
+      const client = await db();
+      await client.session.deleteMany({ where: { userId } });
+      return;
+    } catch { /* non-fatal — fall through to fs cleanup */ }
   }
   _fsWrite("sessions", fsActive().filter((s) => s.user_id !== userId));
 }
