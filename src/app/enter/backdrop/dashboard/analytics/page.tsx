@@ -588,11 +588,14 @@ export default function AnalyticsPage() {
   // ── Live feed polling (every 10s) ─────────────────────────────────────────
   const pollLive = useCallback(async () => {
     try {
-      const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://wsucqpunleplgyrrroae.supabase.co";
+      // Both must come from the environment. Never fall back to a hardcoded project
+      // URL — that would silently keep polling the old database after a migration,
+      // showing stale-but-plausible numbers with no error anywhere.
+      const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
       const anonKey      = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-      if (!anonKey) {
-        // No anon key — just update the timestamp for "live" indicator
+      if (!supabaseUrl || !anonKey) {
+        // Not configured — just update the timestamp for "live" indicator
         setLiveTs(new Date().toISOString());
         return;
       }
