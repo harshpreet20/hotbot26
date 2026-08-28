@@ -31,7 +31,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!username || !password) return null;
 
         if (isSupabaseEnabled()) {
-          return authorizeViaSupabase(username, password);
+          try {
+            return await authorizeViaSupabase(username, password);
+          } catch (err) {
+            console.error("[auth] Supabase authorize failed, trying bcrypt fallback:", err instanceof Error ? err.message : err);
+            return authorizeViaBcrypt(username, password);
+          }
         }
         return authorizeViaBcrypt(username, password);
       },

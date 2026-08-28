@@ -69,16 +69,11 @@ export async function createSession(
   const expiresAt = new Date(now.getTime() + TTL_MS);
 
   if (isPrismaEnabled()) {
-    try {
-      const client = await db();
-      await client.session.create({
-        data: { token, userId, username, role, createdAt: now, expiresAt, lastAccessAt: now },
-      });
-      return token;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn("[sessions] Prisma insert failed, using filesystem fallback:", msg);
-    }
+    const client = await db();
+    await client.session.create({
+      data: { token, userId, username, role, createdAt: now, expiresAt, lastAccessAt: now },
+    });
+    return token;
   }
 
   const sessions = fsActive();
@@ -150,27 +145,23 @@ export async function createImpersonationSession(
   const expiresAt = new Date(now.getTime() + IMPERSONATION_TTL);
 
   if (isPrismaEnabled()) {
-    try {
-      const client = await db();
-      await client.session.create({
-        data: {
-          token,
-          userId:           target.userId,
-          username:         target.username,
-          role:             target.role,
-          createdAt:        now,
-          expiresAt,
-          lastAccessAt:     now,
-          isImpersonating:  true,
-          originalUserId:   impersonator.userId,
-          originalUsername: impersonator.username,
-          originalRole:     impersonator.role,
-        },
-      });
-      return token;
-    } catch (err) {
-      console.warn("[sessions] Prisma impersonation insert failed:", err instanceof Error ? err.message : err);
-    }
+    const client = await db();
+    await client.session.create({
+      data: {
+        token,
+        userId:           target.userId,
+        username:         target.username,
+        role:             target.role,
+        createdAt:        now,
+        expiresAt,
+        lastAccessAt:     now,
+        isImpersonating:  true,
+        originalUserId:   impersonator.userId,
+        originalUsername: impersonator.username,
+        originalRole:     impersonator.role,
+      },
+    });
+    return token;
   }
 
   const sessions = fsActive();
