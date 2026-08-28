@@ -109,30 +109,35 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
       return null;
     } catch (err) {
       console.error("[sessions] Prisma getSession error:", err instanceof Error ? err.message : err);
+      return null;
     }
   }
 
-  // Filesystem fallback
-  const sessions = fsActive();
-  const idx = sessions.findIndex((s) => s.token === token);
-  if (idx === -1) return null;
+  // Filesystem fallback (dev mode only — POSTGRES_PRISMA_URL not set)
+  try {
+    const sessions = fsActive();
+    const idx = sessions.findIndex((s) => s.token === token);
+    if (idx === -1) return null;
 
-  const s = sessions[idx];
-  const now = Date.now();
-  if (now - new Date(s.last_access_at).getTime() > REFRESH_AFTER) {
-    sessions[idx] = { ...s, expires_at: new Date(now + TTL_MS).toISOString(), last_access_at: new Date(now).toISOString() };
-    try { _fsWrite("sessions", sessions); } catch { /* non-fatal */ }
+    const s = sessions[idx];
+    const now = Date.now();
+    if (now - new Date(s.last_access_at).getTime() > REFRESH_AFTER) {
+      sessions[idx] = { ...s, expires_at: new Date(now + TTL_MS).toISOString(), last_access_at: new Date(now).toISOString() };
+      try { _fsWrite("sessions", sessions); } catch { /* non-fatal */ }
+    }
+
+    return {
+      userId:           s.user_id,
+      username:         s.username,
+      role:             s.role,
+      isImpersonating:  s.is_impersonating,
+      originalUserId:   s.original_user_id,
+      originalUsername: s.original_username,
+      originalRole:     s.original_role,
+    };
+  } catch {
+    return null;
   }
-
-  return {
-    userId:           s.user_id,
-    username:         s.username,
-    role:             s.role,
-    isImpersonating:  s.is_impersonating,
-    originalUserId:   s.original_user_id,
-    originalUsername: s.original_username,
-    originalRole:     s.original_role,
-  };
 }
 
 export async function createImpersonationSession(
@@ -191,6 +196,7 @@ export async function deleteSession(token: string): Promise<void> {
     try {
       const client = await db();
       await client.session.deleteMany({ where: { token } });
+      return;
     } catch { /* non-fatal */ }
   }
   _fsWrite("sessions", fsActive().filter((s) => s.token !== token));
