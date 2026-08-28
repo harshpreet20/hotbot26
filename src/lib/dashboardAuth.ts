@@ -21,18 +21,21 @@ import type { Role, SessionInfo } from "@/types/dashboard";
  * of `authorizeAny(extractToken(req))` to transparently support both auth styles.
  */
 export async function getSessionFromRequest(req: NextRequest): Promise<SessionInfo | null> {
-  // Auth.js JWT session — primary path when AUTH_SECRET is configured
-  try {
-    const { auth } = await import("@/auth");
-    const jwtSession = await auth();
-    if (jwtSession?.user?.id) {
-      return {
-        userId:   jwtSession.user.id,
-        username: jwtSession.user.username ?? jwtSession.user.email ?? "",
-        role:     (jwtSession.user.role as Role) ?? "agent",
-      };
-    }
-  } catch { /* AUTH_SECRET not set or auth() not available — fall through */ }
+  // Auth.js JWT session — primary path when AUTH_SECRET is configured.
+  // Skipped entirely when the env var is absent so legacy deployments are unaffected.
+  if (process.env.AUTH_SECRET) {
+    try {
+      const { auth } = await import("@/auth");
+      const jwtSession = await auth();
+      if (jwtSession?.user?.id) {
+        return {
+          userId:   jwtSession.user.id,
+          username: jwtSession.user.username ?? jwtSession.user.email ?? "",
+          role:     (jwtSession.user.role as Role) ?? "agent",
+        };
+      }
+    } catch { /* AUTH_SECRET set but auth() failed — fall through */ }
+  }
 
   // Legacy path: bearer token / backdrop_auth cookie / ?secret query param
   return authorizeAny(extractToken(req));

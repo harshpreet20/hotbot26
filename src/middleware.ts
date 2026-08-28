@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // ── Admin dashboard ─────────────────────────────────────────────────────────
   if (pathname.startsWith("/enter/backdrop/dashboard")) {
-    const session = await auth();
-    if (session?.user) return NextResponse.next();
-    // Fallback: accept legacy backdrop_auth cookie during transition period
+    // Auth.js JWT session — only active when AUTH_SECRET is configured.
+    // Without it the app falls back to the legacy backdrop_auth cookie so
+    // existing deployments continue to work without any env-var change.
+    if (process.env.AUTH_SECRET) {
+      try {
+        const { auth } = await import("@/auth");
+        const session = await auth();
+        if (session?.user) return NextResponse.next();
+      } catch {
+        // Auth.js misconfigured or JWT invalid — fall through to cookie check
+      }
+    }
+
+    // Legacy cookie fallback (always checked when Auth.js session is absent)
     if (req.cookies.get("backdrop_auth")?.value) return NextResponse.next();
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/enter/backdrop";
