@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ADMIN_COOKIE  = "backdrop_auth";
+const PORTAL_COOKIE = "portal_session";
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -19,7 +22,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // Legacy cookie fallback (always checked when Auth.js session is absent)
-    if (req.cookies.get("backdrop_auth")?.value) return NextResponse.next();
+    if (req.cookies.get(ADMIN_COOKIE)?.value) return NextResponse.next();
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/enter/backdrop";
     loginUrl.search   = "";
@@ -28,7 +31,7 @@ export async function middleware(req: NextRequest) {
 
   // ── Customer portal dashboard ────────────────────────────────────────────────
   if (pathname.startsWith("/portal/dashboard")) {
-    if (req.cookies.get("portal_session")?.value) return NextResponse.next();
+    if (req.cookies.get(PORTAL_COOKIE)?.value) return NextResponse.next();
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/portal/login";
     loginUrl.search   = "";
