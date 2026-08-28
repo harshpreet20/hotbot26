@@ -71,7 +71,7 @@ export async function createSession(
   if (isPrismaEnabled()) {
     const client = await db();
     await client.session.create({
-      data: { token, userId, username, role, createdAt: now, expiresAt, lastAccessAt: now },
+      data: { token, userId, username, role, createdAt: now, expiresAt, lastAccessAt: now, isImpersonating: false },
     });
     return token;
   }

@@ -1,3 +1,15 @@
+// Derived from the live database's information_schema (Postgres 17.6), not hand-written.
+//
+// NOTE: `prisma db pull` could not be run — this environment permits only proxied HTTPS,
+// not raw TCP to 5432. Column names, types and nullability below were read directly from
+// pg_catalog/information_schema, so they reflect the real database; primary keys are
+// assumed to be `id` (`token` for sessions), matching every call site in src/lib/store.ts.
+// Re-run `npx prisma db pull` from a machine with database access to confirm.
+//
+// Scope: only the tables this application uses. The database is shared with several
+// unrelated apps (129 tables in `public` — a sports app, a content agent, event apps);
+// those are deliberately omitted.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,31 +20,34 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-// ── backdrop_users ────────────────────────────────────────────────────────────
+// ── Auth & sessions ───────────────────────────────────────────────────────────
 
 model BackdropUser {
-  id        String   @id
-  email     String   @unique
-  username  String   @unique
-  role      String   @default("agent")
-  status    String   @default("approved")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String    @id
+  email        String
+  username     String
+  role         String
+  status       String
+  approvedBy   String?   @map("approved_by")
+  approvedAt   DateTime? @map("approved_at") @db.Timestamptz(6)
+  invitedBy    String?   @map("invited_by")
+  createdAt    DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @map("updated_at") @db.Timestamptz(6)
+  passwordHash String?   @map("password_hash")
+  permissions  Json?
 
   @@map("backdrop_users")
 }
-
-// ── sessions (legacy token sessions — kept alongside Auth.js JWT) ─────────────
 
 model Session {
   token            String    @id
   userId           String    @map("user_id")
   username         String
   role             String
-  createdAt        DateTime  @map("created_at")
-  expiresAt        DateTime  @map("expires_at")
-  lastAccessAt     DateTime  @map("last_access_at")
-  isImpersonating  Boolean?  @map("is_impersonating")
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  lastAccessAt     DateTime  @map("last_access_at") @db.Timestamptz(6)
+  isImpersonating  Boolean   @map("is_impersonating")
   originalUserId   String?   @map("original_user_id")
   originalUsername String?   @map("original_username")
   originalRole     String?   @map("original_role")
@@ -40,36 +55,59 @@ model Session {
   @@map("sessions")
 }
 
-// ── leads ─────────────────────────────────────────────────────────────────────
+model UserPermission {
+  id        String   @id
+  userId    String   @unique @map("user_id")
+  grants    String[]
+  revokes   String[]
+  updatedBy String   @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_permissions")
+}
+
+model GoogleToken {
+  id           String   @id
+  accessToken  String   @map("access_token")
+  refreshToken String   @map("refresh_token")
+  expiryDate   Float    @map("expiry_date")
+  scope        String
+  email        String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("google_tokens")
+}
+
+// ── Inbound CRM ───────────────────────────────────────────────────────────────
 
 model Lead {
-  id            String    @id
-  name          String
-  email         String
-  phone         String?
-  company       String?
-  service       String?
-  budget        String?
-  message       String?
-  formType      String?   @map("form_type")
-  source        String?
-  ip            String?
-  createdAt     DateTime  @map("created_at")
-  status        String    @default("new")
-  assignedTo    String?   @map("assigned_to")
-  notes         String?
-  tags          String[]
-  lastUpdatedAt DateTime? @map("last_updated_at")
-  lastUpdatedBy String?   @map("last_updated_by")
-  sessionId     String?   @map("session_id")
-  journeyStage  String?   @map("journey_stage")
-
-  crmUpdates CRMUpdate[]
+  id              String    @id
+  name            String
+  email           String
+  phone           String
+  company         String
+  service         String
+  budget          String
+  message         String
+  formType        String    @map("form_type")
+  source          String
+  ip              String
+  status          String
+  tags            String[]
+  notes           String
+  lastUpdatedAt   DateTime? @map("last_updated_at") @db.Timestamptz(6)
+  lastUpdatedBy   String    @map("last_updated_by")
+  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
+  assignedTo      String?   @map("assigned_to")
+  sessionId       String?   @map("session_id")
+  journeyStage    String?   @map("journey_stage")
+  meetUrl         String?   @map("meet_url")
+  meetScheduledAt DateTime? @map("meet_scheduled_at") @db.Timestamptz(6)
 
   @@map("leads")
 }
-
-// ── contacts ──────────────────────────────────────────────────────────────────
 
 model Contact {
   id        String   @id
@@ -79,49 +117,45 @@ model Contact {
   subject   String
   message   String
   source    String
-  createdAt DateTime @map("created_at")
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  sessionId String?  @map("session_id")
 
   @@map("contacts")
 }
 
-// ── newsletter ────────────────────────────────────────────────────────────────
-
 model Newsletter {
   id            String   @id
   name          String
-  email         String   @unique
-  whatsapp      String?
-  whatsappOptIn Boolean? @map("whatsapp_opt_in")
+  email         String
+  whatsapp      String
+  whatsappOptIn Boolean  @map("whatsapp_opt_in")
   source        String
-  createdAt     DateTime @map("created_at")
+  createdAt     DateTime @map("created_at") @db.Timestamptz(6)
 
   @@map("newsletter")
 }
-
-// ── callbacks ─────────────────────────────────────────────────────────────────
 
 model Callback {
   id        String   @id
   name      String
   phone     String
   source    String
-  status    String   @default("pending")
-  createdAt DateTime @map("created_at")
+  status    String
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
 
   @@map("callbacks")
 }
-
-// ── chats ─────────────────────────────────────────────────────────────────────
 
 model Chat {
   id              String    @id
   messages        Json
   ip              String
-  startedAt       DateTime  @map("started_at")
-  lastMessageAt   DateTime  @map("last_message_at")
-  needsHuman      Boolean?  @map("needs_human")
+  startedAt       DateTime  @map("started_at") @db.Timestamptz(6)
+  lastMessageAt   DateTime  @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
+  needsHuman      Boolean   @map("needs_human")
   agentUsername   String?   @map("agent_username")
-  agentTookOverAt DateTime? @map("agent_took_over_at")
+  agentTookOverAt DateTime? @map("agent_took_over_at") @db.Timestamptz(6)
   guestName       String?   @map("guest_name")
   guestEmail      String?   @map("guest_email")
   guestPhone      String?   @map("guest_phone")
@@ -129,305 +163,216 @@ model Chat {
   @@map("chats")
 }
 
-// ── crm_updates ───────────────────────────────────────────────────────────────
-
 model CRMUpdate {
   id        String   @id
   leadId    String   @map("lead_id")
   type      String
   content   String
-  createdAt DateTime @map("created_at")
-  createdBy String   @map("created_by")
+  author    String
+  authorId  String   @map("author_id")
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
   metadata  Json?
-
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  projectId String?  @map("project_id")
 
   @@map("crm_updates")
 }
 
-// ── crm_tasks ─────────────────────────────────────────────────────────────────
-
 model CRMTask {
   id                String    @id
   title             String
-  description       String?
-  priority          String    @default("medium")
-  status            String    @default("open")
-  assignedTo        String?   @map("assigned_to")
-  createdBy         String    @map("created_by")
-  createdAt         DateTime  @map("created_at")
-  dueDate           DateTime? @map("due_date")
-  completedAt       DateTime? @map("completed_at")
+  description       String
+  status            String
+  priority          String
+  dueDate           DateTime? @map("due_date") @db.Timestamptz(6)
+  assignedTo        String    @map("assigned_to")
+  tags              String[]
   leadId            String?   @map("lead_id")
+  createdBy         String    @map("created_by")
+  updatedAt         DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdAt         DateTime  @map("created_at") @db.Timestamptz(6)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(6)
   invoiceId         String?   @map("invoice_id")
   ticketId          String?   @map("ticket_id")
   clientId          String?   @map("client_id")
   blogId            String?   @map("blog_id")
   callbackId        String?   @map("callback_id")
   newsletterId      String?   @map("newsletter_id")
-  projectId         String?   @map("project_id")
   linkedEntityType  String?   @map("linked_entity_type")
-  linkedEntityLabel String?   @map("linked_entity_label")
+  linkedEntityLabel String    @map("linked_entity_label")
+  projectId         String?   @map("project_id")
 
   @@map("crm_tasks")
 }
 
-// ── invoices ──────────────────────────────────────────────────────────────────
-
-model Invoice {
-  id            String    @id
-  invoiceNumber String    @unique @map("invoice_number")
-  status        String    @default("draft")
-  clientName    String    @map("client_name")
-  clientEmail   String    @map("client_email")
-  clientPhone   String?   @map("client_phone")
-  clientCompany String?   @map("client_company")
-  clientAddress String?   @map("client_address")
-  lineItems     Json      @map("line_items")
-  subtotal      Float
-  taxRate       Float     @map("tax_rate")
-  taxAmount     Float     @map("tax_amount")
-  discount      Float
-  total         Float
-  currency      String    @default("INR")
-  issuedDate    String    @map("issued_date")
-  dueDate       String    @map("due_date")
-  paidDate      String?   @map("paid_date")
-  notes         String?
-  terms         String?
-  createdAt     DateTime  @map("created_at")
-  createdBy     String    @map("created_by")
-  lastUpdatedAt DateTime? @map("last_updated_at")
-  lastUpdatedBy String?   @map("last_updated_by")
-  leadId        String?   @map("lead_id")
-
-  @@map("invoices")
-}
-
-// ── tickets ───────────────────────────────────────────────────────────────────
+// ── Tickets ───────────────────────────────────────────────────────────────────
+// comments/activity are jsonb columns on this table, NOT relations.
 
 model Ticket {
-  id             String    @id
-  ticketNumber   String    @unique @map("ticket_number")
-  title          String
-  description    String
-  status         String    @default("open")
-  priority       String    @default("medium")
-  category       String    @default("general")
-  requesterName  String    @map("requester_name")
-  requesterEmail String    @map("requester_email")
-  assignedTo     String?   @map("assigned_to")
-  labels         String[]
-  dueDate        String?   @map("due_date")
-  createdAt      DateTime  @map("created_at")
-  updatedAt      DateTime  @map("updated_at")
-  resolvedAt     DateTime? @map("resolved_at")
-  isInternal     Boolean?  @map("is_internal")
-  raisedAgainst  String?   @map("raised_against")
-  raisedBy       String?   @map("raised_by")
-  clientId       String?   @map("client_id")
-  ip             String?
-
-  comments TicketComment[]
-  activity TicketActivity[]
+  id              String    @id
+  number          String?
+  subject         String?
+  description     String
+  status          String
+  priority        String
+  category        String
+  clientName      String?   @map("client_name")
+  clientEmail     String?   @map("client_email")
+  assignedTo      String?   @map("assigned_to")
+  tags            String[]
+  comments        Json?
+  activity        Json?
+  createdBy       String?   @map("created_by")
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
+  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @map("updated_at") @db.Timestamptz(6)
+  ticketNumber    String?   @map("ticket_number")
+  title           String?
+  requesterName   String?   @map("requester_name")
+  requesterEmail  String?   @map("requester_email")
+  labels          String[]
+  dueDate         String?   @map("due_date")
+  ip              String?
+  approvalStatus  String?   @map("approval_status")
+  approvedBy      String?   @map("approved_by")
+  approvedAt      DateTime? @map("approved_at") @db.Timestamptz(6)
+  rejectionReason String?   @map("rejection_reason")
+  source          String?
+  clientId        String?   @map("client_id")
+  whiteboardData  Json?     @map("whiteboard_data")
+  meetUrl         String?   @map("meet_url")
+  isInternal      Boolean?  @map("is_internal")
+  raisedAgainst   String?   @map("raised_against")
+  raisedBy        String?   @map("raised_by")
 
   @@map("tickets")
 }
 
-// ── ticket_comments ───────────────────────────────────────────────────────────
+// ── Billing ───────────────────────────────────────────────────────────────────
 
-model TicketComment {
-  id          String    @id
-  ticketId    String    @map("ticket_id")
-  text        String
-  authorName  String    @map("author_name")
-  authorEmail String?   @map("author_email")
-  isStaff     Boolean   @map("is_staff")
-  isInternal  Boolean?  @map("is_internal")
-  createdAt   DateTime  @map("created_at")
-  editedAt    DateTime? @map("edited_at")
+model Invoice {
+  id            String    @id
+  invoiceNumber String    @map("invoice_number")
+  clientName    String    @map("client_name")
+  clientEmail   String    @map("client_email")
+  clientPhone   String    @map("client_phone")
+  clientCompany String    @map("client_company")
+  lineItems     Json      @map("line_items")
+  subtotal      Decimal   @db.Decimal
+  tax           Decimal   @db.Decimal
+  discount      Decimal   @db.Decimal
+  total         Decimal   @db.Decimal
+  status        String
+  currency      String
+  notes         String
+  dueDate       DateTime? @map("due_date") @db.Timestamptz(6)
+  paidAt        DateTime? @map("paid_at") @db.Timestamptz(6)
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
+  taxRate       Decimal   @map("tax_rate") @db.Decimal
+  taxAmount     Decimal   @map("tax_amount") @db.Decimal
+  issuedDate    String?   @map("issued_date")
+  clientAddress String?   @map("client_address")
+  terms         String?
+  paidDate      String?   @map("paid_date")
+  leadId        String?   @map("lead_id")
+  lastUpdatedAt DateTime? @map("last_updated_at") @db.Timestamptz(6)
+  lastUpdatedBy String?   @map("last_updated_by")
 
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  @@map("ticket_comments")
+  @@map("invoices")
 }
 
-// ── ticket_activity ───────────────────────────────────────────────────────────
-
-model TicketActivity {
-  id        String   @id
-  ticketId  String   @map("ticket_id")
-  type      String
-  actorName String   @map("actor_name")
-  createdAt DateTime @map("created_at")
-  metadata  Json?
-
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  @@map("ticket_activity")
-}
-
-// ── team_messages ─────────────────────────────────────────────────────────────
-
-model TeamMessage {
-  id        String    @id
-  channelId String    @map("channel_id")
-  text      String
-  createdBy String    @map("created_by")
-  createdAt DateTime  @map("created_at")
-  editedAt  DateTime? @map("edited_at")
-  replyTo   String?   @map("reply_to")
-
-  @@map("team_messages")
-}
-
-// ── team_channels ─────────────────────────────────────────────────────────────
-
-model TeamChannel {
-  id          String   @id
-  name        String   @unique
-  description String?
-  createdBy   String   @map("created_by")
-  createdAt   DateTime @map("created_at")
-
-  @@map("team_channels")
-}
-
-// ── audit_logs ────────────────────────────────────────────────────────────────
-
-model AuditLog {
-  id              String   @id
-  actorId         String   @map("actor_id")
-  actorUsername   String   @map("actor_username")
-  actorRole       String   @map("actor_role")
-  action          String
-  resourceType    String   @map("resource_type")
-  resourceId      String?  @map("resource_id")
-  details         Json
-  ip              String
-  createdAt       DateTime @map("created_at")
-  isImpersonating Boolean? @map("is_impersonating")
-  impersonatorId  String?  @map("impersonator_id")
-
-  @@map("audit_logs")
-}
-
-// ── system_logs ───────────────────────────────────────────────────────────────
-
-model SystemLog {
-  id        String   @id
-  level     String
-  message   String
-  context   Json?
-  createdAt DateTime @map("created_at")
-
-  @@map("system_logs")
-}
-
-// ── seo_scores ────────────────────────────────────────────────────────────────
-
-model SeoScore {
-  id        String   @id
-  postId    String   @map("post_id")
-  score     Int
-  details   Json?
-  createdAt DateTime @map("created_at")
-
-  @@map("seo_scores")
-}
-
-// ── analytics_snapshots ───────────────────────────────────────────────────────
-
-model AnalyticsSnapshot {
-  id        String   @id
-  data      Json
-  createdAt DateTime @map("created_at")
-
-  @@map("analytics_snapshots")
-}
-
-// ── topic_suggestions ─────────────────────────────────────────────────────────
-
-model TopicSuggestion {
-  id          String   @id
-  title       String
-  description String?
-  status      String   @default("pending")
-  createdAt   DateTime @map("created_at")
-
-  @@map("topic_suggestions")
-}
-
-// ── clients ───────────────────────────────────────────────────────────────────
+// ── Clients & delivery ────────────────────────────────────────────────────────
 
 model Client {
   id                 String    @id
-  clientId           String    @unique @map("client_id")
+  clientId           String    @map("client_id")
   name               String
   email              String
   phone              String
   company            String
-  status             String    @default("active")
-  notes              String    @default("")
-  createdAt          DateTime  @map("created_at")
-  updatedAt          DateTime  @map("updated_at")
+  status             String
+  notes              String
+  createdAt          DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @map("updated_at") @db.Timestamptz(6)
+  leadId             String?   @map("lead_id")
+  onboardingStage    String?   @map("onboarding_stage")
+  accountManager     String?   @map("account_manager")
   portalEnabled      Boolean?  @map("portal_enabled")
-  portalInviteSentAt DateTime? @map("portal_invite_sent_at")
+  portalInviteSentAt DateTime? @map("portal_invite_sent_at") @db.Timestamptz(6)
+  subscriptionStatus String?   @map("subscription_status")
+  industry           String?
+  website            String?
+  address            String?
+  avatarUrl          String?   @map("avatar_url")
+  tags               String[]
+  customFields       Json?     @map("custom_fields")
+  clientType         String?   @map("client_type")
+  totalRevenue       Decimal?  @map("total_revenue") @db.Decimal
+  outstandingBalance Decimal?  @map("outstanding_balance") @db.Decimal
+  lastActivityAt     DateTime? @map("last_activity_at") @db.Timestamptz(6)
+  accountStatus      String    @map("account_status")
+  suspendedAt        DateTime? @map("suspended_at") @db.Timestamptz(6)
+  suspensionReason   String?   @map("suspension_reason")
 
   @@map("clients")
 }
 
-// ── projects ──────────────────────────────────────────────────────────────────
-
 model Project {
-  id          String   @id
-  name        String
-  description String?
-  clientId    String   @map("client_id")
-  clientEmail String?  @map("client_email")
-  clientName  String?  @map("client_name")
-  status      String   @default("planning")
-  startDate   String?  @map("start_date")
-  endDate     String?  @map("end_date")
-  color       String?
-  budget      Int?
-  currency    String?
-  tags        String[]
-  createdBy   String   @map("created_by")
-  createdAt   DateTime @map("created_at")
-  updatedAt   DateTime @map("updated_at")
+  id              String    @id @db.Uuid
+  projectNumber   String?   @map("project_number")
+  clientId        String?   @map("client_id")
+  name            String
+  description     String?
+  status          String?
+  stage           String?
+  priority        String?
+  progress        Int?
+  startDate       DateTime? @map("start_date") @db.Date
+  targetDate      DateTime? @map("target_date") @db.Date
+  completedDate   DateTime? @map("completed_date") @db.Date
+  assignedTo      String[]  @map("assigned_to")
+  accountManager  String?   @map("account_manager")
+  budget          Decimal?  @db.Decimal
+  currency        String?
+  tags            String[]
+  metadata        Json?
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
+  whiteboardData  Json?     @map("whiteboard_data")
+  meetUrl         String?   @map("meet_url")
+  meetScheduledAt DateTime? @map("meet_scheduled_at") @db.Timestamptz(6)
+  collabNotes     String?   @map("collab_notes")
+  endDate         DateTime? @map("end_date") @db.Date
+  color           String?
+  clientEmail     String?   @map("client_email")
+  clientName      String?   @map("client_name")
 
   @@map("projects")
 }
 
-// ── meetings ──────────────────────────────────────────────────────────────────
-
 model Meeting {
-  id             String    @id
-  title          String
-  description    String?
-  clientId       String?   @map("client_id")
-  clientEmail    String?   @map("client_email")
-  clientName     String?   @map("client_name")
-  hostUsername   String    @map("host_username")
-  attendees      String[]
-  startTime      DateTime  @map("start_time")
-  endTime        DateTime  @map("end_time")
-  meetLink       String?   @map("meet_link")
-  googleEventId  String?   @map("google_event_id")
-  googleHtmlLink String?   @map("google_html_link")
-  status         String    @default("scheduled")
-  notes          String?
-  projectId      String?   @map("project_id")
-  createdAt      DateTime  @map("created_at")
-  updatedAt      DateTime  @map("updated_at")
-
-  attachments MeetingAttachment[]
+  id            String    @id
+  title         String
+  description   String?
+  clientId      String?   @map("client_id")
+  clientEmail   String?   @map("client_email")
+  clientName    String?   @map("client_name")
+  hostUsername  String    @map("host_username")
+  attendees     Json?
+  startTime     DateTime  @map("start_time") @db.Timestamptz(6)
+  endTime       DateTime  @map("end_time") @db.Timestamptz(6)
+  meetLink      String?   @map("meet_link")
+  googleEventId String?   @map("google_event_id")
+  status        String?
+  notes         String?
+  createdAt     DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  projectId     String?   @map("project_id")
 
   @@map("meetings")
 }
-
-// ── meeting_attachments ───────────────────────────────────────────────────────
 
 model MeetingAttachment {
   id         String   @id
@@ -435,99 +380,157 @@ model MeetingAttachment {
   name       String
   fileUrl    String   @map("file_url")
   fileName   String   @map("file_name")
-  fileSize   Int      @map("file_size")
+  fileSize   BigInt   @map("file_size")
   mimeType   String   @map("mime_type")
   category   String
   uploadedBy String   @map("uploaded_by")
-  createdAt  DateTime @map("created_at")
-
-  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("meeting_attachments")
 }
 
-// ── whiteboards ───────────────────────────────────────────────────────────────
+model ClientResource {
+  id             String   @id
+  clientId       String   @map("client_id")
+  projectId      String?  @map("project_id")
+  name           String
+  description    String?
+  fileUrl        String   @map("file_url")
+  fileName       String   @map("file_name")
+  fileSize       BigInt?  @map("file_size")
+  mimeType       String   @map("mime_type")
+  category       String
+  uploadedBy     String?  @map("uploaded_by")
+  uploadedByType String   @map("uploaded_by_type")
+  visibility     String
+  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+
+  @@map("client_resources")
+}
+
+model Document {
+  id          String    @id
+  title       String
+  type        String?
+  status      String?
+  content     String?
+  clientId    String    @map("client_id")
+  clientEmail String?   @map("client_email")
+  clientName  String?   @map("client_name")
+  comments    Json?
+  suggestions Json?
+  signatures  Json?
+  createdBy   String    @map("created_by")
+  createdAt   DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  projectId   String?   @map("project_id")
+
+  @@map("documents")
+}
 
 model Whiteboard {
-  id           String   @id
+  id           String    @id
   name         String
-  clientId     String?  @map("client_id")
-  clientEmail  String?  @map("client_email")
-  elements     String
-  projectId    String?  @map("project_id")
-  createdBy    String   @map("created_by")
-  lastEditedBy String?  @map("last_edited_by")
-  createdAt    DateTime @map("created_at")
-  updatedAt    DateTime @map("updated_at")
+  clientId     String?   @map("client_id")
+  clientEmail  String?   @map("client_email")
+  elements     String?
+  createdBy    String    @map("created_by")
+  lastEditedBy String?   @map("last_edited_by")
+  createdAt    DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  projectId    String?   @map("project_id")
 
   @@map("whiteboards")
 }
 
-// ── project_sops ──────────────────────────────────────────────────────────────
-
 model ProjectSOP {
-  id           String   @id
-  projectId    String   @map("project_id")
-  clientId     String   @map("client_id")
+  id           String    @id
+  projectId    String    @map("project_id")
+  clientId     String    @map("client_id")
   title        String
-  brief        String
-  content      String
-  createdBy    String   @map("created_by")
-  lastEditedBy String?  @map("last_edited_by")
-  createdAt    DateTime @map("created_at")
-  updatedAt    DateTime @map("updated_at")
+  brief        String?
+  content      String?
+  createdBy    String    @map("created_by")
+  lastEditedBy String?   @map("last_edited_by")
+  createdAt    DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
 
   @@map("project_sops")
 }
 
-// ── knowledge ─────────────────────────────────────────────────────────────────
+// ── Team chat ─────────────────────────────────────────────────────────────────
 
-model Knowledge {
-  id        String   @id
+model TeamChannel {
+  id          String   @id
+  name        String
+  description String
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @map("created_at") @db.Timestamptz(6)
+
+  @@map("team_channels")
+}
+
+model TeamMessage {
+  id          String    @id
+  channel     String
+  userId      String    @map("user_id")
+  username    String
+  role        String
+  text        String
+  attachments Json
+  reactions   Json
+  createdAt   DateTime  @map("created_at") @db.Timestamptz(6)
+  channelId   String?   @map("channel_id")
+  createdBy   String?   @map("created_by")
+  editedAt    DateTime? @map("edited_at") @db.Timestamptz(6)
+  replyTo     String?   @map("reply_to")
+
+  @@map("team_messages")
+}
+
+// ── Knowledge base ────────────────────────────────────────────────────────────
+
+model AiKnowledgeBase {
+  id        String    @id @db.Uuid
   title     String
   content   String
-  category  String?
-  active    Boolean  @default(true)
-  priority  Int      @default(0)
-  createdBy String?  @map("created_by")
-  createdAt DateTime @map("created_at")
-  updatedAt DateTime @map("updated_at")
+  category  String
+  active    Boolean
+  priority  Int
+  createdAt DateTime? @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by")
 
-  @@map("knowledge")
+  @@map("ai_knowledge_base")
 }
 
-// ── posts (blog) ──────────────────────────────────────────────────────────────
+// ── Logging ───────────────────────────────────────────────────────────────────
 
-model Post {
-  id          String    @id
-  title       String
-  slug        String    @unique
-  content     String
-  excerpt     String?
-  status      String    @default("draft")
-  authorId    String    @map("author_id")
-  authorName  String    @map("author_name")
-  publishedAt DateTime? @map("published_at")
-  createdAt   DateTime  @map("created_at")
-  updatedAt   DateTime  @map("updated_at")
-  tags        String[]
-  coverImage  String?   @map("cover_image")
-  metaTitle   String?   @map("meta_title")
-  metaDesc    String?   @map("meta_desc")
-  seoScore    Int?      @map("seo_score")
-
-  @@map("posts")
-}
-
-// ── user_module_permissions ───────────────────────────────────────────────────
-
-model UserModulePermission {
+model AuditLog {
   id        String   @id
-  userId    String   @unique @map("user_id")
-  grants    String[]
-  revokes   String[]
-  updatedAt DateTime @map("updated_at")
-  updatedBy String   @map("updated_by")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  userId    String   @map("user_id")
+  username  String
+  role      String
+  ip        String
+  details   Json
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
 
-  @@map("user_module_permissions")
+  @@map("audit_logs")
+}
+
+model SystemLog {
+  id        String   @id
+  level     String
+  event     String
+  message   String
+  ip        String
+  username  String
+  userId    String   @map("user_id")
+  details   Json
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+
+  @@map("system_logs")
 }
