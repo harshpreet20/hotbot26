@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readWhere, updateById } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { ChatSession, ChatMessage } from "@/types/dashboard";
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as { sessionId?: string; message?: string };

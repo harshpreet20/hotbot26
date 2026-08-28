@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeSuperAdmin } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeSuperAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin");
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (!isSupabaseEnabled()) return NextResponse.json({ ok: true, deleted: 0 });

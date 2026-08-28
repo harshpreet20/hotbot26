@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { requireDataAccess } from "@/lib/dashboardAuth";
 import { getAllUsers } from "@/lib/adminStore";
 
 export async function GET(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const users = await getAllUsers();

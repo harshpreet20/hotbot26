@@ -7,7 +7,7 @@
  * GET /api/blog/audit-logs?limit=N  – limit results (default 200)
  */
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeAdmin, authorizeSuperAdmin, extractToken } from "@/lib/dashboardAuth";
+import { authorizeAdmin, authorizeSuperAdmin } from "@/lib/dashboardAuth";
 import { getAuditLogs, getUserActivity, getLogsByAction } from "@/lib/agents/monitoring";
 
 function getToken(req: NextRequest): string | null {

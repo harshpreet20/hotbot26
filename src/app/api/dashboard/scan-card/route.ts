@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import OpenAI from "openai";
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "scan-card", { limit: 20, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!process.env.OPENAI_API_KEY) {

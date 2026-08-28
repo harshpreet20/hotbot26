@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { sendTaskAssignedEmail } from "@/lib/resend";
@@ -24,7 +24,7 @@ function getIp(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tasks  = await readAll<CRMTask>("crm_tasks");
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as Partial<CRMTask>;
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as Partial<CRMTask> & { id: string };
@@ -173,7 +173,7 @@ export async function DELETE(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!["super_admin", "admin", "manager"].includes(session.role)) {

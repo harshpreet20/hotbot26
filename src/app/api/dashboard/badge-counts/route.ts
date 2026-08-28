@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll } from "@/lib/store";
 import type { Lead, Ticket, CallbackRequest, ChatSession } from "@/types/dashboard";
 
 const EMPTY = { tickets: 0, leads: 0, callbacks: 0, chats: 0 };
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {

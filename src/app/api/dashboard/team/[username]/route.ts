@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { requireDataAccess } from "@/lib/dashboardAuth";
 import { readAll } from "@/lib/store";
 import { getAllUsers } from "@/lib/adminStore";
 import type { Lead, CRMTask, Ticket, CRMUpdate } from "@/types/dashboard";
@@ -14,7 +14,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { username: string } }
 ) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

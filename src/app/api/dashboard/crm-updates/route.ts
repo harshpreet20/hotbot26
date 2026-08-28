@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll, insert, removeById, newId } from "@/lib/store";
 import type { CRMUpdate } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = await readAll<CRMUpdate>("crm_updates");
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json() as Partial<CRMUpdate> & { projectId?: string };
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const id = new URL(req.url).searchParams.get("id");

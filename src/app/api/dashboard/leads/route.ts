@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { extractToken, authorizeData, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth, requireDataAccess } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { Lead, CRMUpdate, LeadStatus } from "@/types/dashboard";
@@ -47,7 +47,8 @@ function getIp(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const leads = await readAll<Lead>("leads");
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin", "manager", "sales"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -104,7 +105,7 @@ export async function PATCH(req: NextRequest) {
   const limited = await rateLimitResponse(getIp(req), "dashboard-writes", { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: z.infer<typeof UpdateLeadSchema>;
@@ -174,7 +175,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });

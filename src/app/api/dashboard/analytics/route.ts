@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { sb } from "@/lib/supabase";
 import OpenAI from "openai";
 
@@ -28,7 +28,7 @@ function cleanReferrer(ref: string | null): string {
 // ── GET: fetch analytics bundle from Supabase ─────────────────────────────────
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -367,7 +367,7 @@ interface AnalyticsBundle {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

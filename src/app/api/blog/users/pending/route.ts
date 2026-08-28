@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
-import { authorizeAdmin, extractToken } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { log } from "@/lib/logger";
 import type { Role } from "@/types/dashboard";
 import { sendUserApprovedEmail, sendUserRejectedEmail } from "@/lib/resend";
 
 // GET - list users pending approval (admin only)
 export async function GET(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
 // PATCH - approve or reject a pending user
 export async function PATCH(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

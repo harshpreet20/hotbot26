@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRole } from "@/lib/dashboardAuth";
-import { extractToken } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { sendFeatureBroadcast } from "@/lib/resend";
 
 const SEGMENTS = ["Tickets","Leads","Analytics","Team Chat","Callbacks","Blog","Tasks","Invoices","Users","Clients","CRM","General"] as const;
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeRole(extractToken(req), "super_admin", "admin");
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   let body: { segment?: string; changes?: string[]; version?: string };

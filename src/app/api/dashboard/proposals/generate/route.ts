@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitResponse(ip(req), "proposal-generate", { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!ALLOWED_ROLES.includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

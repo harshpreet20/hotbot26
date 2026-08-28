@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll, updateById, removeById, insert, newId } from "@/lib/store";
 import { sendStaffReplyNotification, sendStatusUpdateNotification } from "@/lib/ticketEmail";
 import type { Ticket, TicketComment, TicketActivity, TicketStatus } from "@/types/dashboard";
@@ -57,7 +57,7 @@ function makeActivity(
 }
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url    = new URL(req.url);
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
 
 // POST - staff creates an internal ticket
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: z.infer<typeof CreateTicketSchema>;
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: z.infer<typeof UpdateTicketSchema>;
@@ -234,7 +234,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin"].includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

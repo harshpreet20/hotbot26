@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { readAll } from "@/lib/store";
 import type { Lead } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const leads = await readAll<Lead>("leads");

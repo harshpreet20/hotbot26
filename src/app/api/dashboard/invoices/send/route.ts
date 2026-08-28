@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import PDFDocument from "pdfkit";
 import path from "path";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import type { Invoice } from "@/types/dashboard";
@@ -246,7 +246,7 @@ function buildInvoiceText(inv: Invoice): string {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["super_admin", "admin", "manager", "finance"].includes(session.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

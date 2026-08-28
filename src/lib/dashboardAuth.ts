@@ -147,3 +147,39 @@ export async function authorizeUserRead(
 ): Promise<SessionInfo | null> {
   return authorizeRole(token, "super_admin", "admin", "manager");
 }
+
+// ── Request-level helpers (Auth.js + legacy token bridge) ─────────────────────
+// Use these in API routes instead of authorizeAny/authorizeAdmin/authorizeData.
+// They transparently support both next-auth JWT sessions and legacy backdrop_auth
+// cookie sessions, eliminating the Auth.js cookie mismatch 401s.
+
+/** Any authenticated user — replaces authorizeAny(extractToken(req)). */
+export async function requireAuth(req: NextRequest): Promise<SessionInfo | null> {
+  return getSessionFromRequest(req);
+}
+
+/** Session with one of the allowed roles — replaces authorizeAdmin / authorizeSuperAdmin. */
+export async function requireRole(
+  req: NextRequest,
+  ...allowed: Role[]
+): Promise<SessionInfo | null> {
+  const session = await getSessionFromRequest(req);
+  if (!session || !allowed.includes(session.role)) return null;
+  return session;
+}
+
+/**
+ * Data-access roles (super_admin, admin, manager, sales, crm_operator, finance)
+ * plus the static publish secret — replaces authorizeData(extractToken(req)).
+ * Now returns SessionInfo | null instead of boolean so callers get the session too.
+ */
+export async function requireDataAccess(req: NextRequest): Promise<SessionInfo | null> {
+  const session = await getSessionFromRequest(req);
+  if (session && ["super_admin", "admin", "manager", "sales", "crm_operator", "finance"].includes(session.role)) {
+    return session;
+  }
+  const token = extractToken(req);
+  const ps    = getPublishSecret();
+  if (ps && token === ps) return { userId: "publish-secret", username: "publish-secret", role: "admin" };
+  return null;
+}

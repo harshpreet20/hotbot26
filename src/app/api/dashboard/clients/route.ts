@@ -6,7 +6,7 @@
  * DELETE /api/dashboard/clients?id=     delete a client
  */
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny, authorizeAdmin } from "@/lib/dashboardAuth";
+import { requireAuth, requireRole } from "@/lib/dashboardAuth";
 import { insert, readAll, updateById, removeById, newId } from "@/lib/store";
 import type { Client, ClientStatus } from "@/types/dashboard";
 import crypto from "crypto";
@@ -32,7 +32,7 @@ async function uniqueClientId(): Promise<string> {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const allowed = ["super_admin", "admin", "manager", "sales", "crm_operator"];
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const allowed = ["super_admin", "admin", "manager", "sales"];
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const allowed = ["super_admin", "admin", "manager", "sales", "crm_operator"];
@@ -133,7 +133,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized or insufficient permissions" }, { status: 401 });
 
   const id = new URL(req.url).searchParams.get("id");

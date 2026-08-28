@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { requireDataAccess } from "@/lib/dashboardAuth";
 import { readAll, removeById } from "@/lib/store";
 import { isSupabaseEnabled, sb } from "@/lib/supabase";
 import type { Contact } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   return NextResponse.json({ contacts: await readAll<Contact>("contacts") });
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const id = new URL(req.url).searchParams.get("id");

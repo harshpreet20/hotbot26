@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeData } from "@/lib/dashboardAuth";
+import { requireDataAccess } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
 import type { CallbackRequest } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   return NextResponse.json({ callbacks: await readAll<CallbackRequest>("callbacks") });
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!await authorizeData(extractToken(req))) {
+  const session = await requireDataAccess(req);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await req.json() as { id: string };

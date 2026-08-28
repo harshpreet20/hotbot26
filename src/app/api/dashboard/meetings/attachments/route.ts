@@ -5,7 +5,7 @@
  * DELETE /api/dashboard/meetings/attachments?id=          delete a file
  */
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { readAll, insert, removeById, newId } from "@/lib/store";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rateLimit";
@@ -45,7 +45,7 @@ function ip(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const meetingId = new URL(req.url).searchParams.get("meetingId");
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitResponse(ip(req), "dashboard-writes", { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData   = await req.formData();
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const id = new URL(req.url).searchParams.get("id");

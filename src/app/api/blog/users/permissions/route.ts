@@ -6,7 +6,7 @@
  * GET  /api/blog/users/permissions/me        – caller's own effective perms
  */
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeAdmin, extractToken } from "@/lib/dashboardAuth";
+import { authorizeAdmin } from "@/lib/dashboardAuth";
 import { readWhere, insert, updateById } from "@/lib/store";
 import { resolvePermissions, invalidatePermissionCache } from "@/lib/agents/accessControl";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";

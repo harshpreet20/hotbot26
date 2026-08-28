@@ -6,13 +6,13 @@
  * DELETE /api/dashboard/knowledge?id=     delete an entry
  */
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
+import { requireRole } from "@/lib/dashboardAuth";
 import { insert, readAll, updateById, removeById } from "@/lib/store";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import type { KnowledgeEntry } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entries = await readAll<KnowledgeEntry>("ai_knowledge_base");
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
@@ -105,7 +105,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await authorizeAdmin(extractToken(req));
+  const session = await requireRole(req, "super_admin", "admin");
   if (!session) return NextResponse.json({ error: "Unauthorized or insufficient permissions" }, { status: 401 });
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";

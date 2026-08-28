@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { extractToken, requireAuth } from "@/lib/dashboardAuth";
 import { getAuthUrl } from "@/lib/googleAuth";
 
 // GET /api/auth/google?secret=<token>&returnTo=<path>
 // Initiates Google OAuth2 flow. Token passed via ?secret= because this is
 // a browser navigation (no Authorization header available).
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {

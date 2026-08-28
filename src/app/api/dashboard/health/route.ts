@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSupabaseEnabled, sb } from "@/lib/supabase";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 
 export async function GET(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
 
   const checks: Record<string, { ok: boolean; detail?: string }> = {};
 

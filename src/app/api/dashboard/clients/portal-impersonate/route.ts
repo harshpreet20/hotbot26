@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { requireAuth } from "@/lib/dashboardAuth";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
 
 // In-memory store for one-time impersonation tokens (60s TTL)
@@ -13,7 +13,7 @@ function cleanup() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await authorizeAny(extractToken(req));
+  const session = await requireAuth(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "super_admin") {
     return NextResponse.json({ error: "Super admin only" }, { status: 403 });
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const providedSecret = req.headers.get("x-internal-secret");
   const isInternal = internalSecret != null && providedSecret === internalSecret;
   if (!isInternal) {
-    const session = await authorizeAny(extractToken(req));
+    const session = await requireAuth(req);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
