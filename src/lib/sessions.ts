@@ -136,9 +136,19 @@ export async function getSession(token: string): Promise<SessionInfo | null> {
       };
     }
 
-    // Token not found in Supabase - also check filesystem fallback.
-    // This handles the case where the session was created via filesystem
-    // (e.g. because schema wasn't applied yet or FK constraint failed).
+    if (error) {
+      if (error.message?.includes("permission denied")) {
+        // Service role key is missing or set to the anon key.
+        // Fix: set SUPABASE_SERVICE_ROLE_KEY to the service_role secret key in Vercel.
+        console.error("[sessions] SUPABASE_SERVICE_ROLE_KEY is not the service role key — session lookup denied. Falling back to filesystem (unreliable on Vercel).");
+      } else if (error.code !== "PGRST116") {
+        // PGRST116 = "not found" (normal — no error logging needed)
+        console.error("[sessions] getSession Supabase error:", error.code, error.message);
+      }
+    }
+
+    // Token not found in Supabase — check filesystem fallback.
+    // WARNING: filesystem sessions are per-instance and ephemeral on Vercel.
   }
 
   // Filesystem fallback
