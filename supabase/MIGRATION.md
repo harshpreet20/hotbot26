@@ -11,8 +11,8 @@ manual action before steps 4–6 can run.
 | 2 | Storage buckets and objects copied | **Done, verified** |
 | 3 | Schema + grants applied to the new project | **Done** — 26/26 tables |
 | 4 | Table data copied | **Done, verified** — 146/146 rows |
-| 5 | Auth users | **Outstanding — blocks login** |
-| 6 | Deployment env vars + verification | Outstanding |
+| 5 | Auth users | **Done, verified** — no orphans |
+| 6 | Deployment env vars + verification | **Outstanding — the last step** |
 
 The new project was empty when this started: no tables, no buckets, no data.
 Nothing was overwritten.
@@ -140,11 +140,25 @@ the source, exiting non-zero on any mismatch.
 `sessions` (19 rows) are live login sessions. Copying them is harmless, but
 skipping them (`--only=…` without it) just means everyone logs in again.
 
-## 5. Auth users — outstanding, and login does not work until it is resolved
+## 5. Auth users — done and verified
 
-The new project currently has **zero auth users**, while `backdrop_users` holds
-the two migrated rows. Until matching auth users exist, nobody can log in to
-Backdrop.
+Both users were recreated through the Admin API with their **original UUIDs
+supplied explicitly**, so they match the `backdrop_users` rows already in place.
+Verified afterwards by comparing the full set of auth user ids against the full
+set of `backdrop_users` ids: they match exactly, with no orphans on either side.
+
+The email-confirmed state was replicated as it stood in the source — the
+`super_admin` confirmed, the `contributor` not. If you want the contributor able
+to sign in without first confirming, flip that on their account.
+
+**Neither account has a password.** The source hashes are not retrievable (see
+below), so both users must go through the password-reset flow before their first
+login. No email was sent by the migration itself; the Admin API's create-user
+call does not notify anyone.
+
+One incidental improvement: listing auth users on the new project returns 200,
+where the old project returns HTTP 500 past the sixth record. The corruption
+described below did not follow the data across.
 
 **Password hashes cannot be moved.** The Auth Admin API does not expose
 `encrypted_password`; the user object it returns has no such field. Recreating
@@ -178,15 +192,17 @@ specified explicitly; if they are allowed to get fresh UUIDs, both
 `backdrop_users` rows orphan and nobody can log into Backdrop, on a database
 that looks perfectly populated.
 
-There are two ways to resolve it. Both end with the two users setting fresh
-passwords, because the originals cannot be recovered.
+### How this was done, and the alternative that was not needed
 
-**A — recreate with the original UUIDs.** Create each auth user through the
+Both routes below end with the users setting fresh passwords, because the
+originals cannot be recovered. **Route A was taken.**
+
+**A — recreate with the original UUIDs (used).** Create each auth user through the
 Admin API with its `id` supplied explicitly, so it matches the `backdrop_users`
 row already in place. Nothing else changes. This cannot be done from the
 Supabase dashboard, which does not let you choose a UUID.
 
-**B — create them normally, then repoint `backdrop_users`.** Add both users in
+**B — create them normally, then repoint `backdrop_users` (not needed).** Add both users in
 the dashboard, let them get fresh UUIDs, then update the two rows to match:
 
 ```sql
@@ -199,8 +215,8 @@ a reference to `backdrop_users.id`. The only loose ends are the 19 migrated
 `sessions` rows, whose `user_id` would no longer match — they are live login
 sessions and expire anyway, so the effect is that everyone logs in once more.
 
-B needs no special tooling and is the easier path if you are already in the
-dashboard. A is tidier if you would rather the UUIDs never move.
+B is kept here only as the fallback if these accounts ever have to be rebuilt
+from a dashboard, where UUIDs cannot be chosen.
 
 ## 6. Deployment and verification
 
