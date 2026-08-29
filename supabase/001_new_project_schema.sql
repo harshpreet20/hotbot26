@@ -13,7 +13,9 @@
 -- expose it. None of it is required for the application to run, but review it
 -- before treating the new project as a complete replica:
 --   * secondary indexes (primary keys ARE included)
---   * CHECK and UNIQUE constraints other than the primary key
+--   * CHECK constraints, and UNIQUE constraints other than the primary key —
+--     except clients.client_id, which is included because the foreign key
+--     below requires it
 --   * triggers and database functions
 --   * RLS policies — see the note at the foot of this file
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -135,7 +137,11 @@ CREATE TABLE IF NOT EXISTS public."clients" (
   "account_status" text DEFAULT 'active' NOT NULL,
   "suspended_at" timestamp with time zone,
   "suspension_reason" text,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  -- projects.client_id references this column, so it needs its own unique
+  -- constraint. `id` is the primary key; `client_id` is the human-readable
+  -- business key (e.g. HBS-NKG39) that the rest of the app joins on.
+  UNIQUE ("client_id")
 );
 
 CREATE TABLE IF NOT EXISTS public."contacts" (
@@ -490,8 +496,20 @@ CREATE TABLE IF NOT EXISTS public."whiteboards" (
   PRIMARY KEY ("id")
 );
 
--- Foreign keys (added after all tables exist)
-ALTER TABLE public."projects" ADD CONSTRAINT "projects_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES public."clients"("client_id");
+-- Foreign keys (added after all tables exist).
+-- Guarded so a re-run over an already-migrated project is a no-op rather than
+-- an error, which matters because the SQL Editor runs this file as a single
+-- transaction: one failure rolls the whole thing back.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'projects_client_id_fkey'
+  ) THEN
+    ALTER TABLE public."projects"
+      ADD CONSTRAINT "projects_client_id_fkey"
+      FOREIGN KEY ("client_id") REFERENCES public."clients"("client_id");
+  END IF;
+END $$;
 
 -- ── Realtime ─────────────────────────────────────────────────────────────────
 -- The Backdrop shell subscribes to postgres_changes on leads/tickets/callbacks/
@@ -500,8 +518,26 @@ ALTER TABLE public."projects" ADD CONSTRAINT "projects_client_id_fkey" FOREIGN K
 -- CREATE TABLE alone does not put a table in the realtime publication, so
 -- without this the dashboard badges and live chat go quiet with no error.
 
-ALTER PUBLICATION supabase_realtime ADD TABLE
-  public.leads, public.tickets, public.callbacks, public.chats;
+DO $$
+DECLARE
+  t text;
+BEGIN
+  -- Supabase creates this publication by default, but bail out cleanly rather
+  -- than failing the whole transaction if the project does not have it.
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    RAISE NOTICE 'publication supabase_realtime not found — skipping realtime setup';
+    RETURN;
+  END IF;
+
+  FOREACH t IN ARRAY ARRAY['leads', 'tickets', 'callbacks', 'chats'] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = t
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    END IF;
+  END LOOP;
+END $$;
 
 -- ── A decision you need to make: RLS ─────────────────────────────────────────
 -- These tables are created WITHOUT row level security, which is Postgres's
