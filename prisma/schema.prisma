@@ -40,17 +40,17 @@ model BackdropUser {
 }
 
 model Session {
-  token            String    @id
-  userId           String    @map("user_id")
+  token            String   @id
+  userId           String   @map("user_id")
   username         String
   role             String
-  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
-  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
-  lastAccessAt     DateTime  @map("last_access_at") @db.Timestamptz(6)
-  isImpersonating  Boolean   @map("is_impersonating")
-  originalUserId   String?   @map("original_user_id")
-  originalUsername String?   @map("original_username")
-  originalRole     String?   @map("original_role")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt        DateTime @map("expires_at") @db.Timestamptz(6)
+  lastAccessAt     DateTime @default(now()) @map("last_access_at") @db.Timestamptz(6)
+  isImpersonating  Boolean  @default(false) @map("is_impersonating")
+  originalUserId   String?  @map("original_user_id")
+  originalUsername String?  @map("original_username")
+  originalRole     String?  @map("original_role")
 
   @@map("sessions")
 }
@@ -58,8 +58,8 @@ model Session {
 model UserPermission {
   id        String   @id
   userId    String   @unique @map("user_id")
-  grants    String[]
-  revokes   String[]
+  grants    String[] @default([])
+  revokes   String[] @default([])
   updatedBy String   @map("updated_by")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -86,23 +86,23 @@ model Lead {
   id              String    @id
   name            String
   email           String
-  phone           String
-  company         String
-  service         String
-  budget          String
-  message         String
-  formType        String    @map("form_type")
-  source          String
-  ip              String
-  status          String
-  tags            String[]
-  notes           String
+  phone           String    @default("")
+  company         String    @default("")
+  service         String    @default("")
+  budget          String    @default("")
+  message         String    @default("")
+  formType        String    @default("get-started") @map("form_type")
+  source          String    @default("unknown")
+  ip              String    @default("")
+  status          String    @default("new")
+  tags            String[]  @default([])
+  notes           String    @default("")
   lastUpdatedAt   DateTime? @map("last_updated_at") @db.Timestamptz(6)
-  lastUpdatedBy   String    @map("last_updated_by")
-  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
+  lastUpdatedBy   String    @default("") @map("last_updated_by")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   assignedTo      String?   @map("assigned_to")
   sessionId       String?   @map("session_id")
-  journeyStage    String?   @map("journey_stage")
+  journeyStage    String?   @default("lead") @map("journey_stage")
   meetUrl         String?   @map("meet_url")
   meetScheduledAt DateTime? @map("meet_scheduled_at") @db.Timestamptz(6)
 
@@ -113,11 +113,11 @@ model Contact {
   id        String   @id
   name      String
   email     String
-  phone     String
-  subject   String
-  message   String
-  source    String
-  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  phone     String   @default("")
+  subject   String   @default("")
+  message   String   @default("")
+  source    String   @default("contact-page")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   sessionId String?  @map("session_id")
 
   @@map("contacts")
@@ -125,12 +125,12 @@ model Contact {
 
 model Newsletter {
   id            String   @id
-  name          String
+  name          String   @default("")
   email         String
-  whatsapp      String
-  whatsappOptIn Boolean  @map("whatsapp_opt_in")
-  source        String
-  createdAt     DateTime @map("created_at") @db.Timestamptz(6)
+  whatsapp      String   @default("")
+  whatsappOptIn Boolean  @default(false) @map("whatsapp_opt_in")
+  source        String   @default("newsletter-signup")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("newsletter")
 }
@@ -139,21 +139,21 @@ model Callback {
   id        String   @id
   name      String
   phone     String
-  source    String
-  status    String
-  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  source    String   @default("chatbot-call-tab")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("callbacks")
 }
 
 model Chat {
   id              String    @id
-  messages        Json
-  ip              String
-  startedAt       DateTime  @map("started_at") @db.Timestamptz(6)
-  lastMessageAt   DateTime  @map("last_message_at") @db.Timestamptz(6)
-  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
-  needsHuman      Boolean   @map("needs_human")
+  messages        Json      @default("[]")
+  ip              String    @default("")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  lastMessageAt   DateTime  @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  needsHuman      Boolean   @default(false) @map("needs_human")
   agentUsername   String?   @map("agent_username")
   agentTookOverAt DateTime? @map("agent_took_over_at") @db.Timestamptz(6)
   guestName       String?   @map("guest_name")
@@ -163,14 +163,14 @@ model Chat {
   @@map("chats")
 }
 
-model CRMUpdate {
+model CrmUpdate {
   id        String   @id
   leadId    String   @map("lead_id")
-  type      String
-  content   String
-  author    String
-  authorId  String   @map("author_id")
-  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  type      String   @default("note")
+  content   String   @default("")
+  author    String   @default("")
+  authorId  String   @default("") @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   createdBy String?  @map("created_by")
   metadata  Json?
   projectId String?  @map("project_id")
@@ -178,19 +178,19 @@ model CRMUpdate {
   @@map("crm_updates")
 }
 
-model CRMTask {
+model CrmTask {
   id                String    @id
   title             String
-  description       String
-  status            String
-  priority          String
+  description       String    @default("")
+  status            String    @default("open")
+  priority          String    @default("medium")
   dueDate           DateTime? @map("due_date") @db.Timestamptz(6)
-  assignedTo        String    @map("assigned_to")
-  tags              String[]
+  assignedTo        String    @default("") @map("assigned_to")
+  tags              String[]  @default([])
   leadId            String?   @map("lead_id")
-  createdBy         String    @map("created_by")
+  createdBy         String    @default("") @map("created_by")
   updatedAt         DateTime? @map("updated_at") @db.Timestamptz(6)
-  createdAt         DateTime  @map("created_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   completedAt       DateTime? @map("completed_at") @db.Timestamptz(6)
   invoiceId         String?   @map("invoice_id")
   ticketId          String?   @map("ticket_id")
@@ -199,7 +199,7 @@ model CRMTask {
   callbackId        String?   @map("callback_id")
   newsletterId      String?   @map("newsletter_id")
   linkedEntityType  String?   @map("linked_entity_type")
-  linkedEntityLabel String    @map("linked_entity_label")
+  linkedEntityLabel String    @default("") @map("linked_entity_label")
   projectId         String?   @map("project_id")
 
   @@map("crm_tasks")
@@ -209,39 +209,39 @@ model CRMTask {
 // comments/activity are jsonb columns on this table, NOT relations.
 
 model Ticket {
-  id              String    @id
-  number          String?
-  subject         String?
-  description     String
-  status          String
-  priority        String
-  category        String
-  clientName      String?   @map("client_name")
-  clientEmail     String?   @map("client_email")
-  assignedTo      String?   @map("assigned_to")
-  tags            String[]
-  comments        Json?
-  activity        Json?
-  createdBy       String?   @map("created_by")
+  id              String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  number          String?   @default("")
+  subject         String?   @default("")
+  description     String    @default("")
+  status          String    @default("open")
+  priority        String    @default("medium")
+  category        String    @default("general")
+  clientName      String?   @default("") @map("client_name")
+  clientEmail     String?   @default("") @map("client_email")
+  assignedTo      String?   @default("") @map("assigned_to")
+  tags            String[]  @default([])
+  comments        Json?     @default("[]")
+  activity        Json?     @default("[]")
+  createdBy       String?   @default("") @map("created_by")
   resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
-  createdAt       DateTime  @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @map("updated_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   ticketNumber    String?   @map("ticket_number")
-  title           String?
+  title           String?   @default("")
   requesterName   String?   @map("requester_name")
   requesterEmail  String?   @map("requester_email")
   labels          String[]
   dueDate         String?   @map("due_date")
   ip              String?
-  approvalStatus  String?   @map("approval_status")
+  approvalStatus  String?   @default("approved") @map("approval_status")
   approvedBy      String?   @map("approved_by")
   approvedAt      DateTime? @map("approved_at") @db.Timestamptz(6)
   rejectionReason String?   @map("rejection_reason")
-  source          String?
+  source          String?   @default("admin")
   clientId        String?   @map("client_id")
-  whiteboardData  Json?     @map("whiteboard_data")
+  whiteboardData  Json?     @default("{}") @map("whiteboard_data")
   meetUrl         String?   @map("meet_url")
-  isInternal      Boolean?  @map("is_internal")
+  isInternal      Boolean?  @default(false) @map("is_internal")
   raisedAgainst   String?   @map("raised_against")
   raisedBy        String?   @map("raised_by")
 
@@ -255,22 +255,22 @@ model Invoice {
   invoiceNumber String    @map("invoice_number")
   clientName    String    @map("client_name")
   clientEmail   String    @map("client_email")
-  clientPhone   String    @map("client_phone")
-  clientCompany String    @map("client_company")
-  lineItems     Json      @map("line_items")
-  subtotal      Decimal   @db.Decimal
-  tax           Decimal   @db.Decimal
-  discount      Decimal   @db.Decimal
-  total         Decimal   @db.Decimal
-  status        String
-  currency      String
-  notes         String
+  clientPhone   String    @default("") @map("client_phone")
+  clientCompany String    @default("") @map("client_company")
+  lineItems     Json      @default("[]") @map("line_items")
+  subtotal      Decimal   @default(0) @db.Decimal
+  tax           Decimal   @default(0) @db.Decimal
+  discount      Decimal   @default(0) @db.Decimal
+  total         Decimal   @default(0) @db.Decimal
+  status        String    @default("draft")
+  currency      String    @default("INR")
+  notes         String    @default("")
   dueDate       DateTime? @map("due_date") @db.Timestamptz(6)
   paidAt        DateTime? @map("paid_at") @db.Timestamptz(6)
-  createdBy     String    @map("created_by")
-  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
-  taxRate       Decimal   @map("tax_rate") @db.Decimal
-  taxAmount     Decimal   @map("tax_amount") @db.Decimal
+  createdBy     String    @default("") @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  taxRate       Decimal   @default(0) @map("tax_rate") @db.Decimal
+  taxAmount     Decimal   @default(0) @map("tax_amount") @db.Decimal
   issuedDate    String?   @map("issued_date")
   clientAddress String?   @map("client_address")
   terms         String?
@@ -287,31 +287,31 @@ model Invoice {
 model Client {
   id                 String    @id
   clientId           String    @map("client_id")
-  name               String
-  email              String
-  phone              String
-  company            String
-  status             String
-  notes              String
-  createdAt          DateTime  @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime  @map("updated_at") @db.Timestamptz(6)
+  name               String    @default("")
+  email              String    @default("")
+  phone              String    @default("")
+  company            String    @default("")
+  status             String    @default("active")
+  notes              String    @default("")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   leadId             String?   @map("lead_id")
-  onboardingStage    String?   @map("onboarding_stage")
+  onboardingStage    String?   @default("prospect") @map("onboarding_stage")
   accountManager     String?   @map("account_manager")
-  portalEnabled      Boolean?  @map("portal_enabled")
+  portalEnabled      Boolean?  @default(false) @map("portal_enabled")
   portalInviteSentAt DateTime? @map("portal_invite_sent_at") @db.Timestamptz(6)
-  subscriptionStatus String?   @map("subscription_status")
+  subscriptionStatus String?   @default("active") @map("subscription_status")
   industry           String?
   website            String?
   address            String?
   avatarUrl          String?   @map("avatar_url")
-  tags               String[]
-  customFields       Json?     @map("custom_fields")
-  clientType         String?   @map("client_type")
-  totalRevenue       Decimal?  @map("total_revenue") @db.Decimal
-  outstandingBalance Decimal?  @map("outstanding_balance") @db.Decimal
+  tags               String[]  @default([])
+  customFields       Json?     @default("{}") @map("custom_fields")
+  clientType         String?   @default("business") @map("client_type")
+  totalRevenue       Decimal?  @default(0) @map("total_revenue") @db.Decimal
+  outstandingBalance Decimal?  @default(0) @map("outstanding_balance") @db.Decimal
   lastActivityAt     DateTime? @map("last_activity_at") @db.Timestamptz(6)
-  accountStatus      String    @map("account_status")
+  accountStatus      String    @default("active") @map("account_status")
   suspendedAt        DateTime? @map("suspended_at") @db.Timestamptz(6)
   suspensionReason   String?   @map("suspension_reason")
 
@@ -319,33 +319,33 @@ model Client {
 }
 
 model Project {
-  id              String    @id @db.Uuid
+  id              String    @id @default(uuid()) @db.Uuid
   projectNumber   String?   @map("project_number")
   clientId        String?   @map("client_id")
   name            String
   description     String?
-  status          String?
-  stage           String?
-  priority        String?
-  progress        Int?
+  status          String?   @default("active")
+  stage           String?   @default("discovery")
+  priority        String?   @default("medium")
+  progress        Int?      @default(0)
   startDate       DateTime? @map("start_date") @db.Date
   targetDate      DateTime? @map("target_date") @db.Date
   completedDate   DateTime? @map("completed_date") @db.Date
-  assignedTo      String[]  @map("assigned_to")
+  assignedTo      String[]  @default([]) @map("assigned_to")
   accountManager  String?   @map("account_manager")
   budget          Decimal?  @db.Decimal
-  currency        String?
-  tags            String[]
-  metadata        Json?
+  currency        String?   @default("INR")
+  tags            String[]  @default([])
+  metadata        Json?     @default("{}")
   createdBy       String?   @map("created_by")
-  createdAt       DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
-  whiteboardData  Json?     @map("whiteboard_data")
+  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  whiteboardData  Json?     @default("{}") @map("whiteboard_data")
   meetUrl         String?   @map("meet_url")
   meetScheduledAt DateTime? @map("meet_scheduled_at") @db.Timestamptz(6)
   collabNotes     String?   @map("collab_notes")
   endDate         DateTime? @map("end_date") @db.Date
-  color           String?
+  color           String?   @default("#6366f1")
   clientEmail     String?   @map("client_email")
   clientName      String?   @map("client_name")
 
@@ -360,15 +360,15 @@ model Meeting {
   clientEmail   String?   @map("client_email")
   clientName    String?   @map("client_name")
   hostUsername  String    @map("host_username")
-  attendees     Json?
+  attendees     Json?     @default("[]")
   startTime     DateTime  @map("start_time") @db.Timestamptz(6)
   endTime       DateTime  @map("end_time") @db.Timestamptz(6)
   meetLink      String?   @map("meet_link")
   googleEventId String?   @map("google_event_id")
-  status        String?
+  status        String?   @default("scheduled")
   notes         String?
-  createdAt     DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
   projectId     String?   @map("project_id")
 
   @@map("meetings")
@@ -382,7 +382,7 @@ model MeetingAttachment {
   fileName   String   @map("file_name")
   fileSize   BigInt   @map("file_size")
   mimeType   String   @map("mime_type")
-  category   String
+  category   String   @default("other")
   uploadedBy String   @map("uploaded_by")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -390,7 +390,7 @@ model MeetingAttachment {
 }
 
 model ClientResource {
-  id             String   @id
+  id             String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   clientId       String   @map("client_id")
   projectId      String?  @map("project_id")
   name           String
@@ -399,11 +399,11 @@ model ClientResource {
   fileName       String   @map("file_name")
   fileSize       BigInt?  @map("file_size")
   mimeType       String   @map("mime_type")
-  category       String
+  category       String   @default("general")
   uploadedBy     String?  @map("uploaded_by")
-  uploadedByType String   @map("uploaded_by_type")
-  visibility     String
-  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+  uploadedByType String   @default("team") @map("uploaded_by_type")
+  visibility     String   @default("client")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("client_resources")
 }
@@ -411,18 +411,18 @@ model ClientResource {
 model Document {
   id          String    @id
   title       String
-  type        String?
-  status      String?
-  content     String?
+  type        String?   @default("proposal")
+  status      String?   @default("draft")
+  content     String?   @default("")
   clientId    String    @map("client_id")
   clientEmail String?   @map("client_email")
   clientName  String?   @map("client_name")
-  comments    Json?
-  suggestions Json?
-  signatures  Json?
+  comments    Json?     @default("[]")
+  suggestions Json?     @default("[]")
+  signatures  Json?     @default("[]")
   createdBy   String    @map("created_by")
-  createdAt   DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
   projectId   String?   @map("project_id")
 
   @@map("documents")
@@ -433,27 +433,27 @@ model Whiteboard {
   name         String
   clientId     String?   @map("client_id")
   clientEmail  String?   @map("client_email")
-  elements     String?
+  elements     String?   @default("[]")
   createdBy    String    @map("created_by")
   lastEditedBy String?   @map("last_edited_by")
-  createdAt    DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
   projectId    String?   @map("project_id")
 
   @@map("whiteboards")
 }
 
-model ProjectSOP {
+model ProjectSop {
   id           String    @id
   projectId    String    @map("project_id")
   clientId     String    @map("client_id")
   title        String
-  brief        String?
-  content      String?
+  brief        String?   @default("")
+  content      String?   @default("")
   createdBy    String    @map("created_by")
   lastEditedBy String?   @map("last_edited_by")
-  createdAt    DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@map("project_sops")
 }
@@ -463,23 +463,23 @@ model ProjectSOP {
 model TeamChannel {
   id          String   @id
   name        String
-  description String
-  createdBy   String   @map("created_by")
-  createdAt   DateTime @map("created_at") @db.Timestamptz(6)
+  description String   @default("")
+  createdBy   String   @default("system") @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("team_channels")
 }
 
 model TeamMessage {
   id          String    @id
-  channel     String
-  userId      String    @map("user_id")
-  username    String
-  role        String
-  text        String
-  attachments Json
-  reactions   Json
-  createdAt   DateTime  @map("created_at") @db.Timestamptz(6)
+  channel     String    @default("general")
+  userId      String    @default("") @map("user_id")
+  username    String    @default("")
+  role        String    @default("")
+  text        String    @default("")
+  attachments Json      @default("[]")
+  reactions   Json      @default("{}")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   channelId   String?   @map("channel_id")
   createdBy   String?   @map("created_by")
   editedAt    DateTime? @map("edited_at") @db.Timestamptz(6)
@@ -491,14 +491,14 @@ model TeamMessage {
 // ── Knowledge base ────────────────────────────────────────────────────────────
 
 model AiKnowledgeBase {
-  id        String    @id @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   title     String
   content   String
-  category  String
-  active    Boolean
-  priority  Int
-  createdAt DateTime? @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  category  String    @default("general")
+  active    Boolean   @default(true)
+  priority  Int       @default(0)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
   createdBy String?   @map("created_by")
 
   @@map("ai_knowledge_base")
@@ -509,14 +509,14 @@ model AiKnowledgeBase {
 model AuditLog {
   id        String   @id
   action    String
-  entity    String
-  entityId  String   @map("entity_id")
-  userId    String   @map("user_id")
-  username  String
-  role      String
-  ip        String
-  details   Json
-  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  entity    String   @default("")
+  entityId  String   @default("") @map("entity_id")
+  userId    String   @default("") @map("user_id")
+  username  String   @default("")
+  role      String   @default("")
+  ip        String   @default("")
+  details   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("audit_logs")
 }

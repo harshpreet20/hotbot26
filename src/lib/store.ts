@@ -1,103 +1,109 @@
 /**
- * Unified async data store.
+ * Unified async data store, backed by Prisma.
  *
- * Primary:  Supabase (when SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are set)
- * Fallback: Local JSON files  (dev / no-Supabase mode)
+ * Prisma connects straight to Postgres as the table owner via POSTGRES_PRISMA_URL,
+ * so it bypasses PostgREST entirely — no table GRANTs, no RLS, and none of the
+ * "permission denied for table x" failures that came with the Supabase client.
  *
- * camelCase ↔ snake_case conversion is handled automatically so TypeScript
- * types (camelCase) match Postgres column names (snake_case) transparently.
+ * The public signatures are unchanged from the Supabase implementation, so all
+ * ~200 call sites keep working untouched. Prisma's @map handles the
+ * camelCase↔snake_case conversion the old toSnake/toCamel helpers did by hand.
+ *
+ * Note the Supabase client is still the right tool for Supabase Auth and Supabase
+ * Storage; only data access moved here.
  */
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
-import { sb, isSupabaseEnabled, toSnake, toCamel } from "@/lib/supabase";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// ── Filesystem helpers ─────────────────────────────────────────────────────────
+// ── Table name → Prisma delegate ──────────────────────────────────────────────
+// Every table reachable through this module. Anything absent is a bug, not a
+// silent no-op, so lookups throw rather than returning [].
 
-const DATA_DIR = process.env.VERCEL
-  ? "/tmp/hotbot-data"
-  : path.join(process.cwd(), "data");
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const MODELS: Record<string, () => any> = {
+  ai_knowledge_base:   () => prisma.aiKnowledgeBase,
+  audit_logs:          () => prisma.auditLog,
+  callbacks:           () => prisma.callback,
+  chats:               () => prisma.chat,
+  client_resources:    () => prisma.clientResource,
+  clients:             () => prisma.client,
+  contacts:            () => prisma.contact,
+  crm_tasks:           () => prisma.crmTask,
+  crm_updates:         () => prisma.crmUpdate,
+  documents:           () => prisma.document,
+  google_tokens:       () => prisma.googleToken,
+  invoices:            () => prisma.invoice,
+  leads:               () => prisma.lead,
+  meeting_attachments: () => prisma.meetingAttachment,
+  meetings:            () => prisma.meeting,
+  newsletter:          () => prisma.newsletter,
+  project_sops:        () => prisma.projectSop,
+  projects:            () => prisma.project,
+  team_channels:       () => prisma.teamChannel,
+  team_messages:       () => prisma.teamMessage,
+  tickets:             () => prisma.ticket,
+  user_permissions:    () => prisma.userPermission,
+  whiteboards:         () => prisma.whiteboard,
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
-function ensureDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function fp(name: string) {
-  return path.join(DATA_DIR, `${name}.json`);
-}
-
-function fsRead<T>(store: string): T[] {
-  try {
-    const raw = fs.readFileSync(fp(store), "utf-8");
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
-  } catch {
-    return [];
+function model(table: string) {
+  const delegate = MODELS[table];
+  if (!delegate) {
+    throw new Error(
+      `[store] Unknown table "${table}". Add it to MODELS in src/lib/store.ts.`
+    );
   }
+  return delegate();
 }
 
-function fsWrite<T>(store: string, items: T[]): void {
-  ensureDir();
-  fs.writeFileSync(fp(store), JSON.stringify(items, null, 2), "utf-8");
+/** Call sites pass database column names; Prisma expects model field names. */
+function toField(column: string): string {
+  return column.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+// ── Value normalisation ───────────────────────────────────────────────────────
+// Prisma returns Decimal for numeric columns and BigInt for bigint. JSON.stringify
+// renders Decimal as a quoted string and throws outright on BigInt, while the
+// Supabase client returned both as plain numbers. Convert on the way out so API
+// response shapes are unchanged.
+
+function normalise<T>(row: T): T {
+  if (row === null || typeof row !== "object") return row;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row as Record<string, unknown>)) {
+    if (typeof v === "bigint") out[k] = Number(v);
+    else if (v instanceof Prisma.Decimal) out[k] = v.toNumber();
+    else out[k] = v;
+  }
+  return out as T;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /** Read all rows from a table, newest first. */
 export async function readAll<T>(table: string): Promise<T[]> {
-  if (isSupabaseEnabled()) {
-    const { data, error } = await sb()
-      .from(table)
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error(`[store] readAll(${table}) Supabase error - falling back to filesystem:`, error.message);
-      return fsRead<T>(table);
-    }
-    return ((data ?? []) as Record<string, unknown>[]).map(toCamel<T>);
-  }
-  return fsRead<T>(table);
+  const rows = await model(table).findMany({ orderBy: { createdAt: "desc" } });
+  return (rows as T[]).map(normalise);
 }
 
-/** Read rows filtered by a single column equality. */
+/** Read rows filtered by a single column equality, newest first. */
 export async function readWhere<T>(
   table: string,
   column: string,
   value: string
 ): Promise<T[]> {
-  if (isSupabaseEnabled()) {
-    const { data, error } = await sb()
-      .from(table)
-      .select("*")
-      .eq(column, value)
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error(`[store] readWhere(${table}):`, error.message);
-      return [];
-    }
-    return ((data ?? []) as Record<string, unknown>[]).map(toCamel<T>);
-  }
-  // Filesystem fallback - filter in memory
-  const items = fsRead<Record<string, unknown>>(table);
-  return items.filter((i) => i[column] === value) as T[];
+  const rows = await model(table).findMany({
+    where:   { [toField(column)]: value },
+    orderBy: { createdAt: "desc" },
+  });
+  return (rows as T[]).map(normalise);
 }
 
-/** Insert one row (newest first in filesystem fallback). */
+/** Insert one row. */
 export async function insert<T>(table: string, item: T): Promise<void> {
-  if (isSupabaseEnabled()) {
-    const { error } = await sb()
-      .from(table)
-      .insert(toSnake(item as Record<string, unknown>));
-    if (error) {
-      // Throw so callers can return a proper error response instead of silently
-      // writing to /tmp (ephemeral on Vercel — data would be lost immediately).
-      throw new Error(`[store] insert(${table}): ${error.message}`);
-    }
-    return;
-  }
-  const items = fsRead<T>(table);
-  items.unshift(item);
-  fsWrite(table, items);
+  await model(table).create({ data: item as Record<string, unknown> });
 }
 
 /** Update a single row by its `id` field. */
@@ -106,75 +112,17 @@ export async function updateById<T>(
   id: string,
   data: Partial<T>
 ): Promise<void> {
-  if (isSupabaseEnabled()) {
-    const { error } = await sb()
-      .from(table)
-      .update(toSnake(data as Record<string, unknown>))
-      .eq("id", id);
-    if (error) throw new Error(`[store] updateById(${table}): ${error.message}`);
-    return;
-  }
-  const items = fsRead<T & { id: string }>(table);
-  const idx = items.findIndex((i) => i.id === id);
-  if (idx !== -1) {
-    items[idx] = { ...items[idx], ...data };
-    fsWrite(table, items);
-  }
+  // updateMany rather than update: a missing row is a no-op here, matching the
+  // previous behaviour, whereas update() would throw P2025.
+  await model(table).updateMany({ where: { id }, data: data as Record<string, unknown> });
 }
 
 /** Delete a single row by its `id` field. */
 export async function removeById(table: string, id: string): Promise<void> {
-  if (isSupabaseEnabled()) {
-    const { error } = await sb().from(table).delete().eq("id", id);
-    if (error) throw new Error(`[store] removeById(${table}): ${error.message}`);
-    return;
-  }
-  const items = fsRead<{ id: string }>(table);
-  fsWrite(table, items.filter((i) => i.id !== id));
+  await model(table).deleteMany({ where: { id } });
 }
 
-/** Remove rows where `column` equals `value`. */
-export async function removeWhere(
-  table: string,
-  column: string,
-  value: string
-): Promise<void> {
-  if (isSupabaseEnabled()) {
-    const { error } = await sb().from(table).delete().eq(column, value);
-    if (error) throw new Error(`[store] removeWhere(${table}): ${error.message}`);
-    return;
-  }
-  const items = fsRead<Record<string, unknown>>(table);
-  fsWrite(table, items.filter((i) => i[column] !== value));
-}
-
-/** Generate a time-sortable unique id (filesystem compat; Supabase uses its own). */
+/** Generate a time-sortable unique id. */
 export function newId(): string {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
-}
-
-// ── Sync helpers (sessions.ts internal use only) ───────────────────────────────
-
-/** @internal Synchronous filesystem read - used only by sessions.ts fallback. */
-export function _fsRead<T>(store: string): T[] {
-  return fsRead<T>(store);
-}
-
-/** @internal Synchronous filesystem write - used only by sessions.ts fallback. */
-export function _fsWrite<T>(store: string, items: T[]): void {
-  fsWrite(store, items);
-}
-
-// ── Sync filesystem wrappers (for backwards-compatible usage) ─────────────────
-
-/** Synchronous write - replaces entire store with given items array. */
-export function writeAll<T>(store: string, items: T[]): void {
-  fsWrite(store, items);
-}
-
-/** Synchronous prepend - inserts item at the front of the filesystem store. */
-export function prepend<T>(store: string, item: T): void {
-  const items = fsRead<T>(store);
-  items.unshift(item);
-  fsWrite(store, items);
 }

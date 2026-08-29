@@ -1,131 +1,133 @@
 /**
  * Unit tests - src/lib/store.ts
- * File-based JSON storage layer (mocking fs to avoid disk I/O)
+ *
+ * store.ts is now backed by Prisma rather than JSON files, so these exercise the
+ * delegate mapping and the value normalisation that keeps API response shapes
+ * stable. The Prisma client is mocked; no database is touched.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import fs from "fs";
+import { Prisma } from "@prisma/client";
 
-vi.mock("fs");
+const lead = {
+  findMany:   vi.fn(),
+  create:     vi.fn(),
+  updateMany: vi.fn(),
+  deleteMany: vi.fn(),
+};
+const invoice = { findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() };
+const userPermission = { findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() };
 
-// Re-import after mocking so module picks up mocked fs
-async function getStore() {
-  vi.resetModules();
-  return import("@/lib/store");
-}
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    get lead() { return lead; },
+    get invoice() { return invoice; },
+    get userPermission() { return userPermission; },
+  },
+}));
 
-const MOCK_DIR  = expect.stringContaining("data");
-const MOCK_FILE = expect.stringContaining(".json");
+import { readAll, readWhere, insert, updateById, removeById, newId } from "@/lib/store";
 
-describe("store - readAll()", () => {
-  beforeEach(() => vi.resetModules());
+beforeEach(() => {
+  vi.clearAllMocks();
+  lead.findMany.mockResolvedValue([]);
+  invoice.findMany.mockResolvedValue([]);
+  userPermission.findMany.mockResolvedValue([]);
+});
 
-  it("returns parsed array from valid JSON file", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify([{ id: "1", name: "Alice" }]));
-    const { readAll } = await getStore();
+describe("store - table mapping", () => {
+  it("routes a table name to its Prisma delegate", async () => {
+    lead.findMany.mockResolvedValue([{ id: "1", name: "Alice" }]);
     expect(await readAll("leads")).toEqual([{ id: "1", name: "Alice" }]);
+    expect(lead.findMany).toHaveBeenCalledOnce();
   });
 
-  it("returns [] when file does not exist (ENOENT)", async () => {
-    vi.mocked(fs.readFileSync).mockImplementation(() => { throw Object.assign(new Error("ENOENT"), { code: "ENOENT" }); });
-    const { readAll } = await getStore();
-    expect(await readAll("leads")).toEqual([]);
+  it("throws on an unknown table rather than silently returning nothing", async () => {
+    await expect(readAll("not_a_table")).rejects.toThrow(/Unknown table "not_a_table"/);
   });
 
-  it("returns [] when file contains invalid JSON", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue("not-valid-json{{");
-    const { readAll } = await getStore();
-    expect(await readAll("sessions")).toEqual([]);
-  });
-
-  it("returns [] when JSON is an object, not an array", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ key: "value" }));
-    const { readAll } = await getStore();
-    expect(await readAll("sessions")).toEqual([]);
-  });
-
-  it("returns [] when JSON is null", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue("null");
-    const { readAll } = await getStore();
-    expect(await readAll("sessions")).toEqual([]);
-  });
-
-  it("returns [] when file is empty", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue("");
-    const { readAll } = await getStore();
-    expect(await readAll("any")).toEqual([]);
+  it("orders newest first", async () => {
+    await readAll("leads");
+    expect(lead.findMany).toHaveBeenCalledWith({ orderBy: { createdAt: "desc" } });
   });
 });
 
-describe("store - writeAll()", () => {
-  beforeEach(() => vi.resetModules());
-
-  it("creates directory and writes JSON to file", async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
-    vi.mocked(fs.writeFileSync).mockReturnValue(undefined);
-    const { writeAll } = await getStore();
-    writeAll("leads", [{ id: "1" }]);
-    expect(fs.mkdirSync).toHaveBeenCalledWith(MOCK_DIR, { recursive: true });
-    expect(fs.writeFileSync).toHaveBeenCalledWith(MOCK_FILE, expect.stringContaining('"id": "1"'), "utf-8");
+describe("store - readWhere()", () => {
+  it("converts a snake_case column to its Prisma field name", async () => {
+    await readWhere("user_permissions", "user_id", "u-1");
+    expect(userPermission.findMany).toHaveBeenCalledWith({
+      where:   { userId: "u-1" },
+      orderBy: { createdAt: "desc" },
+    });
   });
 
-  it("skips mkdir if directory already exists", async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.writeFileSync).mockReturnValue(undefined);
-    const { writeAll } = await getStore();
-    writeAll("leads", []);
-    expect(fs.mkdirSync).not.toHaveBeenCalled();
-  });
-
-  it("writes pretty-printed JSON", async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    let written = "";
-    vi.mocked(fs.writeFileSync).mockImplementation((_p, data) => { written = String(data); });
-    const { writeAll } = await getStore();
-    writeAll("test", [{ a: 1 }]);
-    expect(written).toContain("\n");
-    expect(JSON.parse(written)).toEqual([{ a: 1 }]);
+  it("leaves a single-word column untouched", async () => {
+    await readWhere("leads", "id", "abc");
+    expect(lead.findMany).toHaveBeenCalledWith({
+      where:   { id: "abc" },
+      orderBy: { createdAt: "desc" },
+    });
   });
 });
 
-describe("store - prepend()", () => {
-  beforeEach(() => vi.resetModules());
-
-  it("prepends new item to existing array", async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify([{ id: "old" }]));
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    let written = "";
-    vi.mocked(fs.writeFileSync).mockImplementation((_p, data) => { written = String(data); });
-    const { prepend } = await getStore();
-    prepend("leads", { id: "new" });
-    const result = JSON.parse(written);
-    expect(result[0]).toEqual({ id: "new" });
-    expect(result[1]).toEqual({ id: "old" });
+describe("store - value normalisation", () => {
+  // Prisma returns Decimal for numeric and BigInt for bigint. JSON.stringify
+  // renders Decimal as a quoted string and throws outright on BigInt, so both
+  // are converted back to plain numbers on the way out.
+  it("converts Decimal columns to numbers", async () => {
+    invoice.findMany.mockResolvedValue([
+      { id: "i-1", total: new Prisma.Decimal("1234.56"), status: "paid" },
+    ]);
+    const [row] = await readAll<{ total: number }>("invoices");
+    expect(row.total).toBe(1234.56);
+    expect(typeof row.total).toBe("number");
   });
 
-  it("creates array with single item when store is empty", async () => {
-    vi.mocked(fs.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    let written = "";
-    vi.mocked(fs.writeFileSync).mockImplementation((_p, data) => { written = String(data); });
-    const { prepend } = await getStore();
-    prepend("leads", { id: "first" });
-    expect(JSON.parse(written)).toEqual([{ id: "first" }]);
+  it("converts BigInt columns to numbers so JSON.stringify does not throw", async () => {
+    invoice.findMany.mockResolvedValue([{ id: "i-2", fileSize: BigInt(4096) }]);
+    const rows = await readAll("invoices");
+    expect(() => JSON.stringify(rows)).not.toThrow();
+    expect((rows[0] as { fileSize: number }).fileSize).toBe(4096);
+  });
+
+  it("leaves other values alone", async () => {
+    const createdAt = new Date("2026-01-01T00:00:00Z");
+    invoice.findMany.mockResolvedValue([{ id: "i-3", notes: null, tags: ["a"], createdAt }]);
+    expect(await readAll("invoices")).toEqual([
+      { id: "i-3", notes: null, tags: ["a"], createdAt },
+    ]);
+  });
+});
+
+describe("store - writes", () => {
+  it("insert passes the item through as create data", async () => {
+    await insert("leads", { id: "l-1", name: "Bob", email: "b@example.com" });
+    expect(lead.create).toHaveBeenCalledWith({
+      data: { id: "l-1", name: "Bob", email: "b@example.com" },
+    });
+  });
+
+  it("updateById uses updateMany so a missing row is a no-op", async () => {
+    await updateById("leads", "l-1", { status: "won" });
+    expect(lead.updateMany).toHaveBeenCalledWith({
+      where: { id: "l-1" },
+      data:  { status: "won" },
+    });
+  });
+
+  it("removeById deletes by id", async () => {
+    await removeById("leads", "l-1");
+    expect(lead.deleteMany).toHaveBeenCalledWith({ where: { id: "l-1" } });
   });
 });
 
 describe("store - newId()", () => {
-  beforeEach(() => vi.resetModules());
-
-  it("generates unique IDs on each call", async () => {
-    const { newId } = await getStore();
+  it("generates unique IDs on each call", () => {
     const ids = new Set(Array.from({ length: 100 }, () => newId()));
     expect(ids.size).toBe(100);
   });
 
-  it("ID starts with a timestamp", async () => {
+  it("ID starts with a timestamp", () => {
     const before = Date.now();
-    const { newId } = await getStore();
     const id = newId();
     const after = Date.now();
     const ts = parseInt(id.split("-")[0], 10);
@@ -133,10 +135,8 @@ describe("store - newId()", () => {
     expect(ts).toBeLessThanOrEqual(after);
   });
 
-  it("ID contains a hex suffix", async () => {
-    const { newId } = await getStore();
-    const id = newId();
-    const suffix = id.split("-")[1];
+  it("ID contains a hex suffix", () => {
+    const suffix = newId().split("-")[1];
     expect(suffix).toMatch(/^[0-9a-f]+$/);
   });
 });

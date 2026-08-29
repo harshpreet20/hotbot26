@@ -5,12 +5,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the store so no disk I/O happens
-vi.mock("@/lib/store", () => ({
+vi.mock("@/lib/fsStore", () => ({
   _fsRead:  vi.fn(),
   _fsWrite: vi.fn(),
 }));
 
-import { _fsRead, _fsWrite } from "@/lib/store";
+import { _fsRead, _fsWrite } from "@/lib/fsStore";
 import { createSession, getSession, deleteSession } from "@/lib/sessions";
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;

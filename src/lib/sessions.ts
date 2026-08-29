@@ -7,7 +7,7 @@
  * Sessions expire after 30 days of inactivity (sliding window).
  */
 import crypto from "crypto";
-import { _fsRead, _fsWrite } from "@/lib/store";
+import { _fsRead, _fsWrite } from "@/lib/fsStore";
 import type { Role, SessionInfo } from "@/types/dashboard";
 
 const TTL_MS        = 30 * 24 * 60 * 60 * 1000; // 30 days

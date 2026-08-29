@@ -25,7 +25,7 @@
  */
 import crypto from "crypto";
 import { sb, isSupabaseEnabled } from "@/lib/supabase";
-import { _fsRead, _fsWrite } from "@/lib/store";
+import { _fsRead, _fsWrite } from "@/lib/fsStore";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
