@@ -9,8 +9,8 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken:  vi.fn(),
-  authorizeAny:  vi.fn(),
-  authorizeData: vi.fn(),
+  requireAuth:  vi.fn(),
+  requireDataAccess: vi.fn(),
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -24,7 +24,7 @@ vi.mock("@/lib/rateLimit", () => ({
   rateLimitResponse: vi.fn().mockResolvedValue(null),
 }));
 
-import { extractToken, authorizeAny, authorizeData } from "@/lib/dashboardAuth";
+import { extractToken, requireAuth, requireDataAccess } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, newId } from "@/lib/store";
 import { GET, POST, PATCH } from "@/app/api/dashboard/leads/route";
 
@@ -61,8 +61,8 @@ function makeReq(method: string, url: string, body?: unknown, bearer?: string) {
 
 beforeEach(() => {
   vi.mocked(extractToken).mockReturnValue("test-token");
-  vi.mocked(authorizeAny).mockResolvedValue(ADMIN_SESSION);
-  vi.mocked(authorizeData).mockResolvedValue(true);
+  vi.mocked(requireAuth).mockResolvedValue(ADMIN_SESSION);
+  vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
   vi.mocked(readAll).mockResolvedValue([LEAD_FIXTURE]);
   vi.mocked(insert).mockClear();
   vi.mocked(updateById).mockClear();
@@ -73,7 +73,7 @@ beforeEach(() => {
 
 describe("GET /api/dashboard/leads - auth guard", () => {
   it("returns 401 when not authenticated", async () => {
-    vi.mocked(authorizeData).mockResolvedValue(false);
+    vi.mocked(requireDataAccess).mockResolvedValue(null);
     const res = await GET(makeReq("GET", "http://localhost/api/dashboard/leads"));
     expect(res.status).toBe(401);
   });
@@ -110,25 +110,25 @@ describe("GET /api/dashboard/leads", () => {
 
 describe("POST /api/dashboard/leads - auth & roles", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/leads", { name: "X", email: "x@x.com" }));
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when role is agent (not allowed to create leads)", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(AGENT_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/leads", { name: "X", email: "x@x.com" }));
     expect(res.status).toBe(403);
   });
 
   it("returns 403 when role is crm_operator", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(CRM_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(CRM_SESSION);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/leads", { name: "X", email: "x@x.com" }));
     expect(res.status).toBe(403);
   });
 
   it("allows sales role to create a lead", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(SALES_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(SALES_SESSION);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/leads", {
       name: "Bob", email: "bob@example.com",
     }));
@@ -181,7 +181,7 @@ describe("POST /api/dashboard/leads - creation", () => {
 
 describe("PATCH /api/dashboard/leads - auth guard", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await PATCH(makeReq("PATCH", "http://localhost/api/dashboard/leads", { id: "lead-1" }));
     expect(res.status).toBe(401);
   });

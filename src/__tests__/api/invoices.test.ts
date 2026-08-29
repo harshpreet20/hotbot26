@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken: vi.fn(),
-  authorizeAny: vi.fn(),
+  requireAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -24,7 +24,7 @@ vi.mock("@/lib/rateLimit", () => ({
   rateLimitResponse: vi.fn().mockResolvedValue(null),
 }));
 
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { extractToken, requireAuth } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById, newId } from "@/lib/store";
 import {
   GET, POST, PATCH, DELETE,
@@ -66,7 +66,7 @@ function makeReq(method: string, url: string, body?: unknown, bearer?: string) {
 
 beforeEach(() => {
   vi.mocked(extractToken).mockReturnValue("test-token");
-  vi.mocked(authorizeAny).mockResolvedValue(ADMIN_SESSION);
+  vi.mocked(requireAuth).mockResolvedValue(ADMIN_SESSION);
   vi.mocked(readAll).mockResolvedValue([INVOICE_FIXTURE]);
   vi.mocked(insert).mockClear();
   vi.mocked(updateById).mockClear();
@@ -78,7 +78,7 @@ beforeEach(() => {
 
 describe("GET /api/dashboard/invoices - auth guard", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await GET(makeReq("GET", "http://localhost/api/dashboard/invoices"));
     expect(res.status).toBe(401);
   });
@@ -116,13 +116,13 @@ describe("GET /api/dashboard/invoices", () => {
 
 describe("POST /api/dashboard/invoices - auth & roles", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/invoices", {}));
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when role is sales (not allowed)", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(SALES_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(SALES_SESSION);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/invoices", {
       clientName: "Test", clientEmail: "t@test.com", lineItems: [],
     }));
@@ -130,7 +130,7 @@ describe("POST /api/dashboard/invoices - auth & roles", () => {
   });
 
   it("allows finance role to create invoices", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(FINANCE_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(FINANCE_SESSION);
     vi.mocked(readAll).mockResolvedValue([]);
     const res = await POST(makeReq("POST", "http://localhost/api/dashboard/invoices", {
       clientName: "Client", clientEmail: "c@example.com", lineItems: [],
@@ -209,13 +209,13 @@ describe("POST /api/dashboard/invoices - creation", () => {
 
 describe("PATCH /api/dashboard/invoices", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await PATCH(makeReq("PATCH", "http://localhost/api/dashboard/invoices", { id: "inv-1" }));
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when role is sales", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(SALES_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(SALES_SESSION);
     const res = await PATCH(makeReq("PATCH", "http://localhost/api/dashboard/invoices", { id: "inv-1" }));
     expect(res.status).toBe(403);
   });
@@ -279,13 +279,13 @@ describe("PATCH /api/dashboard/invoices", () => {
 
 describe("DELETE /api/dashboard/invoices", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await DELETE(makeReq("DELETE", "http://localhost/api/dashboard/invoices?id=inv-1"));
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when role is not admin", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(FINANCE_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(FINANCE_SESSION);
     const res = await DELETE(makeReq("DELETE", "http://localhost/api/dashboard/invoices?id=inv-1"));
     expect(res.status).toBe(403);
   });

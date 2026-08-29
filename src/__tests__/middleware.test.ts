@@ -34,8 +34,8 @@ describe("middleware - non-dashboard paths", () => {
   ];
 
   for (const path of publicPaths) {
-    it(`passes through ${path} without redirect`, () => {
-      const res = middleware(makeReq(path));
+    it(`passes through ${path} without redirect`, async () => {
+      const res = await middleware(makeReq(path));
       // NextResponse.next() has no Location header
       expect(res.headers.get("location")).toBeNull();
       expect(res.status).toBe(200);
@@ -57,8 +57,8 @@ describe("middleware - dashboard paths without cookie", () => {
   ];
 
   for (const path of dashboardPaths) {
-    it(`redirects ${path} to /enter/backdrop when no cookie`, () => {
-      const res = middleware(makeReq(path));
+    it(`redirects ${path} to /enter/backdrop when no cookie`, async () => {
+      const res = await middleware(makeReq(path));
       expect(res.status).toBe(307); // Next.js redirect default
       const location = res.headers.get("location") ?? "";
       expect(location).toContain("/enter/backdrop");
@@ -70,14 +70,14 @@ describe("middleware - dashboard paths without cookie", () => {
 // ── Dashboard paths with valid cookie → pass through ─────────────────────────
 
 describe("middleware - dashboard paths with cookie present", () => {
-  it("passes through /enter/backdrop/dashboard when cookie is set", () => {
-    const res = middleware(makeReq("/enter/backdrop/dashboard", "some-token-value"));
+  it("passes through /enter/backdrop/dashboard when cookie is set", async () => {
+    const res = await middleware(makeReq("/enter/backdrop/dashboard", "some-token-value"));
     expect(res.headers.get("location")).toBeNull();
     expect(res.status).toBe(200);
   });
 
-  it("passes through nested dashboard path when cookie is set", () => {
-    const res = middleware(makeReq("/enter/backdrop/dashboard/leads", "tok123"));
+  it("passes through nested dashboard path when cookie is set", async () => {
+    const res = await middleware(makeReq("/enter/backdrop/dashboard/leads", "tok123"));
     expect(res.headers.get("location")).toBeNull();
     expect(res.status).toBe(200);
   });
@@ -86,18 +86,18 @@ describe("middleware - dashboard paths with cookie present", () => {
 // ── Redirect target correctness ───────────────────────────────────────────────
 
 describe("middleware - redirect target", () => {
-  it("redirect clears search params (no ?return= leakage)", () => {
+  it("redirect clears search params (no ?return= leakage)", async () => {
     const req = new NextRequest(
       "http://localhost/enter/backdrop/dashboard?foo=bar",
     );
-    const res = middleware(req);
+    const res = await middleware(req);
     const location = res.headers.get("location") ?? "";
     expect(location).not.toContain("foo=bar");
     expect(location).not.toContain("?");
   });
 
-  it("redirect preserves the host", () => {
-    const res = middleware(makeReq("/enter/backdrop/dashboard"));
+  it("redirect preserves the host", async () => {
+    const res = await middleware(makeReq("/enter/backdrop/dashboard"));
     const location = res.headers.get("location") ?? "";
     expect(location).toContain("localhost");
   });

@@ -11,8 +11,8 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken:  vi.fn(),
-  authorizeData: vi.fn(),
-  authorizeAny:  vi.fn(),
+  requireDataAccess: vi.fn(),
+  requireAuth:  vi.fn(),
   isAuthorized:  vi.fn(),
 }));
 
@@ -27,7 +27,7 @@ vi.mock("@/lib/postsStore", () => ({
   readPosts: vi.fn().mockReturnValue({ posts: [] }),
 }));
 
-import { extractToken, authorizeData, isAuthorized } from "@/lib/dashboardAuth";
+import { extractToken, requireDataAccess, isAuthorized } from "@/lib/dashboardAuth";
 import { readAll, updateById } from "@/lib/store";
 import { readPosts } from "@/lib/postsStore";
 
@@ -58,7 +58,7 @@ function makeReq(url: string, bearer?: string, secret?: string) {
 describe("Dashboard routes - auth guard", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue(null);
-    vi.mocked(authorizeData).mockReturnValue(false);
+    vi.mocked(requireDataAccess).mockResolvedValue(null);
     vi.mocked(isAuthorized).mockReturnValue(false);
     vi.mocked(readAll).mockResolvedValue([]);
     vi.mocked(readPosts).mockReturnValue({ posts: [] });
@@ -88,7 +88,7 @@ describe("Dashboard routes - auth guard", () => {
 describe("GET /api/dashboard/overview", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockImplementation((collection) => {
       switch (collection) {
         case "leads":      return Promise.resolve([LEAD, LEAD, LEAD]);
@@ -152,7 +152,7 @@ describe("GET /api/dashboard/overview", () => {
 
   it("accepts the static publish secret via query param", async () => {
     const res = await getOverview(makeReq("http://localhost/api/dashboard/overview", undefined, "pub-secret"));
-    // authorizeData is mocked to return true regardless; just ensure no 401
+    // requireDataAccess is mocked to return true regardless; just ensure no 401
     expect(res.status).toBe(200);
   });
 });
@@ -162,7 +162,7 @@ describe("GET /api/dashboard/overview", () => {
 describe("GET /api/dashboard/leads", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([LEAD]);
   });
 
@@ -187,7 +187,7 @@ describe("GET /api/dashboard/leads", () => {
 describe("GET /api/dashboard/contacts", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([CONTACT]);
   });
 
@@ -204,7 +204,7 @@ describe("GET /api/dashboard/contacts", () => {
 describe("GET /api/dashboard/newsletter", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([NEWSLETTER]);
   });
 
@@ -223,7 +223,7 @@ import { PATCH as patchCallbacks } from "@/app/api/dashboard/callbacks/route";
 describe("GET /api/dashboard/callbacks", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([CALLBACK]);
   });
 
@@ -238,7 +238,7 @@ describe("GET /api/dashboard/callbacks", () => {
 describe("PATCH /api/dashboard/callbacks - mark as called", () => {
   beforeEach(() => {
     vi.mocked(extractToken).mockReturnValue("admin-token");
-    vi.mocked(authorizeData).mockReturnValue(true);
+    vi.mocked(requireDataAccess).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
     vi.mocked(readAll).mockResolvedValue([{ ...CALLBACK }]);
   });
 
@@ -266,7 +266,7 @@ describe("PATCH /api/dashboard/callbacks - mark as called", () => {
   });
 
   it("returns 401 when unauthorized on PATCH", async () => {
-    vi.mocked(authorizeData).mockReturnValue(false);
+    vi.mocked(requireDataAccess).mockResolvedValue(null);
     const req = new NextRequest("http://localhost/api/dashboard/callbacks", {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },

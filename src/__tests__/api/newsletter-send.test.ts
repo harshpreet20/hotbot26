@@ -18,7 +18,7 @@ vi.mock("@/lib/store", () => ({
 
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken:   vi.fn().mockReturnValue("token"),
-  authorizeAdmin: vi.fn().mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" }),
+  requireRole: vi.fn().mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" }),
 }));
 
 vi.mock("@/lib/newsletterEmail", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/lib/newsletterEmail", () => ({
 }));
 
 import { readAll } from "@/lib/store";
-import { extractToken, authorizeAdmin } from "@/lib/dashboardAuth";
+import { extractToken, requireRole } from "@/lib/dashboardAuth";
 import { isNewsletterEmailConfigured, sendNewsletter } from "@/lib/newsletterEmail";
 import { POST } from "@/app/api/blog/newsletter/send/route";
 
@@ -50,7 +50,7 @@ const SUBSCRIBERS = [
 ];
 
 beforeEach(() => {
-  vi.mocked(authorizeAdmin).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
+  vi.mocked(requireRole).mockResolvedValue({ userId: "admin-id", username: "admin", role: "admin" });
   vi.mocked(isNewsletterEmailConfigured).mockReturnValue(true);
   vi.mocked(readAll).mockResolvedValue(SUBSCRIBERS as never);
   vi.mocked(sendNewsletter).mockResolvedValue({ sent: 2, failed: 0, errors: [] });
@@ -61,7 +61,7 @@ beforeEach(() => {
 describe("POST /api/blog/newsletter/send", () => {
 
   it("returns 403 without auth", async () => {
-    vi.mocked(authorizeAdmin).mockResolvedValue(null);
+    vi.mocked(requireRole).mockResolvedValue(null);
 
     const res  = await POST(postReq({ subject: "Hello", bodyHtml: "<p>Hi</p>" }));
     const body = await res.json() as Record<string, unknown>;

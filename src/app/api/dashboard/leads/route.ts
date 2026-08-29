@@ -132,6 +132,7 @@ export async function PATCH(req: NextRequest) {
     ...(body.message       !== undefined && { message:       body.message }),
     ...(body.status        !== undefined && { status:        body.status }),
     ...(body.notes         !== undefined && { notes:         body.notes }),
+    ...(body.tags          !== undefined && { tags:          body.tags }),
     ...(body.assignedTo    !== undefined && { assignedTo:    body.assignedTo }),
     ...(body.journeyStage  !== undefined && { journeyStage:  body.journeyStage }),
     lastUpdatedAt: new Date().toISOString(),

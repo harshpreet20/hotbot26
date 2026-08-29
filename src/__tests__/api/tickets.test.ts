@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/dashboardAuth", () => ({
   extractToken: vi.fn(),
-  authorizeAny: vi.fn(),
+  requireAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -30,7 +30,7 @@ vi.mock("@/lib/ticketEmail", () => ({
   sendStatusUpdateNotification: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { extractToken, authorizeAny } from "@/lib/dashboardAuth";
+import { extractToken, requireAuth } from "@/lib/dashboardAuth";
 import { readAll, insert, updateById, removeById } from "@/lib/store";
 import {
   GET as dashGet,
@@ -75,7 +75,7 @@ function makeReq(method: string, url: string, body?: unknown, bearer?: string) {
 
 beforeEach(() => {
   vi.mocked(extractToken).mockReturnValue("test-token");
-  vi.mocked(authorizeAny).mockResolvedValue(ADMIN_SESSION);
+  vi.mocked(requireAuth).mockResolvedValue(ADMIN_SESSION);
   vi.mocked(readAll).mockResolvedValue([TICKET_FIXTURE]);
   vi.mocked(insert).mockClear();
   vi.mocked(updateById).mockClear();
@@ -86,7 +86,7 @@ beforeEach(() => {
 
 describe("GET /api/dashboard/tickets", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await dashGet(makeReq("GET", "http://localhost/api/dashboard/tickets"));
     expect(res.status).toBe(401);
   });
@@ -126,7 +126,7 @@ describe("GET /api/dashboard/tickets", () => {
 
 describe("POST /api/dashboard/tickets", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await dashPost(makeReq("POST", "http://localhost/api/dashboard/tickets", { title: "T" }));
     expect(res.status).toBe(401);
   });
@@ -247,13 +247,13 @@ describe("PATCH /api/dashboard/tickets - add comment", () => {
 
 describe("DELETE /api/dashboard/tickets", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(null);
+    vi.mocked(requireAuth).mockResolvedValue(null);
     const res = await dashDelete(makeReq("DELETE", "http://localhost/api/dashboard/tickets?id=tkt-1"));
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when role is not admin", async () => {
-    vi.mocked(authorizeAny).mockResolvedValue(AGENT_SESSION);
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
     const res = await dashDelete(makeReq("DELETE", "http://localhost/api/dashboard/tickets?id=tkt-1"));
     expect(res.status).toBe(403);
   });
