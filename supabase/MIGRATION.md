@@ -9,10 +9,10 @@ manual action before steps 4–6 can run.
 |---|---|---|
 | 1 | Repository references repointed | **Done** |
 | 2 | Storage buckets and objects copied | **Done, verified** |
-| 3 | Schema created on the new project | **Blocked — needs you** |
-| 4 | Table data copied | Ready, waiting on 3 |
-| 5 | Auth users | **Needs a decision** — see below |
-| 6 | Deployment env vars + verification | Waiting on 3–5 |
+| 3 | Schema + grants applied to the new project | **Done** — 26/26 tables |
+| 4 | Table data copied | **Done, verified** — 146/146 rows |
+| 5 | Auth users | **Outstanding — blocks login** |
+| 6 | Deployment env vars + verification | Outstanding |
 
 The new project was empty when this started: no tables, no buckets, no data.
 Nothing was overwritten.
@@ -72,7 +72,7 @@ byte-identical by SHA-256, and the public URL serves correctly.
 > therefore already failing in production. It was not created here because that
 > is a fix, not a migration — but it is a one-line fix worth making.
 
-## 3. Schema — needs one manual step
+## 3. Schema and grants — done
 
 **Open the new project's SQL Editor and run these two files, in order:**
 
@@ -113,9 +113,14 @@ It also adds `leads`, `tickets`, `callbacks` and `chats` to the
 without it the dashboard badge counts and the live chat widget stop updating
 silently — no error, just nothing.
 
-## 4. Data — ready to run
+## 4. Data — done and verified
 
-Once step 3 is done:
+All **146 rows across 26 tables** were copied and then independently verified:
+every table was re-read from both projects and compared on content, not just
+row count. All thirteen non-empty tables are identical; the other thirteen were
+empty at source and remain empty.
+
+To re-run it (safe — rows upsert on their primary key):
 
 ```bash
 OLD_SUPABASE_URL=https://wsucqpunleplgyrrroae.supabase.co OLD_SERVICE_KEY=<old service_role key> \
@@ -135,7 +140,11 @@ the source, exiting non-zero on any mismatch.
 `sessions` (19 rows) are live login sessions. Copying them is harmless, but
 skipping them (`--only=…` without it) just means everyone logs in again.
 
-## 5. Auth users — read this before deciding
+## 5. Auth users — outstanding, and login does not work until it is resolved
+
+The new project currently has **zero auth users**, while `backdrop_users` holds
+the two migrated rows. Until matching auth users exist, nobody can log in to
+Backdrop.
 
 **Password hashes cannot be moved.** The Auth Admin API does not expose
 `encrypted_password`; the user object it returns has no such field. Recreating
@@ -169,10 +178,29 @@ specified explicitly; if they are allowed to get fresh UUIDs, both
 `backdrop_users` rows orphan and nobody can log into Backdrop, on a database
 that looks perfectly populated.
 
-Given two users and no recoverable passwords, the realistic option is to
-recreate both with these exact UUIDs and have them set new passwords. Say the
-word and that can be done from here — it needs no access beyond the keys
-already in use.
+There are two ways to resolve it. Both end with the two users setting fresh
+passwords, because the originals cannot be recovered.
+
+**A — recreate with the original UUIDs.** Create each auth user through the
+Admin API with its `id` supplied explicitly, so it matches the `backdrop_users`
+row already in place. Nothing else changes. This cannot be done from the
+Supabase dashboard, which does not let you choose a UUID.
+
+**B — create them normally, then repoint `backdrop_users`.** Add both users in
+the dashboard, let them get fresh UUIDs, then update the two rows to match:
+
+```sql
+UPDATE backdrop_users SET id = '<new auth uuid>' WHERE email = '<that email>';
+```
+
+This is safe here: the schema has exactly one foreign key
+(`projects.client_id → clients.client_id`), so nothing in the database enforces
+a reference to `backdrop_users.id`. The only loose ends are the 19 migrated
+`sessions` rows, whose `user_id` would no longer match — they are live login
+sessions and expire anyway, so the effect is that everyone logs in once more.
+
+B needs no special tooling and is the easier path if you are already in the
+dashboard. A is tidier if you would rather the UUIDs never move.
 
 ## 6. Deployment and verification
 
