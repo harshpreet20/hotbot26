@@ -74,11 +74,20 @@ byte-identical by SHA-256, and the public URL serves correctly.
 
 ## 3. Schema — needs one manual step
 
-**Open the new project's SQL Editor and run
-[`supabase/001_new_project_schema.sql`](./001_new_project_schema.sql).**
+**Open the new project's SQL Editor and run these two files, in order:**
 
-Dashboard → SQL Editor → New query → paste the file → Run. It is idempotent
-(`CREATE TABLE IF NOT EXISTS`), so re-running it is harmless.
+1. [`supabase/001_new_project_schema.sql`](./001_new_project_schema.sql) — the tables.
+2. [`supabase/002_grants.sql`](./002_grants.sql) — role privileges.
+
+Dashboard → SQL Editor → New query → paste the file's *contents* (not a link to
+it) → Run. Both are safe to re-run.
+
+The second file is not optional. Tables created in the SQL Editor are owned by
+`postgres`, and this project has no default privileges handing the PostgREST
+roles access to them, so without it every REST request fails with 42501
+`permission denied for table ...` — including the data copy in step 4. It also
+sets out the `anon` grant needed for the realtime subscriptions, which is a
+security decision rather than a default; read that section before running it.
 
 This step cannot be automated from here. Creating tables requires SQL
 execution, and none of the three routes to it are open: port 5432 is
