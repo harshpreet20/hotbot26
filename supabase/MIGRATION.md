@@ -61,16 +61,19 @@ size limits and MIME restrictions:
 | `project-files` | no | 50 MB | 0 (empty) |
 | `client-resources` | yes | 50 MB | 0 (empty) |
 | `client-files` | yes | none | 0 (empty) |
+| `meeting-files` | yes | 50 MB | 0 (created empty) |
 
 Both objects were re-downloaded from the new project and confirmed
 byte-identical by SHA-256, and the public URL serves correctly.
 
-> **Latent bug, not caused by this migration.** The code writes meeting
-> attachments to a `meeting-files` bucket
-> (`src/app/api/dashboard/meetings/attachments/route.ts:90`), but that bucket
-> does not exist on the old project either. Meeting attachment uploads are
-> therefore already failing in production. It was not created here because that
-> is a fix, not a migration — but it is a one-line fix worth making.
+> **`meeting-files` was missing from both projects** — a pre-existing bug, not
+> something this migration caused. The code writes meeting attachments there
+> (`src/app/api/dashboard/meetings/attachments/route.ts:90`), so those uploads
+> were failing. The bucket has now been created empty on **both** projects, so
+> the feature works on the old project until cutover and on the new one after.
+> It is public with a 50 MB limit, matching `getPublicUrl()` and `MAX_SIZE` in
+> that route. No bucket-level MIME allowlist was set: the route already enforces
+> one, and a second copy would silently drift from it.
 
 ## 3. Schema and grants — done
 
@@ -85,9 +88,15 @@ it) → Run. Both are safe to re-run.
 The second file is not optional. Tables created in the SQL Editor are owned by
 `postgres`, and this project has no default privileges handing the PostgREST
 roles access to them, so without it every REST request fails with 42501
-`permission denied for table ...` — including the data copy in step 4. It also
-sets out the `anon` grant needed for the realtime subscriptions, which is a
-security decision rather than a default; read that section before running it.
+`permission denied for table ...` — including the data copy in step 4.
+
+A third file, [`supabase/003_anon_realtime_grants.sql`](./003_anon_realtime_grants.sql),
+**is** optional and has not been run. It grants `anon` the SELECT needed for the
+realtime subscriptions behind the dashboard badge counts and the live chat.
+Until it runs, those two features stay quiet on the new project. It is a
+security decision rather than a default — the anon key ships in the browser
+bundle and these tables have no RLS — so the file states the tradeoff and the
+safer alternative. Read it before running it.
 
 This step cannot be automated from here. Creating tables requires SQL
 execution, and none of the three routes to it are open: port 5432 is
