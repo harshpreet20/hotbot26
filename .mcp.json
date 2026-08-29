@@ -14,7 +14,7 @@
         "-y",
         "@supabase/mcp-server-supabase@latest",
         "--supabase-url",
-        "https://wsucqpunleplgyrrroae.supabase.co",
+        "https://ugusopwzziztnxhqlotp.supabase.co",
         "--supabase-key",
         "${SUPABASE_SERVICE_ROLE_KEY}"
       ]

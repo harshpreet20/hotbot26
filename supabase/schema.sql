@@ -1,5 +1,18 @@
 -- HotBot Studios — Supabase Database Schema
--- Run this in the Supabase SQL Editor for project wsucqpunleplgyrrroae
+--
+-- ⚠ STALE — DO NOT USE THIS TO PROVISION THE NEW PROJECT (ugusopwzziztnxhqlotp).
+--
+-- This file predates the move to Prisma and no longer describes the schema the
+-- application runs against. It is missing 14 of the 26 tables in use — including
+-- `backdrop_users`, the table every Backdrop login depends on — and it creates 7
+-- tables the app no longer reads (`users`, `pending_users`, `posts`, `email_logs`,
+-- `site_events`, `site_page_views`, `site_sessions`), one of them seeded with a
+-- default admin password hash.
+--
+-- prisma/schema.prisma is the source of truth. To set up the new project, follow
+-- supabase/MIGRATION.md, which copies the live schema across with pg_dump.
+--
+-- Kept only as a record of the pre-Prisma schema.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── Users (custom bcrypt auth — queried by src/lib/adminStore.ts) ─────────────
