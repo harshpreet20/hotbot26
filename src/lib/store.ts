@@ -58,6 +58,41 @@ function model(table: string) {
   return delegate();
 }
 
+/**
+ * Give database failures an actionable message.
+ *
+ * Prisma's own errors surface as a bare 500 with an empty body once they reach a
+ * route handler, which says nothing about what went wrong. The two cases worth
+ * naming are a database that has no schema (the usual sign of a cutover pointed
+ * at an unrestored project) and one that cannot be reached at all.
+ */
+async function run<T>(table: string, op: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const msg  = err instanceof Error ? err.message : String(err);
+
+    if (code === "P2021" || /does not exist in the current database/.test(msg)) {
+      const detail =
+        `[store] ${op}(${table}): table is missing from the database. ` +
+        `POSTGRES_PRISMA_URL points at a database without this schema — ` +
+        `typically a migration target that has not been restored yet.`;
+      console.error(detail);
+      throw new Error(detail);
+    }
+
+    if (code === "P1001" || code === "P1002" || /Can't reach database server/.test(msg)) {
+      const detail = `[store] ${op}(${table}): cannot reach the database server. Check POSTGRES_PRISMA_URL.`;
+      console.error(detail);
+      throw new Error(detail);
+    }
+
+    console.error(`[store] ${op}(${table}) failed:`, msg);
+    throw err;
+  }
+}
+
 /** Call sites pass database column names; Prisma expects model field names. */
 function toField(column: string): string {
   return column.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -84,7 +119,9 @@ function normalise<T>(row: T): T {
 
 /** Read all rows from a table, newest first. */
 export async function readAll<T>(table: string): Promise<T[]> {
-  const rows = await model(table).findMany({ orderBy: { createdAt: "desc" } });
+  const rows = await run(table, "readAll", () =>
+    model(table).findMany({ orderBy: { createdAt: "desc" } })
+  );
   return (rows as T[]).map(normalise);
 }
 
@@ -94,16 +131,20 @@ export async function readWhere<T>(
   column: string,
   value: string
 ): Promise<T[]> {
-  const rows = await model(table).findMany({
-    where:   { [toField(column)]: value },
-    orderBy: { createdAt: "desc" },
-  });
+  const rows = await run(table, "readWhere", () =>
+    model(table).findMany({
+      where:   { [toField(column)]: value },
+      orderBy: { createdAt: "desc" },
+    })
+  );
   return (rows as T[]).map(normalise);
 }
 
 /** Insert one row. */
 export async function insert<T>(table: string, item: T): Promise<void> {
-  await model(table).create({ data: item as Record<string, unknown> });
+  await run(table, "insert", () =>
+    model(table).create({ data: item as Record<string, unknown> })
+  );
 }
 
 /** Update a single row by its `id` field. */
@@ -114,12 +155,14 @@ export async function updateById<T>(
 ): Promise<void> {
   // updateMany rather than update: a missing row is a no-op here, matching the
   // previous behaviour, whereas update() would throw P2025.
-  await model(table).updateMany({ where: { id }, data: data as Record<string, unknown> });
+  await run(table, "updateById", () =>
+    model(table).updateMany({ where: { id }, data: data as Record<string, unknown> })
+  );
 }
 
 /** Delete a single row by its `id` field. */
 export async function removeById(table: string, id: string): Promise<void> {
-  await model(table).deleteMany({ where: { id } });
+  await run(table, "removeById", () => model(table).deleteMany({ where: { id } }));
 }
 
 /** Generate a time-sortable unique id. */
