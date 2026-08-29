@@ -30,8 +30,13 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const onlyArg = process.argv.find((a) => a.startsWith("--only="));
 const ONLY = onlyArg ? onlyArg.slice("--only=".length).split(",").map((s) => s.trim()) : null;
 
-// FK-safe order: clients must land before projects (projects.client_id → clients.client_id).
-// Everything else is independent, so alphabetical.
+// FK-safe order: clients must land before projects (projects.client_id →
+// clients.client_id) and before client_users (client_users.client_id → the same
+// column). Everything else is independent, so alphabetical.
+//
+// The last six are reached through the Supabase client rather than Prisma, so
+// they are absent from prisma/schema.prisma. They need supabase/004_missing_tables.sql
+// applied first — client_users in particular is what the client portal logs in against.
 const TABLES = [
   "clients",
   "ai_knowledge_base", "audit_logs", "backdrop_users", "callbacks", "chats",
@@ -39,6 +44,8 @@ const TABLES = [
   "google_tokens", "invoices", "leads", "meeting_attachments", "meetings",
   "newsletter", "project_sops", "projects", "sessions", "system_logs",
   "team_channels", "team_messages", "tickets", "user_permissions", "whiteboards",
+  "client_users", "email_logs", "site_sessions", "site_page_views",
+  "site_events", "site_journey_events",
 ];
 
 const PAGE = 500;
